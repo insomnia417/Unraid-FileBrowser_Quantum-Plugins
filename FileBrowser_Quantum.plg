@@ -126,7 +126,7 @@ nohup /usr/local/bin/filebrowser > execution.log 2>&1 &
 
 echo "----------------------------------------------------"
 echo " filebrowser-quantum 已安装成功并启动！"
-echo " 版本: 2026.01.01"
+echo " 版本: 2026.01.04"
 echo " 作者: insomnia417"
 echo " 访问地址: http://$(hostname -I | awk '{print $1}'):8081"
 echo " 默认用户名:admin"
