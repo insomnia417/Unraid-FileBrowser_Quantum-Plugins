@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "2026.01.01">
+  <!ENTITY version   "2026.01.04">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -132,6 +132,7 @@ echo " 访问地址: http://$(hostname -I | awk '{print $1}'):8081"
 echo " 默认用户名:admin"
 echo " 默认密码:admin"
 echo " 数据保留在 /mnt/user/appdata/filebrowser_quantum"
+echo " UI界面可在 [设置 - FileBrowser Q] 启动，更建议使用'Custom Tab'插件添加标签页到首页更方便打开"
 echo "----------------------------------------------------"
 ]]></INLINE>
 </FILE>
