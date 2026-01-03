@@ -53,6 +53,9 @@ Icon="folder-open"
       <p style="margin: 5px 0;">移植者: insomnia417&InSnocent</p>
       <p style="margin: 5px 0;">配置目录: /mnt/user/appdata/filebrowser_quantum</p>
       <p style="margin: 5px 0;">项目会占用端口 8081，请确保端口没有被其他程序占用</p>
+      <p style="margin: 5px 0;">[IP]:8081</p>
+      <p style="margin: 5px 0;">默认用户名:admin</p>
+      <p style="margin: 5px 0;">默认密码:admin</p>
     </div>
     <a href="http://<?=$addr?>:8081" target="_blank" class="gradient-btn" style="position: relative; display: inline-block; padding: 10px 20px; background: white; border-radius: 5px; text-decoration: none; font-weight: bold; flex-shrink: 0;">
       <span style="background: linear-gradient(to right, #ff6600, #ffaa00); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: bold;">进入管理界面</span>
@@ -126,6 +129,9 @@ echo " filebrowser-quantum 已安装成功并启动！"
 echo " 版本: 2026.01.01"
 echo " 作者: insomnia417"
 echo " 访问地址: http://$(hostname -I | awk '{print $1}'):8081"
+echo " 默认用户名:admin"
+echo " 默认密码:admin"
+echo " 数据保留在 /mnt/user/appdata/filebrowser_quantum"
 echo "----------------------------------------------------"
 ]]></INLINE>
 </FILE>
