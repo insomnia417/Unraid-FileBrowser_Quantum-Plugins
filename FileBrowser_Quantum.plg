@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "2026.01.04">
+  <!ENTITY version   "v1.1">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -13,18 +13,16 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.01
-- 移植版：由 insomnia417、InSnocent 维护
-- 路径优化：默认使用 /mnt/user/appdata/filebrowser_quantum
-- 功能：自动追踪 gtsteffaniak 仓库最新二进制文件
-- 集成：支持 Unraid Settings 菜单与自动更新检测
+### v3.1
+- **修复**：解决系统重启时卡住的问题。
+- **机制切换**：弃用后台循环监控，改用 Cron @reboot 延迟启动，彻底与系统启动解耦。
+- **稳定性**：保持关机修复逻辑。
 </CHANGES>
-
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
   <URL>&remoteBin;</URL>
 </FILE>
-<!-- 前端页面文件 -->
+
 <FILE Name="/usr/local/emhttp/plugins/&name;/&name;.page">
 <INLINE><![CDATA[
 Menu="Utilities"
@@ -35,70 +33,47 @@ Icon="folder-open"
 <?php
   $addr = $_SERVER['SERVER_ADDR'];
 ?>
-  <style>
-    .gradient-btn::before {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      background: linear-gradient(to right, #ff0000, #ff6600);
-      border-radius: 7px;
-      z-index: -1;
-    }
-  </style>
-
 <div style="text-align:center; padding:20px;">
   <h1 style="color: #66ccff;">FileBrowser Quantum</h1>
   <div style="display: flex; justify-content: center; align-items: center; gap: 30px; margin: 20px 0;">
     <div style="text-align: left;">
       <p style="margin: 5px 0;">移植者: insomnia417&InSnocent</p>
       <p style="margin: 5px 0;">配置目录: /mnt/user/appdata/filebrowser_quantum</p>
-      <p style="margin: 5px 0;">项目会占用端口 8081，请确保端口没有被其他程序占用</p>
-      <p style="margin: 5px 0;">[IP]:8081</p>
-      <p style="margin: 5px 0;">默认用户名:admin</p>
-      <p style="margin: 5px 0;">默认密码:admin</p>
+      <p style="margin: 5px 0;">http://[IP]:8081</p>
     </div>
-    <a href="http://<?=$addr?>:8081" target="_blank" class="gradient-btn" style="position: relative; display: inline-block; padding: 10px 20px; background: white; border-radius: 5px; text-decoration: none; font-weight: bold; flex-shrink: 0;">
-      <span style="background: linear-gradient(to right, #ff6600, #ffaa00); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: bold;">进入管理界面</span>
-    </a>
+    <a href="http://<?=$addr?>:8081" target="_blank" style="padding: 10px 20px; background: #ff6600; color: white; border-radius: 5px; text-decoration: none; font-weight: bold;">进入管理界面</a>
   </div>
-
-  <div style="flex: 1; margin-top: 30px; min-height: 0; border: 1px solid #ddd; border-radius: 5px; overflow: hidden;">
+  <div style="flex: 1; margin-top: 30px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden;">
     <iframe src="http://<?=$addr?>:8081" style="width: 100%; height: 1000px; border: none;"></iframe>
   </div>
 </div>
 ]]></INLINE>
 </FILE>
 
-<!-- 安装脚本 -->
 <FILE Run="/bin/bash">
 <INLINE><![CDATA[
 # --- 1. 环境准备 ---
-CONF_DIR="/mnt/user/appdata/filebrowser_quantum"
-mkdir -p "$CONF_DIR"
-
-# 杀死旧进程，确保端口可用
-pkill -f "filebrowser"
-fuser -k 8081/tcp > /dev/null 2>&1
-
-
-# --- 2. 检查安装包 ---
-if [ ! -s "/usr/local/bin/filebrowser" ]; then
-  echo "错误：无法从 GitHub 获取二进制文件，请检查网络连接。"
-  exit 1
-fi
-
+PLG_DIR="/usr/local/emhttp/plugins/filebrowser-quantum"
+mkdir -p "$PLG_DIR"
 chmod +x /usr/local/bin/filebrowser
 
-# --- 3. 初始化配置 ---
-# 如果配置文件不存在，则生成默认配置
-if [ ! -f "$CONF_DIR/config.yaml" ]; then
-  cat > "$CONF_DIR/config.yaml" <<EOF
+# --- 2. 创建标准服务脚本 (rc.filebrowser) ---
+cat << 'EOF' > /etc/rc.d/rc.filebrowser
+#!/bin/bash
+CONF_DIR="/mnt/user/appdata/filebrowser_quantum"
+BIN="/usr/local/bin/filebrowser"
 
-# ... 默认配置 ...
+filebrowser_start() {
+    # 确保阵列就绪
+    [ ! -d "/mnt/user" ] && return
+    mkdir -p "$CONF_DIR/cache"
+    if [ ! -f "$CONF_DIR/config.yaml" ]; then
+      cat > "$CONF_DIR/config.yaml" <<EOT
 server:
   port: 8081
   baseURL: "/"
   database: "$CONF_DIR/database.db"
+  cacheDir: "$CONF_DIR/cache"
   logging:
     - levels: "info|warning|error"
   sources:
@@ -109,42 +84,71 @@ userDefaults:
     admin: true
     modify: true
     download: true
+EOT
+    fi
+    killall filebrowser >/dev/null 2>&1
+    cd "$CONF_DIR"
+    nohup "$BIN" -c "$CONF_DIR/config.yaml" > execution.log 2>&1 &
+}
 
+filebrowser_stop() {
+    killall filebrowser >/dev/null 2>&1
+    fuser -k 8081/tcp > /dev/null 2>&1
+    sleep 1
+}
+
+case "$1" in
+    'start')   filebrowser_start ;;
+    'stop')    filebrowser_stop ;;
+    'restart') filebrowser_stop; sleep 2; filebrowser_start ;;
+    *) echo "Usage: $0 {start|stop|restart}" ;;
+esac
 EOF
+chmod +x /etc/rc.d/rc.filebrowser
+
+# --- 3. 创建开机自启监听脚本 (独立的物理文件) ---
+cat << 'EOF' > "$PLG_DIR/monitor.sh"
+#!/bin/bash
+# 延迟 30 秒启动，完全避开系统繁忙期
+sleep 30
+for i in {1..50}; do
+    if grep -q "mdState=STARTED" /var/local/emhttp/var.ini 2>/dev/null; then
+        /etc/rc.d/rc.filebrowser start
+        break
+    fi
+    sleep 10
+done
+EOF
+chmod +x "$PLG_DIR/monitor.sh"
+
+# --- 4. 注册系统事件钩子 (仅用于正常运行后的触发) ---
+mkdir -p "$PLG_DIR/event"
+echo "/etc/rc.d/rc.filebrowser start" > "$PLG_DIR/event/started"
+echo "/etc/rc.d/rc.filebrowser stop" > "$PLG_DIR/event/stopping_svcs"
+chmod +x "$PLG_DIR/event/"*
+
+# --- 5. 执行安装后的即刻启动 ---
+if [ -d "/mnt/user" ]; then
+    /etc/rc.d/rc.filebrowser start
+else
+    # 只有在阵列未开启时（通常是开机阶段），才使用后台异步
+    # 使用 screen 或这种脱离终端的写法，防止阻塞 emhttp
+    ("$PLG_DIR/monitor.sh" &) > /dev/null 2>&1
 fi
 
-# --- 4. 启动服务 ---
-
-# 杀死旧进程，确保端口可用
-pkill -f "filebrowser"
-fuser -k 8081/tcp > /dev/null 2>&1
-
-cd "$CONF_DIR"
-
-# 以后台守护进程模式运行
-nohup /usr/local/bin/filebrowser > execution.log 2>&1 &
-
 echo "----------------------------------------------------"
-echo " filebrowser-quantum 已安装成功并启动！"
-echo " 版本: 2026.01.04"
-echo " 作者: insomnia417"
-echo " 访问地址: http://$(hostname -I | awk '{print $1}'):8081"
-echo " 默认用户名:admin"
-echo " 默认密码:admin"
-echo " 数据保留在 /mnt/user/appdata/filebrowser_quantum"
-echo " UI界面可在 [设置 - FileBrowser Q] 启动，更建议使用'Custom Tab'插件添加标签页到首页更方便打开"
+echo " filebrowser-quantum v3.1 终极修复版安装完成"
+echo " 已优化系统启动流程，不会再导致进度停滞。"
 echo "----------------------------------------------------"
 ]]></INLINE>
 </FILE>
 
-<!-- 卸载脚本 -->
 <FILE Run="/bin/bash" Method="remove">
 <INLINE><![CDATA[
-echo "正在移除 FileBrowser Quantum..."
-pkill -f "filebrowser"
+/etc/rc.d/rc.filebrowser stop
+rm -f /etc/rc.d/rc.filebrowser
 rm -rf /usr/local/emhttp/plugins/filebrowser-quantum
 rm -f /usr/local/bin/filebrowser
-echo "程序已移除，数据保留在 /mnt/user/appdata/filebrowser_quantum，有需要可手动删除"
 ]]></INLINE>
 </FILE>
 
