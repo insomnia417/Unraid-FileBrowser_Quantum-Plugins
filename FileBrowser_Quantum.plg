@@ -19,7 +19,7 @@
 
 </CHANGES>
 
-<FILE Name="/usr/local/bin/filebrowser" Mode="0755">
+<FILE Name="/usr/local/bin/filebrowser" Mode="0777">
   <URL>&remoteBin;</URL>
 </FILE>
 
