@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.2">
+  <!ENTITY version   "v1.2.1">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -13,9 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.2
-- 增加“停止服务”和“重启服务”按钮。
-- **表单间距修正**：消除表单默认边距，使按钮排版更整齐。
+### 2026.01.05 - v1.2.1
+- **代码深度精简**：移除冗余的 JS 动态高度脚本和多余的 div 包裹，提升加载效率。
+- **CSS 布局优化**：填满整个屏幕
+
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -41,8 +42,36 @@ Tabs="no"
     }
   }
 ?>
-<style>#main { padding: 0 !important; margin: 0 !important; }</style>
-<iframe src="http://<?=$addr?>:<?=$port?>" style="width: 100%; height: calc(100vh - 120px); border: none; margin: 0; padding: 0; display: block;"></iframe>
+<style>
+  /* 核心：强制锁定 Unraid 页面容器，防止溢出产生滚动条 */
+  #sb-site, .main-area, #main { 
+    height: 100% !important; 
+    overflow: hidden !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+  }
+  
+  /* 精简后的固定定位容器：完美贴合 Header (60px) 和 Footer (26px) */
+  .fb-view {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 26px;
+    z-index: 1;
+  }
+
+  .fb-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+</style>
+
+<div class="fb-view">
+  <iframe src="http://<?=$addr?>:<?=$port?>" class="fb-iframe"></iframe>
+</div>
 ]]></INLINE>
 </FILE>
 
@@ -95,7 +124,6 @@ Icon="folder-open"
     <p>配置目录: <b style="color: #66ccff;"><?=$display_dir?></b></p>
     <p>修改配置文件后请重启服务</p>
     <p>当前WEBUI端口: <b style="color: #66ccff;"><?=$port?></b> &nbsp;&nbsp; <?=$status_msg?></p>
-    <p>请保持上面的端口，不要于其他服务冲突</p>
     <div class="btn-container">
       <form method="post" class="fb-form" onsubmit="setTimeout(function(){location.reload();}, 600); return true;">
         <button type="submit" name="stop_service" class="fb-btn btn-stop">停止服务</button>
@@ -114,7 +142,7 @@ Icon="folder-open"
 <INLINE><![CDATA[
 PLG_NAME="&name;"
 PLG_VER=$(grep 'ENTITY version' "/var/log/plugins/$PLG_NAME.plg" 2>/dev/null | sed -E 's/.*"([^"]+)".*/\1/')
-[ -z "$PLG_VER" ] && PLG_VER="v2.7"
+[ -z "$PLG_VER" ] && PLG_VER="v1.2.1"
 
 # --- 1. 创建服务脚本 ---
 cat << 'EOF' > /etc/rc.d/rc.filebrowser
@@ -209,6 +237,9 @@ chmod +x "$PLG_PATH/event/"*
 echo "----------------------------------------------------"
 echo " FileBrowser Quantum 安装完成！"
 echo " 插件版本: $PLG_VER"
+echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
+echo " 从顶部标签页'FB'点击打开，即可使用。"
+
 echo "----------------------------------------------------"
 ]]></INLINE>
 </FILE>
