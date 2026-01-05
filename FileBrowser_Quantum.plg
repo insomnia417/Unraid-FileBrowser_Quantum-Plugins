@@ -95,6 +95,7 @@ Icon="folder-open"
     <p>配置目录: <b style="color: #66ccff;"><?=$display_dir?></b></p>
     <p>修改配置文件后请重启服务</p>
     <p>当前WEBUI端口: <b style="color: #66ccff;"><?=$port?></b> &nbsp;&nbsp; <?=$status_msg?></p>
+    <p>请保持上面的端口，不要于其他服务冲突</p>
     <div class="btn-container">
       <form method="post" class="fb-form" onsubmit="setTimeout(function(){location.reload();}, 600); return true;">
         <button type="submit" name="stop_service" class="fb-btn btn-stop">停止服务</button>
