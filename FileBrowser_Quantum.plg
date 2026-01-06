@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.2.8">
+  <!ENTITY version   "v1.2.9">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -14,10 +14,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.2.8
-- **UI 视觉重构**：引入居中卡片式设计，将状态信息封装在小框内。
-- **布局优化**：移除奇怪的虚线，确保所有输入框和文字全局居中。
-- **精致化样式**：调整了输入框宽度和背景透明度，使其与 Unraid 原生主题更契合。
+### 2026.01.05 - v1.2.9
+- **交互逻辑重大优化**：点击保存配置后自动执行服务重启，合并操作步骤。
+- **按钮文字调整**：更新为“保存并重启服务”，清晰传达操作结果。
+- **布局微调**：将“跳转至新窗口”按钮移至状态行右侧，提升操作便捷性。
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -76,7 +76,8 @@ Icon="folder-open"
   }
 
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['save_config'])) {
+    // 保存并自动重启逻辑
+    if (isset($_POST['save_and_restart'])) {
       $new_port = $_POST['new_port'];
       $new_path = $_POST['new_path'];
       if (file_exists($conf_file)) {
@@ -84,7 +85,9 @@ Icon="folder-open"
         $c = preg_replace('/port:\s*\d+/', "port: " . $new_port, $c);
         $c = preg_replace('/path:\s*["\']?([^"\']+)["\']?/', "path: \"" . $new_path . "\"", $c);
         file_put_contents($conf_file, $c);
-        echo "<script>alert('配置已保存！请重启服务使更改生效。');</script>";
+        // 关键：写入文件后立即执行重启脚本
+        exec("/etc/rc.d/rc.filebrowser restart");
+        echo "<script>alert('配置已保存并尝试重启服务！');</script>";
         header("Refresh:0");
       }
     }
@@ -96,41 +99,35 @@ Icon="folder-open"
   $status_msg = $is_running ? "<span style='color:#4caf50;'>● 服务正在运行</span>" : "<span style='color:#aaa;'>○ 服务未启动 </span>";
 ?>
 <style>
-  .fb-wrapper { max-width: 600px; margin: 0 auto; text-align: center; padding: 20px; font-family: sans-serif; }
+  .fb-wrapper { max-width: 650px; margin: 0 auto; text-align: center; padding: 20px; font-family: sans-serif; }
   .info-card { 
     background: rgba(255, 255, 255, 0.05); 
     border: 1px solid rgba(255, 255, 255, 0.1); 
     border-radius: 12px; 
-    padding: 20px; 
+    padding: 25px; 
     margin-bottom: 30px; 
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
   }
-  .info-card p { margin: 8px 0; line-height: 1.6; }
+  .info-card p { margin: 10px 0; line-height: 1.6; }
   
+  .status-line { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 10px; }
+
   .config-table { width: 100%; margin: 20px 0; border-collapse: collapse; }
   .config-table td { padding: 12px 5px; }
-  .config-table td:first-child { text-align: right; width: 40%; font-weight: bold; }
+  .config-table td:first-child { text-align: right; width: 35%; font-weight: bold; }
   .config-table td:last-child { text-align: left; padding-left: 15px; }
 
-  .fb-input { 
-    padding: 8px 12px; 
-    border-radius: 4px; 
-    border: 1px solid #444; 
-    background: #1a1a1a; 
-    color: #fff; 
-    width: 250px; 
-    outline: none;
-  }
+  .fb-input { padding: 8px 12px; border-radius: 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; width: 250px; outline: none; }
   .fb-input:focus { border-color: #66ccff; }
 
-  .fb-btn { display: inline-flex; justify-content: center; align-items: center; width: 140px; height: 38px; color: #fff !important; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; font-size: 13px; text-decoration: none !important; transition: all 0.2s; }
-  .btn-stop { background: #f44336; } 
-  .btn-restart { background: #ff6600; } 
-  .btn-link { background: #448aff; }
-  .btn-save { background: #4caf50; margin: 15px auto; width: 120px; }
+  .fb-btn { display: inline-flex; justify-content: center; align-items: center; color: #fff !important; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; text-decoration: none !important; }
+  .btn-stop { background: #f44336; width: 130px; height: 38px; } 
+  .btn-restart { background: #ff6600; width: 130px; height: 38px; } 
+  .btn-link { background: #448aff; height: 28px; padding: 0 12px; font-size: 12px; }
+  .btn-save { background: #4caf50; margin: 15px auto; width: 180px; height: 40px; font-size: 14px; }
   .fb-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
   
-  .btn-container { display: flex; justify-content: center; gap: 15px; margin-top: 30px; border-top: 1px solid #333; padding-top: 25px; }
+  .btn-container { display: flex; justify-content: center; gap: 20px; margin-top: 30px; border-top: 1px solid #333; padding-top: 25px; }
   .fb-form { margin: 0; display: inline-block; }
 </style>
 
@@ -140,8 +137,11 @@ Icon="folder-open"
   <div class="info-card">
     <p>移植者: <span style="color: #ddd;">insomnia417 & InSnocent</span></p>
     <p>配置目录: <b style="color: #66ccff;"><?=$display_dir?></b></p>
-    <p style="font-weight: bold; color: #ff9800;">修改配置文件后请重启服务</p>
-    <p>当前WEBUI端口: <b style="color: #66ccff;"><?=$port?></b> &nbsp;&nbsp; <?=$status_msg?></p>
+    
+    <div class="status-line">
+      <span>当前WEBUI端口: <b style="color: #66ccff;"><?=$port?></b> &nbsp; <?=$status_msg?></span>
+      <a href="http://<?=$addr?>:<?=$port?>" target="_blank" class="fb-btn btn-link">跳转至新窗口</a>
+    </div>
   </div>
 
   <form method="post">
@@ -155,7 +155,7 @@ Icon="folder-open"
         <td><input type="text" name="new_path" class="fb-input" value="<?=$scan_path?>"></td>
       </tr>
     </table>
-    <button type="submit" name="save_config" class="fb-btn btn-save">保存配置</button>
+    <button type="submit" name="save_and_restart" class="fb-btn btn-save">保存并重启服务</button>
   </form>
 
   <div class="btn-container">
@@ -165,7 +165,6 @@ Icon="folder-open"
     <form method="post" class="fb-form" onsubmit="setTimeout(function(){location.reload();}, 1500); return true;">
       <button type="submit" name="restart_service" class="fb-btn btn-restart">重启服务</button>
     </form>
-    <a href="http://<?=$addr?>:<?=$port?>" target="_blank" class="fb-btn btn-link">跳转至新窗口</a>
   </div>
 </div>
 ]]></INLINE>
@@ -267,7 +266,6 @@ chmod +x "$PLG_PATH/event/"*
 /etc/rc.d/rc.filebrowser start
 /usr/bin/nohup "$PLG_PATH/monitor.sh" > /dev/null 2>&1 &
 
-# 强制重载 emhttp 确保 UI 更新
 killall -HUP emhttp 2>/dev/null
 touch /usr/local/emhttp/plugins/dynamix/FB.page
 touch /usr/local/emhttp/plugins/$PLG_NAME/$PLG_NAME.page
