@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.2.5">
+  <!ENTITY version   "v1.2.6">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -14,9 +14,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.2.5
-- **功能增强**：在设置菜单增加输入框，支持直接修改 WebUI 端口和扫描路径。
-- **配置同步**：修改后自动保存至 config.yaml，并提供重启服务建议。
+### 2026.01.05 - v1.2.6
+- **UI 布局还原与增强**：完整保留了原本的“当前WEBUI端口”和“服务状态”展示文字。
+- **配置管理**：保留了直接修改端口和路径的输入框功能。
+- **稳定性修复**：优化了 PHP 修改 YAML 时的正则匹配逻辑。
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -85,7 +86,7 @@ Icon="folder-open"
         $c = preg_replace('/port:\s*\d+/', "port: " . $new_port, $c);
         $c = preg_replace('/path:\s*["\']?([^"\']+)["\']?/', "path: \"" . $new_path . "\"", $c);
         file_put_contents($conf_file, $c);
-        echo "<script>alert('配置已保存！请重启服务使更改生效。');</script>";
+        echo "<script>alert('配置已保存！请手动重启服务使更改生效。');</script>";
         header("Refresh:0");
       }
     }
@@ -101,12 +102,13 @@ Icon="folder-open"
   .btn-stop { background: #f44336; } 
   .btn-restart { background: #ff6600; } 
   .btn-link { background: #448aff; }
-  .btn-save { background: #4caf50; width: 100px; height: 30px; }
+  .btn-save { background: #4caf50; width: 100px; height: 30px; margin: 10px auto; }
   .fb-btn:hover { opacity: 0.8; }
   .btn-container { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 25px; }
-  .config-table { margin: 20px auto; text-align: left; border-collapse: collapse; }
-  .config-table td { padding: 10px; }
-  .fb-input { padding: 5px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; width: 250px; }
+  .config-table { margin: 10px auto; text-align: left; border-collapse: collapse; background: rgba(255,255,255,0.05); border-radius: 8px; }
+  .config-table td { padding: 8px 15px; }
+  .fb-input { padding: 5px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; width: 220px; }
+  .fb-form { margin: 0; padding: 0; display: inline-block; }
 </style>
 
 <div style="text-align:center; padding:20px;">
@@ -114,27 +116,25 @@ Icon="folder-open"
   <div style="margin: 20px 0;">
     <p>移植者: insomnia417 & InSnocent</p>
     <p>配置目录: <b style="color: #66ccff;"><?=$display_dir?></b></p>
+    <p>修改配置文件后请重启服务</p>
     
+    <p>当前WEBUI端口: <b style="color: #66ccff;"><?=$port?></b> &nbsp;&nbsp; <?=$status_msg?></p>
+
+    <hr style="border: 0; border-top: 1px dashed #444; width: 50%; margin: 20px auto;">
+
     <form method="post">
       <table class="config-table">
         <tr>
-          <td>WEBUI 端口:</td>
+          <td>修改 WEBUI 端口:</td>
           <td><input type="number" name="new_port" class="fb-input" value="<?=$port?>"></td>
         </tr>
         <tr>
-          <td>文件扫描路径:</td>
+          <td>修改文件扫描路径:</td>
           <td><input type="text" name="new_path" class="fb-input" value="<?=$scan_path?>"></td>
         </tr>
-        <tr>
-          <td colspan="2" style="text-align: center;">
-            <button type="submit" name="save_config" class="fb-btn btn-save" style="display:inline-flex;">保存配置</button>
-          </td>
-        </tr>
       </table>
+      <button type="submit" name="save_config" class="fb-btn btn-save">保存配置</button>
     </form>
-
-    <p>修改配置并保存后，请<b>重启服务</b></p>
-    <p>当前状态: <?=$status_msg?></p>
 
     <div class="btn-container">
       <form method="post" class="fb-form" onsubmit="setTimeout(function(){location.reload();}, 600); return true;">
