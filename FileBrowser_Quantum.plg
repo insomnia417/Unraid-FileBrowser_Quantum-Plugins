@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.2.1">
+  <!ENTITY version   "v1.2.2">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -13,13 +13,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.2.1
-- **代码深度精简**：移除冗余的 JS 动态高度脚本和多余的 div 包裹，提升加载效率。
-- **CSS 布局优化**：填满整个屏幕
-
+### 2026.01.05 - v1.2.2
+- **UI 强制更新机制**：修复了在 Unraid 内直接更新插件时，FB.page 和设置页面不立即生效的问题。
+- **重置起始版本**：以 v1.2.2 作为后续修改的最新底板。
+- **代码清理**：安装时自动清理旧的 PHP 缓存文件。
 </CHANGES>
 
-<FILE Name="/usr/local/bin/filebrowser" Mode="0777">
+<FILE Name="/usr/local/bin/filebrowser" Mode="0755">
   <URL>&remoteBin;</URL>
 </FILE>
 
@@ -43,15 +43,12 @@ Tabs="no"
   }
 ?>
 <style>
-  /* 核心：强制锁定 Unraid 页面容器，防止溢出产生滚动条 */
   #sb-site, .main-area, #main { 
     height: 100% !important; 
     overflow: hidden !important; 
     margin: 0 !important; 
     padding: 0 !important; 
   }
-  
-  /* 精简后的固定定位容器：完美贴合 Header (60px) 和 Footer (26px) */
   .fb-view {
     position: fixed;
     top: 60px;
@@ -60,7 +57,6 @@ Tabs="no"
     bottom: 26px;
     z-index: 1;
   }
-
   .fb-iframe {
     width: 100%;
     height: 100%;
@@ -68,7 +64,6 @@ Tabs="no"
     display: block;
   }
 </style>
-
 <div class="fb-view">
   <iframe src="http://<?=$addr?>:<?=$port?>" class="fb-iframe"></iframe>
 </div>
@@ -141,8 +136,14 @@ Icon="folder-open"
 <FILE Run="/bin/bash">
 <INLINE><![CDATA[
 PLG_NAME="&name;"
-PLG_VER=$(grep 'ENTITY version' "/var/log/plugins/$PLG_NAME.plg" 2>/dev/null | sed -E 's/.*"([^"]+)".*/\1/')
-[ -z "$PLG_VER" ] && PLG_VER="v1.2.1"
+PLG_VER="&version;"
+
+# --- 强制更新 UI 逻辑：清理旧页面缓存 ---
+echo "正在强制重载 UI 页面..."
+rm -rf /usr/local/emhttp/plugins/$PLG_NAME/*.page
+rm -f /usr/local/emhttp/plugins/dynamix/FB.page
+# 清理 Unraid 内部的 PHP 缓存（可选，但在顽固情况下有效）
+[ -d "/var/local/emhttp" ] && touch /var/local/emhttp/var.ini
 
 # --- 1. 创建服务脚本 ---
 cat << 'EOF' > /etc/rc.d/rc.filebrowser
@@ -237,9 +238,7 @@ chmod +x "$PLG_PATH/event/"*
 echo "----------------------------------------------------"
 echo " FileBrowser Quantum 安装完成！"
 echo " 插件版本: $PLG_VER"
-echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
-echo " 从顶部标签页'FB'点击打开，即可使用。"
-
+echo " UI 更新机制已生效，改动将立即呈现。"
 echo "----------------------------------------------------"
 ]]></INLINE>
 </FILE>
