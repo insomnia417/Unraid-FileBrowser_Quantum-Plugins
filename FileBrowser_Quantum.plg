@@ -1,8 +1,9 @@
 <?xml version='1.0' standalone='yes'?>
+
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.2.4">
+  <!ENTITY version   "v1.2.2">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -13,9 +14,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.2.4
-- **修复安装提示文字**：补全了被意外截断的“保证默认端口8081未被占用”等 UI 重要提示。
-- **UI 刷新机制**：保持 v1.2.2 引入的物理删除旧页面逻辑，确保直接更新插件时 UI 改动立即可见。
+### 2026.01.05 - v1.2.2
+- **UI 更新优化**：修复了在 Unraid 中直接更新插件时 UI 界面不立即生效的问题。
+- **强制刷新**：增加了安装时自动重载 Web 控制台的逻辑。
+
+### 2026.01.05 - v1.2.1
+- **代码深度精简**：移除冗余的 JS 动态高度脚本和多余的 div 包裹，提升加载效率。
+- **CSS 布局优化**：填满整个屏幕
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -42,12 +47,15 @@ Tabs="no"
   }
 ?>
 <style>
+  /* 核心：强制锁定 Unraid 页面容器，防止溢出产生滚动条 */
   #sb-site, .main-area, #main { 
     height: 100% !important; 
     overflow: hidden !important; 
     margin: 0 !important; 
     padding: 0 !important; 
   }
+  
+  /* 精简后的固定定位容器：完美贴合 Header (60px) 和 Footer (26px) */
   .fb-view {
     position: fixed;
     top: 60px;
@@ -56,6 +64,7 @@ Tabs="no"
     bottom: 26px;
     z-index: 1;
   }
+
   .fb-iframe {
     width: 100%;
     height: 100%;
@@ -63,6 +72,7 @@ Tabs="no"
     display: block;
   }
 </style>
+
 <div class="fb-view">
   <iframe src="http://<?=$addr?>:<?=$port?>" class="fb-iframe"></iframe>
 </div>
@@ -135,11 +145,14 @@ Icon="folder-open"
 <FILE Run="/bin/bash">
 <INLINE><![CDATA[
 PLG_NAME="&name;"
-PLG_VER="&version;"
+# 获取版本号逻辑保持不变
+PLG_VER=$(grep 'ENTITY version' "/var/log/plugins/$PLG_NAME.plg" 2>/dev/null | sed -E 's/.*"([^"]+)".*/\1/')
+[ -z "$PLG_VER" ] && PLG_VER="&version;"
 
-# --- 强制更新逻辑：确保 UI 文件被物理覆盖 ---
-rm -rf /usr/local/emhttp/plugins/$PLG_NAME/*.page
+# --- 0. 预处理：解决 UI 更新不即时的问题 ---
+# 清理旧的页面文件，强制刷新 emhttp 缓存
 rm -f /usr/local/emhttp/plugins/dynamix/FB.page
+rm -rf /usr/local/emhttp/plugins/$PLG_NAME/*.page
 
 # --- 1. 创建服务脚本 ---
 cat << 'EOF' > /etc/rc.d/rc.filebrowser
@@ -227,9 +240,12 @@ echo "/etc/rc.d/rc.filebrowser start" > "$PLG_PATH/event/started"
 echo "/etc/rc.d/rc.filebrowser stop" > "$PLG_PATH/event/stopping_svcs"
 chmod +x "$PLG_PATH/event/"*
 
-# --- 4. 立即启动逻辑 ---
+# --- 4. 立即启动逻辑与界面刷新 ---
 /etc/rc.d/rc.filebrowser start
 ("$PLG_PATH/monitor.sh" &) > /dev/null 2>&1
+
+# 关键：通知 Unraid 重新扫描页面文件
+[ -x /usr/local/sbin/update_cron ] && /usr/local/sbin/update_cron
 
 echo "----------------------------------------------------"
 echo " FileBrowser Quantum 安装完成！"
