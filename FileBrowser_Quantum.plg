@@ -2,21 +2,21 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.4.3">
+  <!ENTITY version   "v1.4.4">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
-  <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg">
   <!ENTITY remoteBin "https://github.com/gtsteffaniak/filebrowser/releases/latest/download/linux-amd64-filebrowser">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.4.3
-- **刷新逻辑优化**：修复保存配置后 F5 弹出“重新提交表单”的问题，改为自动跳转刷新。
-- **数据同步修复**：确保保存后页面立即显示更新后的端口（如 8082）。
-- **对齐与样式保持**：完全保留 v1.4.2 的 UI 文字与双列对齐布局。
+### 2026.01.05 - v1.4.4
+- **UI 布局优化**：将“跳转至新窗口”按钮移动至端口状态右侧，使操作更直观。
+- **按钮样式调整**：优化了行内跳转按钮的尺寸，确保与文字对齐。
+- **保持核心稳定**：延续 v1.4.3 的 PRG 刷新模式和 v1.2.1 的安装启动逻辑。
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -83,7 +83,6 @@ Icon="folder-open"
         $c = preg_replace('/path:\s*["\']?([^"\']+)["\']?/', "path: \"" . $new_path . "\"", $c);
         file_put_contents($conf_file, $c);
         exec("/etc/rc.d/rc.filebrowser restart");
-        // 关键修复：弹窗后使用 location.href 强制跳转 GET 请求，防止 F5 重复提交
         echo "<script>alert('配置已保存并重启服务！'); window.location.href='$page_url';</script>";
         exit;
       }
@@ -99,12 +98,12 @@ Icon="folder-open"
   .fb-btn { display: flex; justify-content: center; align-items: center; color: #fff !important; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; transition: opacity 0.2s; text-decoration: none !important; }
   .btn-stop { background: #f44336; width: 150px; height: 40px; } 
   .btn-restart { background: #ff6600; width: 150px; height: 40px; } 
-  .btn-link { background: #448aff; width: 150px; height: 40px; }
+  .btn-link { background: #448aff; padding: 0 10px; height: 26px; font-size: 12px; display: inline-flex; margin-left: 15px; }
   .btn-save { background: #4caf50; width: 200px; height: 40px; margin: 20px auto; }
   
-  .btn-container { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 25px; }
-  .info-block { display: inline-block; text-align: left; width: 500px; margin: 0 auto; }
-  .info-line { margin-bottom: 12px; font-size: 1.1em; display: flex; align-items: center; }
+  .btn-container { display: flex; justify-content: center; align-items: center; gap: 40px; margin-top: 35px; }
+  .info-block { display: inline-block; text-align: left; width: 550px; margin: 0 auto; }
+  .info-line { margin-bottom: 12px; font-size: 1.1em; display: flex; align-items: center; flex-wrap: nowrap; }
   .info-label { min-width: 140px; font-weight: bold; display: inline-block; }
   .fb-input { padding: 6px 10px; border-radius: 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; width: 280px; }
 </style>
@@ -116,7 +115,11 @@ Icon="folder-open"
     <div class="info-line"><span class="info-label">移植者：</span>insomnia417 & InSnocent</div>
     <div class="info-line"><span class="info-label">配置目录：</span><b style="color: #66ccff;"><?=$display_dir?></b></div>
     <div class="info-line"><span class="info-label">修改提示：</span>修改配置文件后请重启服务</div>
-    <div class="info-line"><span class="info-label">当前WEBUI端口：</span><b style="color: #66ccff;"><?=$port?></b> &nbsp;&nbsp; <?=$status_msg?></div>
+    <div class="info-line">
+        <span class="info-label">当前WEBUI端口：</span>
+        <b style="color: #66ccff;"><?=$port?></b> &nbsp;&nbsp; <?=$status_msg?>
+        <a href="http://<?=$addr?>:<?=$port?>" target="_blank" class="fb-btn btn-link">跳转至新窗口</a>
+    </div>
     
     <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
     
@@ -142,7 +145,6 @@ Icon="folder-open"
     <form method="post" onsubmit="setTimeout(function(){location.reload();}, 1500); return true;">
       <button type="submit" name="restart_service" class="fb-btn btn-restart">重启服务</button>
     </form>
-    <a href="http://<?=$addr?>:<?=$port?>" target="_blank" class="fb-btn btn-link">跳转至新窗口</a>
   </div>
 </div>
 ]]></INLINE>
