@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.3.4">
+  <!ENTITY version   "v1.3.5">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -14,10 +14,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.3.4
-- **安全回归**：彻底移除会导致系统卡死的 HUP 信号。
-- **进程管理**：修复安装完成后后台进程不退出的问题，确保安装界面能正常关闭。
-- **UI 修正**：恢复 FB 标签页定义，优化设置页面居中布局。
+### 2026.01.05 - v1.3.5
+- **安装卡死修复**：重定向后台脚本输出，确保安装进程能正常结束。
+- **稳定性回归**：移除不稳定指令，回归标准 Unraid 插件架构。
+- **UI 修正**：恢复 FB 标签页，并确保设置页面元素居中。
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -91,7 +91,7 @@ Icon="folder-open"
   $status_msg = $is_running ? "<span style='color:#4caf50;'>● 服务正在运行</span>" : "<span style='color:#aaa;'>○ 服务未启动 </span>";
 ?>
 <style>
-  .fb-wrapper { max-width: 650px; margin: 0 auto; text-align: center; padding: 20px; }
+  .fb-wrapper { max-width: 650px; margin: 0 auto; text-align: center; }
   .info-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 25px; margin-bottom: 30px; }
   .status-line { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 15px; }
   .config-table { width: 100%; margin: 20px 0; border-collapse: collapse; }
@@ -104,10 +104,9 @@ Icon="folder-open"
   .btn-restart { background: #ff6600; width: 130px; height: 38px; } 
   .btn-link { background: #448aff; height: 26px; padding: 0 10px; font-size: 11px; }
   .btn-save { background: #4caf50; width: 180px; height: 40px; }
-  .btn-container { display: flex; justify-content: center; gap: 20px; margin-top: 30px; border-top: 1px solid #333; padding-top: 25px; }
 </style>
 
-<div class="fb-wrapper" style="margin-left:auto; margin-right:auto;">
+<div class="fb-wrapper">
   <h2 style="color: #66ccff; margin-bottom: 25px;">FileBrowser Quantum 设置</h2>
   <div class="info-card">
     <p>移植者: insomnia417 & InSnocent</p>
@@ -126,7 +125,7 @@ Icon="folder-open"
     <button type="submit" name="save_and_restart" class="fb-btn btn-save" style="margin: 20px auto;">保存并重启服务</button>
   </form>
 
-  <div class="btn-container">
+  <div style="display: flex; justify-content: center; gap: 20px; margin-top: 30px; border-top: 1px solid #333; padding-top: 25px;">
     <form method="post" style="display: inline-block;"><button type="submit" name="stop_service" class="fb-btn btn-stop">停止服务</button></form>
     <form method="post" style="display: inline-block;"><button type="submit" name="restart_service" class="fb-btn btn-restart">重启服务</button></form>
   </div>
@@ -136,11 +135,7 @@ Icon="folder-open"
 
 <FILE Run="/bin/bash">
 <INLINE><![CDATA[
-PLG_NAME="&name;"
-PLG_VER=$(grep 'ENTITY version' "/var/log/plugins/$PLG_NAME.plg" 2>/dev/null | sed -E 's/.*"([^"]+)".*/\1/')
-[ -z "$PLG_VER" ] && PLG_VER="&version;"
-
-# --- 1. 服务控制脚本 ---
+# --- 1. 服务脚本 ---
 cat << 'EOF' > /etc/rc.d/rc.filebrowser
 #!/bin/bash
 CONF_DIR="/mnt/user/appdata/filebrowser_quantum"
@@ -155,7 +150,7 @@ case "$1" in
     'start')
         pgrep -x filebrowser >/dev/null && exit 0
         mkdir -p "$CONF_DIR/cache"
-        cd "$CONF_DIR" && nohup "$BIN" -c "$CONF_FILE" > execution.log 2>&1 &
+        cd "$CONF_DIR" && nohup "$BIN" -c "$CONF_FILE" > /dev/null 2>&1 &
         ;;
     'stop')
         killall filebrowser >/dev/null 2>&1
@@ -168,8 +163,8 @@ esac
 EOF
 chmod +x /etc/rc.d/rc.filebrowser
 
-# --- 2. 异步监控逻辑 (优化脱离) ---
-PLG_PATH="/usr/local/emhttp/plugins/$PLG_NAME"
+# --- 2. 异步监控脚本 ---
+PLG_PATH="/usr/local/emhttp/plugins/&name;"
 mkdir -p "$PLG_PATH"
 cat << 'EOF' > "$PLG_PATH/monitor.sh"
 #!/bin/bash
@@ -184,20 +179,20 @@ done
 EOF
 chmod +x "$PLG_PATH/monitor.sh"
 
-# --- 3. UI 注册与启动 ---
+# --- 3. 启动逻辑 ---
 /etc/rc.d/rc.filebrowser start
 
-# 使用标准 touch 刷新文件系统感知
+# 关键修复：重定向所有输出到 /dev/null，确保安装进程可以结束
+nohup "$PLG_PATH/monitor.sh" > /dev/null 2>&1 &
+
+# 刷新页面识别
 touch /usr/local/emhttp/plugins/dynamix/FB.page
-touch /usr/local/emhttp/plugins/$PLG_NAME/$PLG_NAME.page
+touch /usr/local/emhttp/plugins/&name;/&name;.page
 
-# 关键：以完全脱离的方式运行后台脚本，防止安装进程残留
-setsid "$PLG_PATH/monitor.sh" > /dev/null 2>&1 &
-
-# --- 4. 还原完整描述文字 ---
+# --- 4. 完整安装文字 ---
 echo "----------------------------------------------------"
 echo " FileBrowser Quantum 安装完成！"
-echo " 插件版本: $PLG_VER"
+echo " 插件版本: &version;"
 echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
 echo " 从顶部标签页'FB'点击打开，即可使用。"
 echo "----------------------------------------------------"
@@ -215,4 +210,5 @@ rm -f /usr/local/bin/filebrowser
 echo "卸载已完成。"
 ]]></INLINE>
 </FILE>
+
 </PLUGIN>
