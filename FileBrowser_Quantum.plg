@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.2.2">
+  <!ENTITY version   "v1.2.3">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -13,9 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.2.2
-- **UI 布局优化**：将“跳转至新窗口”按钮移动至端口状态右侧，使操作更直观。
-- **按钮样式调整**：优化了行内跳转按钮的尺寸，确保与文字对齐。
+### 2026.01.05 - v1.2.3
+- **安装反馈修复**：将安装成功的版本号输出改为硬编码直接写入，确保安装界面 100% 正确显示版本号。
+- **布局微调**：保持“跳转至新窗口”在状态栏右侧的紧凑布局。
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -152,12 +152,11 @@ Icon="folder-open"
 <FILE Run="/bin/bash">
 <INLINE><![CDATA[
 PLG_NAME="&name;"
-PLG_VER="&version;"
 
 # --- 0. 强制清理旧目录确保 UI 刷新 ---
 rm -rf /usr/local/emhttp/plugins/$PLG_NAME/
 
-# --- 1. 创建服务脚本 (完全参照 v1.2.1) ---
+# --- 1. 创建服务脚本 ---
 cat << 'EOF' > /etc/rc.d/rc.filebrowser
 #!/bin/bash
 CONF_DIR="/mnt/user/appdata/filebrowser_quantum"
@@ -214,7 +213,7 @@ esac
 EOF
 chmod +x /etc/rc.d/rc.filebrowser
 
-# --- 2. 异步监控脚本 (参照 v1.2.1) ---
+# --- 2. 异步监控脚本 ---
 PLG_PATH="/usr/local/emhttp/plugins/$PLG_NAME"
 mkdir -p "$PLG_PATH/event"
 cat << 'EOF' > "$PLG_PATH/monitor.sh"
@@ -235,13 +234,13 @@ echo "/etc/rc.d/rc.filebrowser start" > "$PLG_PATH/event/started"
 echo "/etc/rc.d/rc.filebrowser stop" > "$PLG_PATH/event/stopping_svcs"
 chmod +x "$PLG_PATH/event/"*
 
-# --- 4. 立即启动逻辑 (回归 v1.2.1 的启动方式) ---
+# --- 4. 立即启动逻辑 ---
 /etc/rc.d/rc.filebrowser start
 "$PLG_PATH/monitor.sh" > /dev/null 2>&1 &
 
 echo "----------------------------------------------------"
 echo " FileBrowser Quantum 安装完成！"
-echo " 插件版本: $PLG_VER"
+echo " 插件版本: &version;"
 echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
 echo " 从顶部标签页'FB'点击打开，即可使用。"
 echo "----------------------------------------------------"
