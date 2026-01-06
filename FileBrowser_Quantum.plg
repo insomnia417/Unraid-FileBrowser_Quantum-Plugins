@@ -153,3 +153,115 @@ cat << 'EOF' > /etc/rc.d/rc.filebrowser
 #!/bin/bash
 CONF_DIR="/mnt/user/appdata/filebrowser_quantum"
 CONF_FILE="$CONF_DIR/config.yaml"
+BIN="/usr/local/bin/filebrowser"
+
+get_config_path() {
+    local path="/mnt/user"
+    if [ -f "$CONF_FILE" ]; then
+        local extracted=$(sed -n '/sources:/,/path:/p' "$CONF_FILE" | grep "path:" | head -n 1 | sed -E 's/.*path:[[:space:]]*["'\'']?([^"'\'']+)["'\'']?.*/\1/')
+        [ ! -z "$extracted" ] && path="$extracted"
+    fi
+    echo "$path"
+}
+
+get_config_port() {
+    local port="8081"
+    if [ -f "$CONF_FILE" ]; then
+        local extracted=$(grep "port:" "$CONF_FILE" | head -n 1 | awk '{print $2}')
+        [ ! -z "$extracted" ] && port="$extracted"
+    fi
+    echo "$port"
+}
+
+filebrowser_start() {
+    local target_path=$(get_config_path)
+    [ ! -d "$target_path" ] && return
+    pgrep -x filebrowser >/dev/null && return
+    mkdir -p "$CONF_DIR/cache"
+    if [ ! -f "$CONF_FILE" ]; then
+      cat > "$CONF_FILE" <<EOT
+server:
+  port: 8081
+  baseURL: "/"
+  database: "$CONF_DIR/database.db"
+  cacheDir: "$CONF_DIR/cache"
+  logging:
+    - levels: "info|warning|error"
+  sources:
+    - path: "/mnt/user"
+userDefaults:
+  darkMode: true
+  permissions: {admin: true, modify: true, download: true}
+EOT
+    fi
+    cd "$CONF_DIR"
+    nohup "$BIN" -c "$CONF_FILE" > execution.log 2>&1 &
+}
+
+filebrowser_stop() {
+    local port=$(get_config_port)
+    killall filebrowser >/dev/null 2>&1
+    fuser -k $port/tcp > /dev/null 2>&1
+    sleep 1
+}
+
+case "$1" in
+    'start')   filebrowser_start ;;
+    'stop')    filebrowser_stop ;;
+    'restart') filebrowser_stop; sleep 2; filebrowser_start ;;
+esac
+EOF
+chmod +x /etc/rc.d/rc.filebrowser
+
+# --- 2. 异步监控脚本 ---
+PLG_PATH="/usr/local/emhttp/plugins/$PLG_NAME"
+mkdir -p "$PLG_PATH/event"
+cat << 'EOF' > "$PLG_PATH/monitor.sh"
+#!/bin/bash
+sleep 30
+for i in {1..60}; do
+    if grep -q "mdState=STARTED" /var/local/emhttp/var.ini 2>/dev/null; then
+        /etc/rc.d/rc.filebrowser start
+        break
+    fi
+    sleep 10
+done
+EOF
+chmod +x "$PLG_PATH/monitor.sh"
+
+# --- 3. 注册系统事件 ---
+echo "/etc/rc.d/rc.filebrowser start" > "$PLG_PATH/event/started"
+echo "/etc/rc.d/rc.filebrowser stop" > "$PLG_PATH/event/stopping_svcs"
+chmod +x "$PLG_PATH/event/"*
+
+# --- 4. 立即启动逻辑 ---
+/etc/rc.d/rc.filebrowser start
+/usr/bin/nohup "$PLG_PATH/monitor.sh" > /dev/null 2>&1 &
+
+# 关键：更新文件时间戳触发 emhttp 刷新 UI，避免删除文件导致菜单消失
+touch /usr/local/emhttp/plugins/dynamix/FB.page
+touch /usr/local/emhttp/plugins/$PLG_NAME/$PLG_NAME.page
+
+echo "----------------------------------------------------"
+echo " FileBrowser Quantum 安装完成！"
+echo " 插件版本: $PLG_VER"
+echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
+echo " 从顶部标签页'FB'点击打开，即可使用。"
+
+echo "----------------------------------------------------"
+]]></INLINE>
+</FILE>
+
+<FILE Run="/bin/bash" Method="remove">
+<INLINE><![CDATA[
+/etc/rc.d/rc.filebrowser stop 2>/dev/null
+pkill -f monitor.sh >/dev/null 2>&1
+rm -rf /usr/local/emhttp/plugins/filebrowser-quantum
+rm -f /etc/rc.d/rc.filebrowser
+rm -f /usr/local/emhttp/plugins/dynamix/FB.page
+rm -f /usr/local/bin/filebrowser
+echo "卸载已完成。"
+]]></INLINE>
+</FILE>
+
+</PLUGIN>
