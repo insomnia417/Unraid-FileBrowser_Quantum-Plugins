@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.2.3">
+  <!ENTITY version   "v1.2.5">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -13,9 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.2.3
+### 2026.01.05 - v1.2.5
 - **安装反馈修复**
-- **布局微调**
+- **UI 布局保持**
+- **刷新逻辑保持**
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -156,7 +157,7 @@ PLG_NAME="&name;"
 # --- 0. 强制清理旧目录确保 UI 刷新 ---
 rm -rf /usr/local/emhttp/plugins/$PLG_NAME/
 
-# --- 1. 创建服务脚本 ---
+# --- 1. 创建服务脚本 (完全参照 v1.2.1) ---
 cat << 'EOF' > /etc/rc.d/rc.filebrowser
 #!/bin/bash
 CONF_DIR="/mnt/user/appdata/filebrowser_quantum"
@@ -213,7 +214,7 @@ esac
 EOF
 chmod +x /etc/rc.d/rc.filebrowser
 
-# --- 2. 异步监控脚本 ---
+# --- 2. 异步监控脚本 (参照 v1.2.1) ---
 PLG_PATH="/usr/local/emhttp/plugins/$PLG_NAME"
 mkdir -p "$PLG_PATH/event"
 cat << 'EOF' > "$PLG_PATH/monitor.sh"
@@ -240,7 +241,7 @@ chmod +x "$PLG_PATH/event/"*
 
 echo "----------------------------------------------------"
 echo " FileBrowser Quantum 安装完成！"
-echo " 插件版本: &version;"
+echo " 插件版本: v1.2.5"
 echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
 echo " 从顶部标签页'FB'点击打开，即可使用。"
 echo "----------------------------------------------------"
