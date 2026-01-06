@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.2.5">
+  <!ENTITY version   "v1.2.6">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -13,10 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.2.5
-- **安装反馈修复**
-- **UI 布局保持**
-- **刷新逻辑保持**
+### 2026.01.05 - v1.2.6
+- **默认路径调整**：将文件扫描起始路径从 /mnt/user 改为 /mnt，权限覆盖更广。
+- **配置同步**：确保安装时生成的 config.yaml 默认指向 /mnt。
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -64,7 +63,7 @@ Icon="folder-open"
   $conf_file = "/mnt/user/appdata/filebrowser_quantum/config.yaml";
   $display_dir = "/mnt/user/appdata/filebrowser_quantum";
   $port = "8081";
-  $scan_path = "/mnt/user";
+  $scan_path = "/mnt";
 
   if (file_exists($conf_file)) {
     $conf_content = file_get_contents($conf_file);
@@ -165,7 +164,7 @@ CONF_FILE="$CONF_DIR/config.yaml"
 BIN="/usr/local/bin/filebrowser"
 
 get_config_path() {
-    local path="/mnt/user"
+    local path="/mnt"
     if [ -f "$CONF_FILE" ]; then
         local extracted=$(sed -n '/sources:/,/path:/p' "$CONF_FILE" | grep "path:" | head -n 1 | sed -E 's/.*path:[[:space:]]*["'\'']?([^"'\'']+)["'\'']?.*/\1/')
         [ ! -z "$extracted" ] && path="$extracted"
@@ -237,15 +236,15 @@ chmod +x "$PLG_PATH/event/"*
 
 # --- 4. 立即启动逻辑 ---
 /etc/rc.d/rc.filebrowser start
-"$PLG_PATH/monitor.sh" > /dev/null 2>&1 &
+("$PLG_PATH/monitor.sh" &) > /dev/null 2>&1
 
 echo "----------------------------------------------------"
 echo " FileBrowser Quantum 安装完成！"
-echo " 插件版本: v1.2.5"
+echo " 插件版本: v1.2.6"
 echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
 echo " 从顶部标签页'FB'点击打开，即可使用。"
-echo " 默认用户名(user):admin"
-echo "默认密码(password):admin"
+echo " 默认用户名(user): admin"
+echo " 默认密码(password): admin"
 echo "----------------------------------------------------"
 ]]></INLINE>
 </FILE>
