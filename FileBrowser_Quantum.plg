@@ -15,6 +15,7 @@
 
 <CHANGES>
 ### 2026.01.05 - v1.2.2
+- **修复安装报错**：修正了 XML 解析错误。
 - **UI 更新优化**：修复了在 Unraid 中直接更新插件时 UI 界面不立即生效的问题。
 - **强制刷新**：增加了安装时自动重载 Web 控制台的逻辑。
 
@@ -144,17 +145,15 @@ Icon="folder-open"
 
 <FILE Run="/bin/bash">
 <INLINE><![CDATA[
-PLG_NAME="&name;"
-# 获取版本号逻辑保持不变
-PLG_VER=$(grep 'ENTITY version' "/var/log/plugins/$PLG_NAME.plg" 2>/dev/null | sed -E 's/.*"([^"]+)".*/\1/')
-[ -z "$PLG_VER" ] && PLG_VER="&version;"
+# 1. 变量定义 (手动指定版本以避免实体解析风险)
+PLG_NAME="filebrowser-quantum"
+PLG_VER="v1.2.2"
 
-# --- 0. 预处理：解决 UI 更新不即时的问题 ---
-# 清理旧的页面文件，强制刷新 emhttp 缓存
+# 2. 预处理：解决 UI 更新不即时的问题
 rm -f /usr/local/emhttp/plugins/dynamix/FB.page
-rm -rf /usr/local/emhttp/plugins/$PLG_NAME/*.page
+rm -rf /usr/local/emhttp/plugins/${PLG_NAME}/*.page
 
-# --- 1. 创建服务脚本 ---
+# 3. 创建服务脚本
 cat << 'EOF' > /etc/rc.d/rc.filebrowser
 #!/bin/bash
 CONF_DIR="/mnt/user/appdata/filebrowser_quantum"
@@ -219,8 +218,8 @@ esac
 EOF
 chmod +x /etc/rc.d/rc.filebrowser
 
-# --- 2. 异步监控脚本 ---
-PLG_PATH="/usr/local/emhttp/plugins/$PLG_NAME"
+# 4. 异步监控脚本
+PLG_PATH="/usr/local/emhttp/plugins/${PLG_NAME}"
 mkdir -p "$PLG_PATH/event"
 cat << 'EOF' > "$PLG_PATH/monitor.sh"
 #!/bin/bash
@@ -235,21 +234,19 @@ done
 EOF
 chmod +x "$PLG_PATH/monitor.sh"
 
-# --- 3. 注册系统事件 ---
+# 5. 注册系统事件
 echo "/etc/rc.d/rc.filebrowser start" > "$PLG_PATH/event/started"
 echo "/etc/rc.d/rc.filebrowser stop" > "$PLG_PATH/event/stopping_svcs"
 chmod +x "$PLG_PATH/event/"*
 
-# --- 4. 立即启动逻辑与界面刷新 ---
+# 6. 立即启动逻辑
 /etc/rc.d/rc.filebrowser start
-("$PLG_PATH/monitor.sh" &) > /dev/null 2>&1
-
-# 关键：通知 Unraid 重新扫描页面文件
-[ -x /usr/local/sbin/update_cron ] && /usr/local/sbin/update_cron
+# 使用完全路径调用以确保稳定性
+/usr/bin/nohup "$PLG_PATH/monitor.sh" > /dev/null 2>&1 &
 
 echo "----------------------------------------------------"
 echo " FileBrowser Quantum 安装完成！"
-echo " 插件版本: $PLG_VER"
+echo " 插件版本: ${PLG_VER}"
 echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
 echo " 从顶部标签页'FB'点击打开，即可使用。"
 echo "----------------------------------------------------"
