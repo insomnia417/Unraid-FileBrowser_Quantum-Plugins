@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.4.2">
+  <!ENTITY version   "v1.4.3">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -13,10 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.4.2
-- **功能回归**：重新加入 WEBUI 端口和文件扫描路径的修改输入框。
-- **对齐加固**：优化 CSS 确保展示信息与输入框标签完美左对齐。
-- **逻辑锁定**：保持 v1.2.1 的安装启动脚本，确保系统兼容性与稳定性。
+### 2026.01.05 - v1.4.3
+- **刷新逻辑优化**：修复保存配置后 F5 弹出“重新提交表单”的问题，改为自动跳转刷新。
+- **数据同步修复**：确保保存后页面立即显示更新后的端口（如 8082）。
+- **对齐与样式保持**：完全保留 v1.4.2 的 UI 文字与双列对齐布局。
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -60,6 +60,7 @@ Icon="folder-open"
 ---
 <?php
   $addr = $_SERVER['SERVER_ADDR'];
+  $page_url = $_SERVER['REQUEST_URI'];
   $conf_file = "/mnt/user/appdata/filebrowser_quantum/config.yaml";
   $display_dir = "/mnt/user/appdata/filebrowser_quantum";
   $port = "8081";
@@ -82,8 +83,9 @@ Icon="folder-open"
         $c = preg_replace('/path:\s*["\']?([^"\']+)["\']?/', "path: \"" . $new_path . "\"", $c);
         file_put_contents($conf_file, $c);
         exec("/etc/rc.d/rc.filebrowser restart");
-        echo "<script>alert('配置已保存并重启服务！');</script>";
-        header("Refresh:0");
+        // 关键修复：弹窗后使用 location.href 强制跳转 GET 请求，防止 F5 重复提交
+        echo "<script>alert('配置已保存并重启服务！'); window.location.href='$page_url';</script>";
+        exit;
       }
     }
     if (isset($_POST['restart_service'])) { exec("/etc/rc.d/rc.filebrowser restart"); }
