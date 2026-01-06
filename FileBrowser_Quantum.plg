@@ -1,23 +1,22 @@
 <?xml version='1.0' standalone='yes'?>
-
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.4.0">
+  <!ENTITY version   "v1.4.1">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
-  <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
   <!ENTITY remoteBin "https://github.com/gtsteffaniak/filebrowser/releases/latest/download/linux-amd64-filebrowser">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.4.0
-- **安装卡死终极修复**：引入子 Shell 脱离与 disown 指令，确保安装界面立即返回“完成”状态。
-- **UI 刷新增强**：安装前自动清理旧缓存目录，强制系统重新识别。
-- **双列布局对齐**：实现“标签列”与“内容列”的垂直双线对齐。
+### 2026.01.05 - v1.4.1
+- **回归原始结构**：完全恢复 v1.2.1 的 Shell 脚本启动与监控逻辑。
+- **UI 对齐修正**：实现“移植者”、“配置目录”、“当前端口”标签的左侧统一对齐。
+- **安装状态修复**：修正导致 Unraid 安装界面不返回“完成”状态的进程引用问题。
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -64,29 +63,14 @@ Icon="folder-open"
   $conf_file = "/mnt/user/appdata/filebrowser_quantum/config.yaml";
   $display_dir = "/mnt/user/appdata/filebrowser_quantum";
   $port = "8081";
-  $scan_path = "/mnt/user";
 
   if (file_exists($conf_file)) {
     $conf_content = file_get_contents($conf_file);
     if (preg_match('/port:\s*(\d+)/', $conf_content, $matches)) { $port = $matches[1]; }
-    if (preg_match('/path:\s*["\']?([^"\']+)["\']?/', $conf_content, $path_matches)) { $scan_path = $path_matches[1]; }
     if (preg_match('/database:\s*["\']?([^"\']+)["\']?/', $conf_content, $db_matches)) { $display_dir = dirname($db_matches[1]); }
   }
 
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['save_config'])) {
-      $new_port = $_POST['new_port'];
-      $new_path = $_POST['new_path'];
-      if (file_exists($conf_file)) {
-        $c = file_get_contents($conf_file);
-        $c = preg_replace('/port:\s*\d+/', "port: " . $new_port, $c);
-        $c = preg_replace('/path:\s*["\']?([^"\']+)["\']?/', "path: \"" . $new_path . "\"", $c);
-        file_put_contents($conf_file, $c);
-        exec("/etc/rc.d/rc.filebrowser restart");
-        echo "<script>alert('配置已保存并重启服务！');</script>";
-        header("Refresh:0");
-      }
-    }
     if (isset($_POST['restart_service'])) { exec("/etc/rc.d/rc.filebrowser restart"); }
     elseif (isset($_POST['stop_service'])) { exec("/etc/rc.d/rc.filebrowser stop"); }
   }
@@ -95,60 +79,32 @@ Icon="folder-open"
   $status_msg = $is_running ? "<span style='color:#4caf50;'>● 服务正在运行</span>" : "<span style='color:#aaa;'>○ 服务未启动 </span>";
 ?>
 <style>
-  .fb-wrapper { max-width: 700px; margin: 0 auto; text-align: center; }
-  .info-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 30px; margin-bottom: 30px; display: flex; flex-direction: column; align-items: center; }
-  
-  /* 双列对齐实现 */
-  .info-grid { display: inline-grid; grid-template-columns: auto auto; column-gap: 20px; row-gap: 12px; font-size: 1.1em; text-align: left; }
-  .grid-label { font-weight: bold; text-align: right; color: #aaa; }
-  .grid-content { display: flex; align-items: center; gap: 10px; }
-
-  .config-table { width: 100%; margin: 20px 0; border-collapse: collapse; }
-  .config-table td { padding: 12px 5px; }
-  .config-table td:first-child { text-align: right; width: 40%; font-weight: bold; }
-  .config-table td:last-child { text-align: left; padding-left: 20px; }
-  .fb-input { padding: 8px 12px; border-radius: 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; width: 280px; }
-  .fb-btn { display: inline-flex; justify-content: center; align-items: center; color: #fff !important; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; text-decoration: none !important; }
-  .btn-stop { background: #f44336; width: 130px; height: 38px; } 
-  .btn-restart { background: #ff6600; width: 130px; height: 38px; } 
-  .btn-link { background: #448aff; height: 26px; padding: 0 10px; font-size: 11px; }
-  .btn-save { background: #4caf50; width: 180px; height: 40px; margin: 15px auto; }
+  .fb-btn { display: flex; justify-content: center; align-items: center; width: 150px; height: 40px; color: #fff !important; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; text-decoration: none !important; transition: opacity 0.2s; }
+  .btn-stop { background: #f44336; } 
+  .btn-restart { background: #ff6600; } 
+  .btn-link { background: #448aff; }
+  .btn-container { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 25px; }
+  /* 对齐样式：固定标签宽度实现左对齐 */
+  .info-line { text-align: left; display: inline-block; width: 450px; margin-bottom: 8px; font-size: 1.1em; }
+  .info-label { display: inline-block; min-width: 130px; font-weight: bold; }
 </style>
-
-<div class="fb-wrapper">
-  <h2 style="color: #66ccff; margin-bottom: 25px;">FileBrowser Quantum 设置</h2>
-  <div class="info-card">
-    <div class="info-grid">
-      <div class="grid-label">移植者：</div>
-      <div class="grid-content">insomnia417 & InSnocent</div>
-      
-      <div class="grid-label">配置目录：</div>
-      <div class="grid-content"><b style="color: #66ccff;"><?=$display_dir?></b></div>
-      
-      <div class="grid-label">当前端口：</div>
-      <div class="grid-content">
-        <b style="color: #66ccff;"><?=$port?></b> 
-        &nbsp; <?=$status_msg?>
-        <a href="http://<?=$addr?>:<?=$port?>" target="_blank" class="fb-btn btn-link">跳转至新窗口</a>
-      </div>
+<div style="text-align:center; padding:20px;">
+  <h2 style="color: #66ccff;">FileBrowser Quantum 设置</h2>
+  <div style="margin: 20px 0;">
+    <div class="info-line"><span class="info-label">移植者：</span>insomnia417 & InSnocent</div><br>
+    <div class="info-line"><span class="info-label">配置目录：</span><b style="color: #66ccff;"><?=$display_dir?></b></div><br>
+    <div class="info-line"><span class="info-label">修改提示：</span>修改配置文件后请重启服务</div><br>
+    <div class="info-line"><span class="info-label">当前端口：</span><b style="color: #66ccff;"><?=$port?></b> &nbsp;&nbsp; <?=$status_msg?></div>
+    
+    <div class="btn-container">
+      <form method="post" onsubmit="setTimeout(function(){location.reload();}, 600); return true;">
+        <button type="submit" name="stop_service" class="fb-btn btn-stop">停止服务</button>
+      </form>
+      <form method="post" onsubmit="setTimeout(function(){location.reload();}, 1500); return true;">
+        <button type="submit" name="restart_service" class="fb-btn btn-restart">重启服务</button>
+      </form>
+      <a href="http://<?=$addr?>:<?=$port?>" target="_blank" class="fb-btn btn-link">跳转至新窗口</a>
     </div>
-  </div>
-
-  <form method="post">
-    <table class="config-table">
-      <tr><td>修改 WEBUI 端口:</td><td><input type="number" name="new_port" class="fb-input" value="<?=$port?>"></td></tr>
-      <tr><td>修改文件扫描路径:</td><td><input type="text" name="new_path" class="fb-input" value="<?=$scan_path?>"></td></tr>
-    </table>
-    <button type="submit" name="save_config" class="fb-btn btn-save">保存并重启服务</button>
-  </form>
-
-  <div style="display: flex; justify-content: center; gap: 20px; margin-top: 30px; border-top: 1px solid #333; padding-top: 25px;">
-    <form method="post" onsubmit="setTimeout(function(){location.reload();}, 600); return true;">
-      <button type="submit" name="stop_service" class="fb-btn btn-stop">停止服务</button>
-    </form>
-    <form method="post" onsubmit="setTimeout(function(){location.reload();}, 1500); return true;">
-      <button type="submit" name="restart_service" class="fb-btn btn-restart">重启服务</button>
-    </form>
   </div>
 </div>
 ]]></INLINE>
@@ -156,32 +112,72 @@ Icon="folder-open"
 
 <FILE Run="/bin/bash">
 <INLINE><![CDATA[
-# --- 1. 强制刷新：清理旧 UI 目录 ---
-rm -rf /usr/local/emhttp/plugins/&name;/
+PLG_NAME="&name;"
+PLG_VER="&version;"
 
-# --- 2. 服务脚本定义 ---
+# --- 0. 强制清理旧目录确保 UI 刷新 ---
+rm -rf /usr/local/emhttp/plugins/$PLG_NAME/
+
+# --- 1. 创建服务脚本 (完全参照 v1.2.1) ---
 cat << 'EOF' > /etc/rc.d/rc.filebrowser
 #!/bin/bash
 CONF_DIR="/mnt/user/appdata/filebrowser_quantum"
 CONF_FILE="$CONF_DIR/config.yaml"
 BIN="/usr/local/bin/filebrowser"
+
+get_config_path() {
+    local path="/mnt/user"
+    if [ -f "$CONF_FILE" ]; then
+        local extracted=$(sed -n '/sources:/,/path:/p' "$CONF_FILE" | grep "path:" | head -n 1 | sed -E 's/.*path:[[:space:]]*["'\'']?([^"'\'']+)["'\'']?.*/\1/')
+        [ ! -z "$extracted" ] && path="$extracted"
+    fi
+    echo "$path"
+}
+
+get_config_port() {
+    local port="8081"
+    if [ -f "$CONF_FILE" ]; then
+        local extracted=$(grep "port:" "$CONF_FILE" | head -n 1 | awk '{print $2}')
+        [ ! -z "$extracted" ] && port="$extracted"
+    fi
+    echo "$port"
+}
+
+filebrowser_start() {
+    local target_path=$(get_config_path)
+    [ ! -d "$target_path" ] && return
+    pgrep -x filebrowser >/dev/null && return
+    mkdir -p "$CONF_DIR/cache"
+    if [ ! -f "$CONF_FILE" ]; then
+      cat > "$CONF_FILE" <<EOT
+server:
+  port: 8081
+  database: "$CONF_DIR/database.db"
+  cacheDir: "$CONF_DIR/cache"
+  sources:
+    - path: "$target_path"
+EOT
+    fi
+    cd "$CONF_DIR"
+    nohup "$BIN" -c "$CONF_FILE" > execution.log 2>&1 &
+}
+
+filebrowser_stop() {
+    killall filebrowser >/dev/null 2>&1
+    fuser -k $(get_config_port)/tcp > /dev/null 2>&1
+}
+
 case "$1" in
-    'start')
-        pgrep -x filebrowser >/dev/null && exit 0
-        mkdir -p "$CONF_DIR/cache"
-        cd "$CONF_DIR" && nohup "$BIN" -c "$CONF_FILE" > execution.log 2>&1 &
-        ;;
-    'stop')
-        killall filebrowser >/dev/null 2>&1
-        ;;
-    'restart') $0 stop; sleep 2; $0 start ;;
+    'start')   filebrowser_start ;;
+    'stop')    filebrowser_stop ;;
+    'restart') filebrowser_stop; sleep 2; filebrowser_start ;;
 esac
 EOF
 chmod +x /etc/rc.d/rc.filebrowser
 
-# --- 3. 监控脚本定义 ---
-PLG_PATH="/usr/local/emhttp/plugins/&name;"
-mkdir -p "$PLG_PATH"
+# --- 2. 异步监控脚本 (参照 v1.2.1) ---
+PLG_PATH="/usr/local/emhttp/plugins/$PLG_NAME"
+mkdir -p "$PLG_PATH/event"
 cat << 'EOF' > "$PLG_PATH/monitor.sh"
 #!/bin/bash
 sleep 30
@@ -195,18 +191,19 @@ done
 EOF
 chmod +x "$PLG_PATH/monitor.sh"
 
-# --- 4. 立即启动并断绝父子进程关系 ---
-/etc/rc.d/rc.filebrowser start
-( nohup "$PLG_PATH/monitor.sh" > /dev/null 2>&1 & ) && disown
+# --- 3. 注册系统事件 ---
+echo "/etc/rc.d/rc.filebrowser start" > "$PLG_PATH/event/started"
+echo "/etc/rc.d/rc.filebrowser stop" > "$PLG_PATH/event/stopping_svcs"
+chmod +x "$PLG_PATH/event/"*
 
-# 触发 UI 感知
-touch /usr/local/emhttp/plugins/dynamix/FB.page
-touch /usr/local/emhttp/plugins/&name;/&name;.page
+# --- 4. 立即启动逻辑 (回归 v1.2.1 的启动方式) ---
+/etc/rc.d/rc.filebrowser start
+"$PLG_PATH/monitor.sh" > /dev/null 2>&1 &
 
 echo "----------------------------------------------------"
 echo " FileBrowser Quantum 安装完成！"
-echo " 插件版本: v1.4.0"
-echo " 请前往'设置-用户程序-FileBrowser Q'进行配置。"
+echo " 插件版本: $PLG_VER"
+echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
 echo " 从顶部标签页'FB'点击打开，即可使用。"
 echo "----------------------------------------------------"
 ]]></INLINE>
