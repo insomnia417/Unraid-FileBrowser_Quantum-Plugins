@@ -3,21 +3,21 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.3.9">
+  <!ENTITY version   "v1.4.0">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
-  <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg">
   <!ENTITY remoteBin "https://github.com/gtsteffaniak/filebrowser/releases/latest/download/linux-amd64-filebrowser">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.3.9
-- **UI 刷新机制优化**：在安装脚本中加入目录预清理，模拟卸载重装逻辑，强制刷新 UI。
-- **布局深度对齐**：通过 Flex 布局实现“标签列”与“内容列”的完美双列对齐。
-- **按钮状态优化**：跳转按钮与端口信息行保持垂直居中对齐。
+### 2026.01.05 - v1.4.0
+- **安装卡死终极修复**：引入子 Shell 脱离与 disown 指令，确保安装界面立即返回“完成”状态。
+- **UI 刷新增强**：安装前自动清理旧缓存目录，强制系统重新识别。
+- **双列布局对齐**：实现“标签列”与“内容列”的垂直双线对齐。
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -95,46 +95,41 @@ Icon="folder-open"
   $status_msg = $is_running ? "<span style='color:#4caf50;'>● 服务正在运行</span>" : "<span style='color:#aaa;'>○ 服务未启动 </span>";
 ?>
 <style>
-  .fb-wrapper { max-width: 650px; margin: 0 auto; text-align: center; }
-  .info-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 25px; margin-bottom: 30px; }
+  .fb-wrapper { max-width: 700px; margin: 0 auto; text-align: center; }
+  .info-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 30px; margin-bottom: 30px; display: flex; flex-direction: column; align-items: center; }
   
-  /* 双列对齐核心样式 */
-  .align-container { display: inline-block; text-align: left; }
-  .info-row { display: flex; align-items: center; margin-bottom: 10px; font-size: 1.1em; }
-  .info-label { width: 140px; text-align: right; font-weight: bold; padding-right: 15px; color: #aaa; }
-  .info-content { flex: 1; text-align: left; display: flex; align-items: center; gap: 10px; }
+  /* 双列对齐实现 */
+  .info-grid { display: inline-grid; grid-template-columns: auto auto; column-gap: 20px; row-gap: 12px; font-size: 1.1em; text-align: left; }
+  .grid-label { font-weight: bold; text-align: right; color: #aaa; }
+  .grid-content { display: flex; align-items: center; gap: 10px; }
 
   .config-table { width: 100%; margin: 20px 0; border-collapse: collapse; }
   .config-table td { padding: 12px 5px; }
-  .config-table td:first-child { text-align: right; width: 35%; font-weight: bold; }
-  .config-table td:last-child { text-align: left; padding-left: 15px; }
-  .fb-input { padding: 8px 12px; border-radius: 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; width: 250px; }
+  .config-table td:first-child { text-align: right; width: 40%; font-weight: bold; }
+  .config-table td:last-child { text-align: left; padding-left: 20px; }
+  .fb-input { padding: 8px 12px; border-radius: 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; width: 280px; }
   .fb-btn { display: inline-flex; justify-content: center; align-items: center; color: #fff !important; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; text-decoration: none !important; }
   .btn-stop { background: #f44336; width: 130px; height: 38px; } 
   .btn-restart { background: #ff6600; width: 130px; height: 38px; } 
-  .btn-link { background: #448aff; height: 26px; padding: 0 10px; font-size: 11px; margin-left: 10px; }
+  .btn-link { background: #448aff; height: 26px; padding: 0 10px; font-size: 11px; }
   .btn-save { background: #4caf50; width: 180px; height: 40px; margin: 15px auto; }
 </style>
 
 <div class="fb-wrapper">
   <h2 style="color: #66ccff; margin-bottom: 25px;">FileBrowser Quantum 设置</h2>
   <div class="info-card">
-    <div class="align-container">
-      <div class="info-row">
-        <div class="info-label">移植者：</div>
-        <div class="info-content">insomnia417 & InSnocent</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">配置目录：</div>
-        <div class="info-content"><b style="color: #66ccff;"><?=$display_dir?></b></div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">当前端口：</div>
-        <div class="info-content">
-          <b style="color: #66ccff;"><?=$port?></b> 
-          &nbsp; <?=$status_msg?>
-          <a href="http://<?=$addr?>:<?=$port?>" target="_blank" class="fb-btn btn-link">跳转至新窗口</a>
-        </div>
+    <div class="info-grid">
+      <div class="grid-label">移植者：</div>
+      <div class="grid-content">insomnia417 & InSnocent</div>
+      
+      <div class="grid-label">配置目录：</div>
+      <div class="grid-content"><b style="color: #66ccff;"><?=$display_dir?></b></div>
+      
+      <div class="grid-label">当前端口：</div>
+      <div class="grid-content">
+        <b style="color: #66ccff;"><?=$port?></b> 
+        &nbsp; <?=$status_msg?>
+        <a href="http://<?=$addr?>:<?=$port?>" target="_blank" class="fb-btn btn-link">跳转至新窗口</a>
       </div>
     </div>
   </div>
@@ -161,23 +156,15 @@ Icon="folder-open"
 
 <FILE Run="/bin/bash">
 <INLINE><![CDATA[
-PLG_NAME="&name;"
+# --- 1. 强制刷新：清理旧 UI 目录 ---
+rm -rf /usr/local/emhttp/plugins/&name;/
 
-# --- 核心：强制 UI 刷新策略 ---
-# 在安装前先删除旧目录，模拟“先卸载再安装”的行为，强制 emhttp 重新扫描
-rm -rf /usr/local/emhttp/plugins/$PLG_NAME/
-
-# --- 1. 服务控制脚本 ---
+# --- 2. 服务脚本定义 ---
 cat << 'EOF' > /etc/rc.d/rc.filebrowser
 #!/bin/bash
 CONF_DIR="/mnt/user/appdata/filebrowser_quantum"
 CONF_FILE="$CONF_DIR/config.yaml"
 BIN="/usr/local/bin/filebrowser"
-get_config_port() {
-    local port="8081"
-    [ -f "$CONF_FILE" ] && port=$(grep "port:" "$CONF_FILE" | head -n 1 | awk '{print $2}')
-    echo "${port:-8081}"
-}
 case "$1" in
     'start')
         pgrep -x filebrowser >/dev/null && exit 0
@@ -186,15 +173,14 @@ case "$1" in
         ;;
     'stop')
         killall filebrowser >/dev/null 2>&1
-        fuser -k $(get_config_port)/tcp > /dev/null 2>&1
         ;;
     'restart') $0 stop; sleep 2; $0 start ;;
 esac
 EOF
 chmod +x /etc/rc.d/rc.filebrowser
 
-# --- 2. 异步监控逻辑 ---
-PLG_PATH="/usr/local/emhttp/plugins/$PLG_NAME"
+# --- 3. 监控脚本定义 ---
+PLG_PATH="/usr/local/emhttp/plugins/&name;"
 mkdir -p "$PLG_PATH"
 cat << 'EOF' > "$PLG_PATH/monitor.sh"
 #!/bin/bash
@@ -209,19 +195,18 @@ done
 EOF
 chmod +x "$PLG_PATH/monitor.sh"
 
-# --- 3. 启动逻辑 ---
+# --- 4. 立即启动并断绝父子进程关系 ---
 /etc/rc.d/rc.filebrowser start
-nohup "$PLG_PATH/monitor.sh" > /dev/null 2>&1 &
+( nohup "$PLG_PATH/monitor.sh" > /dev/null 2>&1 & ) && disown
 
-# 再次 touch 确保触发
+# 触发 UI 感知
 touch /usr/local/emhttp/plugins/dynamix/FB.page
-touch /usr/local/emhttp/plugins/$PLG_NAME/$PLG_NAME.page
+touch /usr/local/emhttp/plugins/&name;/&name;.page
 
-# --- 4. 安装提示 (硬编码版本) ---
 echo "----------------------------------------------------"
 echo " FileBrowser Quantum 安装完成！"
-echo " 插件版本: v1.3.9"
-echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
+echo " 插件版本: v1.4.0"
+echo " 请前往'设置-用户程序-FileBrowser Q'进行配置。"
 echo " 从顶部标签页'FB'点击打开，即可使用。"
 echo "----------------------------------------------------"
 ]]></INLINE>
