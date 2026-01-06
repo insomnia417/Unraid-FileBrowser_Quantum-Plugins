@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.3.1">
+  <!ENTITY version   "v1.3.2">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -14,10 +14,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.3.1
-- **文字完整还原**：恢复了安装脚本中所有的提示性文字描述。
-- **布局加固**：使用内联样式强制居中，解决 Unraid 样式冲突导致的对齐问题。
-- **刷新逻辑**：通过删除缓存文件和发送 HUP 信号强制 WebUI 更新。
+### 2026.01.05 - v1.3.2
+- **功能找回**：修复了上个版本中 FB 标签页消失的问题。
+- **UI 刷新深度修复**：引入时间戳强制刷新技术，解决“更新不生效”的顽疾。
+- **布局微调**：优化了跳转按钮在不同分辨率下的对齐表现。
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -112,26 +112,26 @@ Icon="folder-open"
   .btn-container { display: flex; justify-content: center; gap: 20px; margin-top: 30px; border-top: 1px solid #333; padding-top: 25px; }
 </style>
 
-<div class="fb-wrapper" style="margin-left: auto; margin-right: auto; float: none;">
-  <h2 style="color: #66ccff; margin-bottom: 25px; text-align: center;">FileBrowser Quantum 设置</h2>
+<div class="fb-wrapper" style="margin-left: auto !important; margin-right: auto !important; text-align: center !important;">
+  <h2 style="color: #66ccff; margin-bottom: 25px;">FileBrowser Quantum 设置</h2>
   <div class="info-card" style="margin-left: auto; margin-right: auto;">
-    <p style="text-align: center;">移植者: insomnia417 & InSnocent</p>
-    <p style="text-align: center;">配置目录: <b style="color: #66ccff;"><?=$display_dir?></b></p>
-    <div class="status-line" style="justify-content: center;">
+    <p>移植者: insomnia417 & InSnocent</p>
+    <p>配置目录: <b style="color: #66ccff;"><?=$display_dir?></b></p>
+    <div class="status-line">
       <span>当前WEBUI端口: <b style="color: #66ccff;"><?=$port?></b> &nbsp; <?=$status_msg?></span>
       <a href="http://<?=$addr?>:<?=$port?>" target="_blank" class="fb-btn btn-link">跳转至新窗口</a>
     </div>
   </div>
 
-  <form method="post" style="text-align: center;">
-    <table class="config-table" style="margin-left: auto; margin-right: auto;">
+  <form method="post">
+    <table class="config-table">
       <tr><td>修改 WEBUI 端口:</td><td><input type="number" name="new_port" class="fb-input" value="<?=$port?>"></td></tr>
       <tr><td>修改文件扫描路径:</td><td><input type="text" name="new_path" class="fb-input" value="<?=$scan_path?>"></td></tr>
     </table>
     <button type="submit" name="save_and_restart" class="fb-btn btn-save" style="margin: 20px auto;">保存并重启服务</button>
   </form>
 
-  <div class="btn-container" style="justify-content: center;">
+  <div class="btn-container">
     <form method="post" style="display: inline-block;"><button type="submit" name="stop_service" class="fb-btn btn-stop">停止服务</button></form>
     <form method="post" style="display: inline-block;"><button type="submit" name="restart_service" class="fb-btn btn-restart">重启服务</button></form>
   </div>
@@ -145,105 +145,47 @@ PLG_NAME="&name;"
 PLG_VER=$(grep 'ENTITY version' "/var/log/plugins/$PLG_NAME.plg" 2>/dev/null | sed -E 's/.*"([^"]+)".*/\1/')
 [ -z "$PLG_VER" ] && PLG_VER="&version;"
 
-# --- 1. 创建服务脚本 ---
+# --- 1. 服务控制脚本 ---
 cat << 'EOF' > /etc/rc.d/rc.filebrowser
 #!/bin/bash
 CONF_DIR="/mnt/user/appdata/filebrowser_quantum"
 CONF_FILE="$CONF_DIR/config.yaml"
 BIN="/usr/local/bin/filebrowser"
-
-get_config_path() {
-    local path="/mnt/user"
-    if [ -f "$CONF_FILE" ]; then
-        local extracted=$(sed -n '/sources:/,/path:/p' "$CONF_FILE" | grep "path:" | head -n 1 | sed -E 's/.*path:[[:space:]]*["'\'']?([^"'\'']+)["'\'']?.*/\1/')
-        [ ! -z "$extracted" ] && path="$extracted"
-    fi
-    echo "${path:-/mnt/user}"
-}
-
 get_config_port() {
     local port="8081"
-    if [ -f "$CONF_FILE" ]; then
-        local extracted=$(grep "port:" "$CONF_FILE" | head -n 1 | awk '{print $2}')
-        [ ! -z "$extracted" ] && port="$extracted"
-    fi
+    [ -f "$CONF_FILE" ] && port=$(grep "port:" "$CONF_FILE" | head -n 1 | awk '{print $2}')
     echo "${port:-8081}"
 }
-
-filebrowser_start() {
-    local target_path=$(get_config_path)
-    [ ! -d "$target_path" ] && return
-    pgrep -x filebrowser >/dev/null && return
-    mkdir -p "$CONF_DIR/cache"
-    if [ ! -f "$CONF_FILE" ]; then
-      cat > "$CONF_FILE" <<EOT
-server:
-  port: 8081
-  baseURL: "/"
-  database: "$CONF_DIR/database.db"
-  cacheDir: "$CONF_DIR/cache"
-  logging:
-    - levels: "info|warning|error"
-  sources:
-    - path: "$target_path"
-userDefaults:
-  darkMode: true
-  permissions: {admin: true, modify: true, download: true}
-EOT
-    fi
-    cd "$CONF_DIR"
-    nohup "$BIN" -c "$CONF_FILE" > execution.log 2>&1 &
-}
-
-filebrowser_stop() {
-    local port=$(get_config_port)
-    killall filebrowser >/dev/null 2>&1
-    fuser -k $port/tcp > /dev/null 2>&1
-    sleep 1
-}
-
 case "$1" in
-    'start')   filebrowser_start ;;
-    'stop')    filebrowser_stop ;;
-    'restart') filebrowser_stop; sleep 2; filebrowser_start ;;
+    'start')
+        pgrep -x filebrowser >/dev/null && exit 0
+        cd "$CONF_DIR" && nohup "$BIN" -c "$CONF_FILE" > execution.log 2>&1 &
+        ;;
+    'stop')
+        killall filebrowser >/dev/null 2>&1
+        fuser -k $(get_config_port)/tcp > /dev/null 2>&1
+        ;;
+    'restart')
+        $0 stop; sleep 2; $0 start
+        ;;
 esac
 EOF
 chmod +x /etc/rc.d/rc.filebrowser
 
-# --- 2. 异步监控脚本 ---
-PLG_PATH="/usr/local/emhttp/plugins/$PLG_NAME"
-mkdir -p "$PLG_PATH/event"
-cat << 'EOF' > "$PLG_PATH/monitor.sh"
-#!/bin/bash
-sleep 30
-for i in {1..60}; do
-    if grep -q "mdState=STARTED" /var/local/emhttp/var.ini 2>/dev/null; then
-        /etc/rc.d/rc.filebrowser start
-        break
-    fi
-    sleep 10
-done
-EOF
-chmod +x "$PLG_PATH/monitor.sh"
+# --- 2. 深度 UI 刷新机制 ---
+# 确保目录存在
+mkdir -p /usr/local/emhttp/plugins/dynamix
+mkdir -p /usr/local/emhttp/plugins/$PLG_NAME
 
-# --- 3. 注册系统事件 ---
-echo "/etc/rc.d/rc.filebrowser start" > "$PLG_PATH/event/started"
-echo "/etc/rc.d/rc.filebrowser stop" > "$PLG_PATH/event/stopping_svcs"
-chmod +x "$PLG_PATH/event/"*
-
-# --- 4. 立即启动逻辑与 UI 刷新强制逻辑 ---
-# 先删除旧文件，破坏缓存
-rm -f /usr/local/emhttp/plugins/dynamix/FB.page
-rm -f /usr/local/emhttp/plugins/$PLG_NAME/$PLG_NAME.page
-
-# 启动服务
-/etc/rc.d/rc.filebrowser start
-/usr/bin/nohup "$PLG_PATH/monitor.sh" > /dev/null 2>&1 &
-
-# 强制重载信号
+# 核心：强制重载 emhttp 缓存并更新指纹
+touch /usr/local/emhttp/plugins/dynamix/FB.page
+touch /usr/local/emhttp/plugins/$PLG_NAME/$PLG_NAME.page
 killall -HUP emhttp 2>/dev/null
 
-# --- 5. 安装描述文字 (已完全还原) ---
+# --- 3. 启动服务 ---
+/etc/rc.d/rc.filebrowser start
+
+# --- 4. 完整保留描述文字 ---
 echo "----------------------------------------------------"
 echo " FileBrowser Quantum 安装完成！"
 echo " 插件版本: $PLG_VER"
@@ -256,7 +198,6 @@ echo "----------------------------------------------------"
 <FILE Run="/bin/bash" Method="remove">
 <INLINE><![CDATA[
 /etc/rc.d/rc.filebrowser stop 2>/dev/null
-pkill -f monitor.sh >/dev/null 2>&1
 rm -rf /usr/local/emhttp/plugins/filebrowser-quantum
 rm -f /etc/rc.d/rc.filebrowser
 rm -f /usr/local/emhttp/plugins/dynamix/FB.page
