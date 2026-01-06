@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.4.1">
+  <!ENTITY version   "v1.4.2">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -13,10 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.4.1
-- **回归原始结构**：完全恢复 v1.2.1 的 Shell 脚本启动与监控逻辑。
-- **UI 对齐修正**：实现“移植者”、“配置目录”、“当前端口”标签的左侧统一对齐。
-- **安装状态修复**：修正导致 Unraid 安装界面不返回“完成”状态的进程引用问题。
+### 2026.01.05 - v1.4.2
+- **功能回归**：重新加入 WEBUI 端口和文件扫描路径的修改输入框。
+- **对齐加固**：优化 CSS 确保展示信息与输入框标签完美左对齐。
+- **逻辑锁定**：保持 v1.2.1 的安装启动脚本，确保系统兼容性与稳定性。
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -63,14 +63,29 @@ Icon="folder-open"
   $conf_file = "/mnt/user/appdata/filebrowser_quantum/config.yaml";
   $display_dir = "/mnt/user/appdata/filebrowser_quantum";
   $port = "8081";
+  $scan_path = "/mnt/user";
 
   if (file_exists($conf_file)) {
     $conf_content = file_get_contents($conf_file);
     if (preg_match('/port:\s*(\d+)/', $conf_content, $matches)) { $port = $matches[1]; }
+    if (preg_match('/path:\s*["\']?([^"\']+)["\']?/', $conf_content, $path_matches)) { $scan_path = $path_matches[1]; }
     if (preg_match('/database:\s*["\']?([^"\']+)["\']?/', $conf_content, $db_matches)) { $display_dir = dirname($db_matches[1]); }
   }
 
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['save_config'])) {
+      $new_port = $_POST['new_port'];
+      $new_path = $_POST['new_path'];
+      if (file_exists($conf_file)) {
+        $c = file_get_contents($conf_file);
+        $c = preg_replace('/port:\s*\d+/', "port: " . $new_port, $c);
+        $c = preg_replace('/path:\s*["\']?([^"\']+)["\']?/', "path: \"" . $new_path . "\"", $c);
+        file_put_contents($conf_file, $c);
+        exec("/etc/rc.d/rc.filebrowser restart");
+        echo "<script>alert('配置已保存并重启服务！');</script>";
+        header("Refresh:0");
+      }
+    }
     if (isset($_POST['restart_service'])) { exec("/etc/rc.d/rc.filebrowser restart"); }
     elseif (isset($_POST['stop_service'])) { exec("/etc/rc.d/rc.filebrowser stop"); }
   }
@@ -79,32 +94,53 @@ Icon="folder-open"
   $status_msg = $is_running ? "<span style='color:#4caf50;'>● 服务正在运行</span>" : "<span style='color:#aaa;'>○ 服务未启动 </span>";
 ?>
 <style>
-  .fb-btn { display: flex; justify-content: center; align-items: center; width: 150px; height: 40px; color: #fff !important; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; text-decoration: none !important; transition: opacity 0.2s; }
-  .btn-stop { background: #f44336; } 
-  .btn-restart { background: #ff6600; } 
-  .btn-link { background: #448aff; }
+  .fb-btn { display: flex; justify-content: center; align-items: center; color: #fff !important; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; transition: opacity 0.2s; text-decoration: none !important; }
+  .btn-stop { background: #f44336; width: 150px; height: 40px; } 
+  .btn-restart { background: #ff6600; width: 150px; height: 40px; } 
+  .btn-link { background: #448aff; width: 150px; height: 40px; }
+  .btn-save { background: #4caf50; width: 200px; height: 40px; margin: 20px auto; }
+  
   .btn-container { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 25px; }
-  /* 对齐样式：固定标签宽度实现左对齐 */
-  .info-line { text-align: left; display: inline-block; width: 450px; margin-bottom: 8px; font-size: 1.1em; }
-  .info-label { display: inline-block; min-width: 130px; font-weight: bold; }
+  .info-block { display: inline-block; text-align: left; width: 500px; margin: 0 auto; }
+  .info-line { margin-bottom: 12px; font-size: 1.1em; display: flex; align-items: center; }
+  .info-label { min-width: 140px; font-weight: bold; display: inline-block; }
+  .fb-input { padding: 6px 10px; border-radius: 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; width: 280px; }
 </style>
+
 <div style="text-align:center; padding:20px;">
   <h2 style="color: #66ccff;">FileBrowser Quantum 设置</h2>
-  <div style="margin: 20px 0;">
-    <div class="info-line"><span class="info-label">移植者：</span>insomnia417 & InSnocent</div><br>
-    <div class="info-line"><span class="info-label">配置目录：</span><b style="color: #66ccff;"><?=$display_dir?></b></div><br>
-    <div class="info-line"><span class="info-label">修改提示：</span>修改配置文件后请重启服务</div><br>
-    <div class="info-line"><span class="info-label">当前端口：</span><b style="color: #66ccff;"><?=$port?></b> &nbsp;&nbsp; <?=$status_msg?></div>
+  
+  <div class="info-block">
+    <div class="info-line"><span class="info-label">移植者：</span>insomnia417 & InSnocent</div>
+    <div class="info-line"><span class="info-label">配置目录：</span><b style="color: #66ccff;"><?=$display_dir?></b></div>
+    <div class="info-line"><span class="info-label">修改提示：</span>修改配置文件后请重启服务</div>
+    <div class="info-line"><span class="info-label">当前WEBUI端口：</span><b style="color: #66ccff;"><?=$port?></b> &nbsp;&nbsp; <?=$status_msg?></div>
     
-    <div class="btn-container">
-      <form method="post" onsubmit="setTimeout(function(){location.reload();}, 600); return true;">
-        <button type="submit" name="stop_service" class="fb-btn btn-stop">停止服务</button>
-      </form>
-      <form method="post" onsubmit="setTimeout(function(){location.reload();}, 1500); return true;">
-        <button type="submit" name="restart_service" class="fb-btn btn-restart">重启服务</button>
-      </form>
-      <a href="http://<?=$addr?>:<?=$port?>" target="_blank" class="fb-btn btn-link">跳转至新窗口</a>
-    </div>
+    <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+    
+    <form method="post">
+      <div class="info-line">
+        <span class="info-label">修改 WEBUI 端口：</span>
+        <input type="number" name="new_port" class="fb-input" value="<?=$port?>">
+      </div>
+      <div class="info-line">
+        <span class="info-label">修改文件扫描路径：</span>
+        <input type="text" name="new_path" class="fb-input" value="<?=$scan_path?>">
+      </div>
+      <div style="text-align: center;">
+        <button type="submit" name="save_config" class="fb-btn btn-save">保存并重启服务</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="btn-container">
+    <form method="post" onsubmit="setTimeout(function(){location.reload();}, 600); return true;">
+      <button type="submit" name="stop_service" class="fb-btn btn-stop">停止服务</button>
+    </form>
+    <form method="post" onsubmit="setTimeout(function(){location.reload();}, 1500); return true;">
+      <button type="submit" name="restart_service" class="fb-btn btn-restart">重启服务</button>
+    </form>
+    <a href="http://<?=$addr?>:<?=$port?>" target="_blank" class="fb-btn btn-link">跳转至新窗口</a>
   </div>
 </div>
 ]]></INLINE>
