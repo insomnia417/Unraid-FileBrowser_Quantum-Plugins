@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.3.2">
+  <!ENTITY version   "v1.3.4">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -14,10 +14,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.3.2
-- **功能找回**：修复了上个版本中 FB 标签页消失的问题。
-- **UI 刷新深度修复**：引入时间戳强制刷新技术，解决“更新不生效”的顽疾。
-- **布局微调**：优化了跳转按钮在不同分辨率下的对齐表现。
+### 2026.01.05 - v1.3.4
+- **安全回归**：彻底移除会导致系统卡死的 HUP 信号。
+- **进程管理**：修复安装完成后后台进程不退出的问题，确保安装界面能正常关闭。
+- **UI 修正**：恢复 FB 标签页定义，优化设置页面居中布局。
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -43,13 +43,8 @@ Tabs="no"
     }
   }
 ?>
-<style>
-  #sb-site, .main-area, #main { height: 100% !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
-  .fb-view { position: fixed; top: 60px; left: 0; right: 0; bottom: 26px; z-index: 1; }
-  .fb-iframe { width: 100%; height: 100%; border: none; display: block; }
-</style>
-<div class="fb-view">
-  <iframe src="http://<?=$addr?>:<?=$port?>" class="fb-iframe"></iframe>
+<div style="position: fixed; top: 60px; left: 0; right: 0; bottom: 26px; z-index: 1;">
+  <iframe src="http://<?=$addr?>:<?=$port?>" style="width: 100%; height: 100%; border: none; display: block;"></iframe>
 </div>
 ]]></INLINE>
 </FILE>
@@ -112,9 +107,9 @@ Icon="folder-open"
   .btn-container { display: flex; justify-content: center; gap: 20px; margin-top: 30px; border-top: 1px solid #333; padding-top: 25px; }
 </style>
 
-<div class="fb-wrapper" style="margin-left: auto !important; margin-right: auto !important; text-align: center !important;">
+<div class="fb-wrapper" style="margin-left:auto; margin-right:auto;">
   <h2 style="color: #66ccff; margin-bottom: 25px;">FileBrowser Quantum 设置</h2>
-  <div class="info-card" style="margin-left: auto; margin-right: auto;">
+  <div class="info-card">
     <p>移植者: insomnia417 & InSnocent</p>
     <p>配置目录: <b style="color: #66ccff;"><?=$display_dir?></b></p>
     <div class="status-line">
@@ -159,6 +154,7 @@ get_config_port() {
 case "$1" in
     'start')
         pgrep -x filebrowser >/dev/null && exit 0
+        mkdir -p "$CONF_DIR/cache"
         cd "$CONF_DIR" && nohup "$BIN" -c "$CONF_FILE" > execution.log 2>&1 &
         ;;
     'stop')
@@ -172,20 +168,33 @@ esac
 EOF
 chmod +x /etc/rc.d/rc.filebrowser
 
-# --- 2. 深度 UI 刷新机制 ---
-# 确保目录存在
-mkdir -p /usr/local/emhttp/plugins/dynamix
-mkdir -p /usr/local/emhttp/plugins/$PLG_NAME
+# --- 2. 异步监控逻辑 (优化脱离) ---
+PLG_PATH="/usr/local/emhttp/plugins/$PLG_NAME"
+mkdir -p "$PLG_PATH"
+cat << 'EOF' > "$PLG_PATH/monitor.sh"
+#!/bin/bash
+sleep 30
+for i in {1..60}; do
+    if grep -q "mdState=STARTED" /var/local/emhttp/var.ini 2>/dev/null; then
+        /etc/rc.d/rc.filebrowser start
+        break
+    fi
+    sleep 10
+done
+EOF
+chmod +x "$PLG_PATH/monitor.sh"
 
-# 核心：强制重载 emhttp 缓存并更新指纹
-touch /usr/local/emhttp/plugins/dynamix/FB.page
-touch /usr/local/emhttp/plugins/$PLG_NAME/$PLG_NAME.page
-killall -HUP emhttp 2>/dev/null
-
-# --- 3. 启动服务 ---
+# --- 3. UI 注册与启动 ---
 /etc/rc.d/rc.filebrowser start
 
-# --- 4. 完整保留描述文字 ---
+# 使用标准 touch 刷新文件系统感知
+touch /usr/local/emhttp/plugins/dynamix/FB.page
+touch /usr/local/emhttp/plugins/$PLG_NAME/$PLG_NAME.page
+
+# 关键：以完全脱离的方式运行后台脚本，防止安装进程残留
+setsid "$PLG_PATH/monitor.sh" > /dev/null 2>&1 &
+
+# --- 4. 还原完整描述文字 ---
 echo "----------------------------------------------------"
 echo " FileBrowser Quantum 安装完成！"
 echo " 插件版本: $PLG_VER"
@@ -198,6 +207,7 @@ echo "----------------------------------------------------"
 <FILE Run="/bin/bash" Method="remove">
 <INLINE><![CDATA[
 /etc/rc.d/rc.filebrowser stop 2>/dev/null
+pkill -f monitor.sh >/dev/null 2>&1
 rm -rf /usr/local/emhttp/plugins/filebrowser-quantum
 rm -f /etc/rc.d/rc.filebrowser
 rm -f /usr/local/emhttp/plugins/dynamix/FB.page
@@ -205,5 +215,4 @@ rm -f /usr/local/bin/filebrowser
 echo "卸载已完成。"
 ]]></INLINE>
 </FILE>
-
 </PLUGIN>
