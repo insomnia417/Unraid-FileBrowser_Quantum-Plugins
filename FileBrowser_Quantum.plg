@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.2.2">
+  <!ENTITY version   "v1.2.4">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
@@ -14,10 +14,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.2.2
-- **修复安装报错**：修正了 XML 解析错误。
-- **UI 更新优化**：修复了在 Unraid 中直接更新插件时 UI 界面不立即生效的问题。
-- **强制刷新**：增加了安装时自动重载 Web 控制台的逻辑。
+### 2026.01.05 - v1.2.4
+- **完全还原提示文字**：修正了上个版本误删的安装完成详细提示信息。
+- **UI 刷新优化**：继续采用 touch 机制，确保更新插件时 UI 能即时生效。
 
 ### 2026.01.05 - v1.2.1
 - **代码深度精简**：移除冗余的 JS 动态高度脚本和多余的 div 包裹，提升加载效率。
@@ -145,124 +144,12 @@ Icon="folder-open"
 
 <FILE Run="/bin/bash">
 <INLINE><![CDATA[
-# 1. 变量定义 (手动指定版本以避免实体解析风险)
-PLG_NAME="filebrowser-quantum"
-PLG_VER="v1.2.2"
+PLG_NAME="&name;"
+PLG_VER=$(grep 'ENTITY version' "/var/log/plugins/$PLG_NAME.plg" 2>/dev/null | sed -E 's/.*"([^"]+)".*/\1/')
+[ -z "$PLG_VER" ] && PLG_VER="&version;"
 
-# 2. 预处理：解决 UI 更新不即时的问题
-rm -f /usr/local/emhttp/plugins/dynamix/FB.page
-rm -rf /usr/local/emhttp/plugins/${PLG_NAME}/*.page
-
-# 3. 创建服务脚本
+# --- 1. 创建服务脚本 ---
 cat << 'EOF' > /etc/rc.d/rc.filebrowser
 #!/bin/bash
 CONF_DIR="/mnt/user/appdata/filebrowser_quantum"
 CONF_FILE="$CONF_DIR/config.yaml"
-BIN="/usr/local/bin/filebrowser"
-
-get_config_path() {
-    local path="/mnt/user"
-    if [ -f "$CONF_FILE" ]; then
-        local extracted=$(sed -n '/sources:/,/path:/p' "$CONF_FILE" | grep "path:" | head -n 1 | sed -E 's/.*path:[[:space:]]*["'\'']?([^"'\'']+)["'\'']?.*/\1/')
-        [ ! -z "$extracted" ] && path="$extracted"
-    fi
-    echo "$path"
-}
-
-get_config_port() {
-    local port="8081"
-    if [ -f "$CONF_FILE" ]; then
-        local extracted=$(grep "port:" "$CONF_FILE" | head -n 1 | awk '{print $2}')
-        [ ! -z "$extracted" ] && port="$extracted"
-    fi
-    echo "$port"
-}
-
-filebrowser_start() {
-    local target_path=$(get_config_path)
-    [ ! -d "$target_path" ] && return
-    pgrep -x filebrowser >/dev/null && return
-    mkdir -p "$CONF_DIR/cache"
-    if [ ! -f "$CONF_FILE" ]; then
-      cat > "$CONF_FILE" <<EOT
-server:
-  port: 8081
-  baseURL: "/"
-  database: "$CONF_DIR/database.db"
-  cacheDir: "$CONF_DIR/cache"
-  logging:
-    - levels: "info|warning|error"
-  sources:
-    - path: "/mnt/user"
-userDefaults:
-  darkMode: true
-  permissions: {admin: true, modify: true, download: true}
-EOT
-    fi
-    cd "$CONF_DIR"
-    nohup "$BIN" -c "$CONF_FILE" > execution.log 2>&1 &
-}
-
-filebrowser_stop() {
-    local port=$(get_config_port)
-    killall filebrowser >/dev/null 2>&1
-    fuser -k $port/tcp > /dev/null 2>&1
-    sleep 1
-}
-
-case "$1" in
-    'start')   filebrowser_start ;;
-    'stop')    filebrowser_stop ;;
-    'restart') filebrowser_stop; sleep 2; filebrowser_start ;;
-esac
-EOF
-chmod +x /etc/rc.d/rc.filebrowser
-
-# 4. 异步监控脚本
-PLG_PATH="/usr/local/emhttp/plugins/${PLG_NAME}"
-mkdir -p "$PLG_PATH/event"
-cat << 'EOF' > "$PLG_PATH/monitor.sh"
-#!/bin/bash
-sleep 30
-for i in {1..60}; do
-    if grep -q "mdState=STARTED" /var/local/emhttp/var.ini 2>/dev/null; then
-        /etc/rc.d/rc.filebrowser start
-        break
-    fi
-    sleep 10
-done
-EOF
-chmod +x "$PLG_PATH/monitor.sh"
-
-# 5. 注册系统事件
-echo "/etc/rc.d/rc.filebrowser start" > "$PLG_PATH/event/started"
-echo "/etc/rc.d/rc.filebrowser stop" > "$PLG_PATH/event/stopping_svcs"
-chmod +x "$PLG_PATH/event/"*
-
-# 6. 立即启动逻辑
-/etc/rc.d/rc.filebrowser start
-# 使用完全路径调用以确保稳定性
-/usr/bin/nohup "$PLG_PATH/monitor.sh" > /dev/null 2>&1 &
-
-echo "----------------------------------------------------"
-echo " FileBrowser Quantum 安装完成！"
-echo " 插件版本: ${PLG_VER}"
-echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
-echo " 从顶部标签页'FB'点击打开，即可使用。"
-echo "----------------------------------------------------"
-]]></INLINE>
-</FILE>
-
-<FILE Run="/bin/bash" Method="remove">
-<INLINE><![CDATA[
-/etc/rc.d/rc.filebrowser stop 2>/dev/null
-pkill -f monitor.sh >/dev/null 2>&1
-rm -rf /usr/local/emhttp/plugins/filebrowser-quantum
-rm -f /etc/rc.d/rc.filebrowser
-rm -f /usr/local/emhttp/plugins/dynamix/FB.page
-rm -f /usr/local/bin/filebrowser
-echo "卸载已完成。"
-]]></INLINE>
-</FILE>
-
-</PLUGIN>
