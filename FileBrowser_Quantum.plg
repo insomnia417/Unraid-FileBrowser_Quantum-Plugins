@@ -244,6 +244,8 @@ echo " FileBrowser Quantum 安装完成！"
 echo " 插件版本: v1.2.5"
 echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
 echo " 从顶部标签页'FB'点击打开，即可使用。"
+echo " 默认用户名(user):admin"
+echo "默认密码(password):admin"
 echo "----------------------------------------------------"
 ]]></INLINE>
 </FILE>
