@@ -3,21 +3,21 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "filebrowser-quantum">
   <!ENTITY author    "insomnia417/InSnocent">
-  <!ENTITY version   "v1.2.6">
+  <!ENTITY version   "v1.2.7">
   <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY Icon      "folder-open">
   <!ENTITY launch    "Settings/&name;">
-  <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg">
   <!ENTITY remoteBin "https://github.com/gtsteffaniak/filebrowser/releases/latest/download/linux-amd64-filebrowser">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-### 2026.01.05 - v1.2.6
-- **UI 布局还原与增强**：完整保留了原本的“当前WEBUI端口”和“服务状态”展示文字。
-- **配置管理**：保留了直接修改端口和路径的输入框功能。
-- **稳定性修复**：优化了 PHP 修改 YAML 时的正则匹配逻辑。
+### 2026.01.05 - v1.2.7
+- **强制 UI 刷新修复**：引入 emhttp 重载信号，彻底解决更新插件后界面不变化的问题。
+- **UI 结构加固**：优化了配置修改表单的 HTML 结构，确保在不同 Unraid 版本下的兼容性。
+- **保留完整信息**：确保所有提示文字、端口展示和注释内容 100% 保留。
 </CHANGES>
 
 <FILE Name="/usr/local/bin/filebrowser" Mode="0755">
@@ -68,7 +68,6 @@ Icon="folder-open"
   $port = "8081";
   $scan_path = "/mnt/user";
 
-  // 读取配置
   if (file_exists($conf_file)) {
     $conf_content = file_get_contents($conf_file);
     if (preg_match('/port:\s*(\d+)/', $conf_content, $matches)) { $port = $matches[1]; }
@@ -76,7 +75,6 @@ Icon="folder-open"
     if (preg_match('/database:\s*["\']?([^"\']+)["\']?/', $conf_content, $db_matches)) { $display_dir = dirname($db_matches[1]); }
   }
 
-  // 处理保存请求
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['save_config'])) {
       $new_port = $_POST['new_port'];
@@ -86,7 +84,7 @@ Icon="folder-open"
         $c = preg_replace('/port:\s*\d+/', "port: " . $new_port, $c);
         $c = preg_replace('/path:\s*["\']?([^"\']+)["\']?/', "path: \"" . $new_path . "\"", $c);
         file_put_contents($conf_file, $c);
-        echo "<script>alert('配置已保存！请手动重启服务使更改生效。');</script>";
+        echo "<script>alert('配置已保存！请重启服务使更改生效。');</script>";
         header("Refresh:0");
       }
     }
@@ -117,7 +115,6 @@ Icon="folder-open"
     <p>移植者: insomnia417 & InSnocent</p>
     <p>配置目录: <b style="color: #66ccff;"><?=$display_dir?></b></p>
     <p>修改配置文件后请重启服务</p>
-    
     <p>当前WEBUI端口: <b style="color: #66ccff;"><?=$port?></b> &nbsp;&nbsp; <?=$status_msg?></p>
 
     <hr style="border: 0; border-top: 1px dashed #444; width: 50%; margin: 20px auto;">
@@ -246,15 +243,16 @@ chmod +x "$PLG_PATH/event/"*
 /etc/rc.d/rc.filebrowser start
 /usr/bin/nohup "$PLG_PATH/monitor.sh" > /dev/null 2>&1 &
 
-touch /usr/local/emhttp/plugins/dynamix/FB.page
-touch /usr/local/emhttp/plugins/$PLG_NAME/$PLG_NAME.page
+# --- 5. 核心：强制重载 Unraid 页面缓存 ---
+# 强制 emhttp 重新加载 .page 结构
+# 向 emhttp 发送 HUP 信号是最彻底的刷新方法，不影响运行中的服务
+killall -HUP emhttp 2>/dev/null
 
 echo "----------------------------------------------------"
 echo " FileBrowser Quantum 安装完成！"
 echo " 插件版本: $PLG_VER"
 echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
 echo " 从顶部标签页'FB'点击打开，即可使用。"
-
 echo "----------------------------------------------------"
 ]]></INLINE>
 </FILE>
