@@ -1,181 +1,263 @@
 <?xml version='1.0' standalone='yes'?>
-
 <!DOCTYPE PLUGIN [
-<!ENTITY name      "FileBrowser_Quantum">
-<!ENTITY author    "YourName">
-<!ENTITY version   "2026.01.07">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/你的仓库/main/&name;.plg">
-<!ENTITY plugin    "/boot/config/plugins/&name;">
-<!ENTITY appdata   "/mnt/user/appdata/&name;">
-<!ENTITY bin       "/usr/local/sbin">
+  <!ENTITY name      "filebrowser-quantum">
+  <!ENTITY author    "insomnia417/InSnocent">
+  <!ENTITY version   "v1.2.6">
+  <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
+  <!ENTITY Icon      "folder-open">
+  <!ENTITY launch    "Settings/&name;">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg">
+  <!ENTITY remoteBin "https://github.com/gtsteffaniak/filebrowser/releases/latest/download/linux-amd64-filebrowser">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="6.9.0">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
-###2026.01.07
-- 哨兵模式：支持全量 AppData 固化与阵列启动自动点火。
-- 动态解析：自动从 config.yaml 提取运行参数。
-- 模块化：彻底分离系统文件与用户数据，支持无损更新。
+### 2026.01.05 - v1.2.6
+- **默认路径调整**：将文件扫描起始路径从 /mnt/user 改为 /mnt，权限覆盖更广。
+- **配置同步**：确保安装时生成的 config.yaml 默认指向 /mnt。
 </CHANGES>
 
+<FILE Name="/usr/local/bin/filebrowser" Mode="0755">
+  <URL>&remoteBin;</URL>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/dynamix/FB.page">
+<INLINE><![CDATA[
+Menu="Tasks:91"
+Type="xmenu"
+Title="FB"
+Icon="folder-open"
+Tabs="no"
+---
+<?php
+  $addr = $_SERVER['SERVER_ADDR'];
+  $conf_file = "/mnt/user/appdata/filebrowser_quantum/config.yaml";
+  $port = "8081";
+  if (file_exists($conf_file)) {
+    $conf_content = file_get_contents($conf_file);
+    if (preg_match('/port:\s*(\d+)/', $conf_content, $matches)) { $port = $matches[1]; }
+  }
+?>
+<style>
+  #sb-site, .main-area, #main { height: 100% !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
+  .fb-view { position: fixed; top: 60px; left: 0; right: 0; bottom: 26px; z-index: 1; }
+  .fb-iframe { width: 100%; height: 100%; border: none; display: block; }
+</style>
+<div class="fb-view">
+  <iframe src="http://<?=$addr?>:<?=$port?>" class="fb-iframe"></iframe>
+</div>
+]]></INLINE>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/&name;/&name;.page">
+<INLINE><![CDATA[
+Menu="Utilities"
+Type="parameter"
+Title="FileBrowser Q"
+Icon="folder-open"
+---
+<?php
+  $addr = $_SERVER['SERVER_ADDR'];
+  $page_url = $_SERVER['REQUEST_URI'];
+  $conf_file = "/mnt/user/appdata/filebrowser_quantum/config.yaml";
+  $display_dir = "/mnt/user/appdata/filebrowser_quantum";
+  $port = "8081";
+  $scan_path = "/mnt";
+
+  if (file_exists($conf_file)) {
+    $conf_content = file_get_contents($conf_file);
+    if (preg_match('/port:\s*(\d+)/', $conf_content, $matches)) { $port = $matches[1]; }
+    if (preg_match('/path:\s*["\']?([^"\']+)["\']?/', $conf_content, $path_matches)) { $scan_path = $path_matches[1]; }
+    if (preg_match('/database:\s*["\']?([^"\']+)["\']?/', $conf_content, $db_matches)) { $display_dir = dirname($db_matches[1]); }
+  }
+
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['save_config'])) {
+      $new_port = $_POST['new_port'];
+      $new_path = $_POST['new_path'];
+      if (file_exists($conf_file)) {
+        $c = file_get_contents($conf_file);
+        $c = preg_replace('/port:\s*\d+/', "port: " . $new_port, $c);
+        $c = preg_replace('/path:\s*["\']?([^"\']+)["\']?/', "path: \"" . $new_path . "\"", $c);
+        file_put_contents($conf_file, $c);
+        exec("/etc/rc.d/rc.filebrowser restart");
+        echo "<script>alert('配置已保存并重启服务！'); window.location.href='$page_url';</script>";
+        exit;
+      }
+    }
+    if (isset($_POST['restart_service'])) { exec("/etc/rc.d/rc.filebrowser restart"); }
+    elseif (isset($_POST['stop_service'])) { exec("/etc/rc.d/rc.filebrowser stop"); }
+  }
+
+  $is_running = shell_exec("pgrep -x filebrowser");
+  $status_msg = $is_running ? "<span style='color:#4caf50;'>● 服务正在运行</span>" : "<span style='color:#aaa;'>○ 服务未启动 </span>";
+?>
+<style>
+  .fb-btn { display: flex; justify-content: center; align-items: center; color: #fff !important; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; transition: opacity 0.2s; text-decoration: none !important; }
+  .btn-stop { background: #f44336; width: 150px; height: 40px; } 
+  .btn-restart { background: #ff6600; width: 150px; height: 40px; } 
+  .btn-link { background: #448aff; padding: 0 10px; height: 26px; font-size: 12px; display: inline-flex; margin-left: 15px; }
+  .btn-save { background: #4caf50; width: 200px; height: 40px; margin: 20px auto; }
+  
+  .btn-container { display: flex; justify-content: center; align-items: center; gap: 40px; margin-top: 35px; }
+  .info-block { display: inline-block; text-align: left; width: 550px; margin: 0 auto; }
+  .info-line { margin-bottom: 12px; font-size: 1.1em; display: flex; align-items: center; flex-wrap: nowrap; }
+  .info-label { min-width: 140px; font-weight: bold; display: inline-block; }
+  .fb-input { padding: 6px 10px; border-radius: 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; width: 280px; }
+</style>
+
+<div style="text-align:center; padding:20px;">
+  <h2 style="color: #66ccff;">FileBrowser Quantum 设置</h2>
+  
+  <div class="info-block">
+    <div class="info-line"><span class="info-label">移植者：</span>insomnia417 & InSnocent</div>
+    <div class="info-line"><span class="info-label">配置目录：</span><b style="color: #66ccff;"><?=$display_dir?></b></div>
+    <div class="info-line"><span class="info-label">修改提示：</span>修改配置文件后请重启服务</div>
+    <div class="info-line">
+        <span class="info-label">当前WEBUI端口：</span>
+        <b style="color: #66ccff;"><?=$port?></b> &nbsp;&nbsp; <?=$status_msg?>
+        <a href="http://<?=$addr?>:<?=$port?>" target="_blank" class="fb-btn btn-link">跳转至新窗口</a>
+    </div>
+    
+    <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+    
+    <form method="post">
+      <div class="info-line">
+        <span class="info-label">修改 WEBUI 端口：</span>
+        <input type="number" name="new_port" class="fb-input" value="<?=$port?>">
+      </div>
+      <div class="info-line">
+        <span class="info-label">修改文件扫描路径：</span>
+        <input type="text" name="new_path" class="fb-input" value="<?=$scan_path?>">
+      </div>
+      <div style="text-align: center;">
+        <button type="submit" name="save_config" class="fb-btn btn-save">保存并重启服务</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="btn-container">
+    <form method="post" onsubmit="setTimeout(function(){location.reload();}, 600); return true;">
+      <button type="submit" name="stop_service" class="fb-btn btn-stop">停止服务</button>
+    </form>
+    <form method="post" onsubmit="setTimeout(function(){location.reload();}, 1500); return true;">
+      <button type="submit" name="restart_service" class="fb-btn btn-restart">重启服务</button>
+    </form>
+  </div>
+</div>
+]]></INLINE>
+</FILE>
+
 <FILE Run="/bin/bash">
-<INLINE>
-  mkdir -p &plugin;
-  mkdir -p &plugin;/bin
-</INLINE>
-</FILE>
+<INLINE><![CDATA[
+PLG_NAME="&name;"
 
-<FILE Name="&plugin;/filebrowser.tar.gz">
-<URL>https://github.com/filebrowser/filebrowser/releases/download/v2.30.0/linux-amd64-filebrowser.tar.gz</URL>
-</FILE>
+# --- 0. 强制清理旧目录确保 UI 刷新 ---
+rm -rf /usr/local/emhttp/plugins/$PLG_NAME/
 
-<FILE Name="/etc/rc.d/rc.&name;" Mode="0755">
-<INLINE>
+# --- 1. 创建服务脚本 (完全参照 v1.2.1) ---
+cat << 'EOF' > /etc/rc.d/rc.filebrowser
 #!/bin/bash
-# --- 变量定义 ---
-APP_DATA="&appdata;"
-CONF_FILE="$APP_DATA/config.yaml"
-TEMPLATE="&plugin;/config.yaml.template"
-BINARY="&bin;/filebrowser"
-LOG_FILE="$APP_DATA/log/execution.log"
+CONF_DIR="/mnt/user/appdata/filebrowser_quantum"
+CONF_FILE="$CONF_DIR/config.yaml"
+BIN="/usr/local/bin/filebrowser"
 
-# --- 工具函数：解析 YAML ---
-# 这样即使你改了端口或数据库名，脚本也能自动识别
-get_yaml_val() {
-    local key=$1
+get_config_path() {
+    local path="/mnt"
     if [ -f "$CONF_FILE" ]; then
-        grep "^  $key:" "$CONF_FILE" | awk -F': ' '{print $2}' | tr -d '"' | tr -d ' '
+        local extracted=$(sed -n '/sources:/,/path:/p' "$CONF_FILE" | grep "path:" | head -n 1 | sed -E 's/.*path:[[:space:]]*["'\'']?([^"'\'']+)["'\'']?.*/\1/')
+        [ ! -z "$extracted" ] && path="$extracted"
     fi
+    echo "$path"
 }
 
-# --- 核心启动逻辑 ---
-filebrowser_start() {
-    if pgrep -x "filebrowser" > /dev/null; then
-        echo "FileBrowser 已经在运行中。"
-        exit 0
+get_config_port() {
+    local port="8081"
+    if [ -f "$CONF_FILE" ]; then
+        local extracted=$(grep "port:" "$CONF_FILE" | head -n 1 | awk '{print $2}')
+        [ ! -z "$extracted" ] && port="$extracted"
     fi
+    echo "$port"
+}
 
-    echo "启动后台哨兵..."
-    (
-        # 1. 等待阵列挂载
-        echo "$(date): 哨兵 - 等待阵列挂载..." >> /var/log/syslog
-        while [ ! -d "/mnt/user" ]; do
-            sleep 5
-        done
-
-        # 2. 初始化 AppData 目录结构
-        if [ ! -d "$APP_DATA" ]; then
-            mkdir -p "$APP_DATA"
-            mkdir -p "$APP_DATA/log"
-            mkdir -p "$APP_DATA/tmp"
-        fi
-
-        # 3. 配置文件初始化
-        if [ ! -f "$CONF_FILE" ]; then
-            if [ -f "$TEMPLATE" ]; then
-                cp "$TEMPLATE" "$CONF_FILE"
-                echo "哨兵 - 首次启动，已从 U 盘同步模板" >> /var/log/syslog
-            else
-                echo "错误：找不到配置模板" >> /var/log/syslog
-                exit 1
-            fi
-        fi
-
-        # 4. 再次等待数据库文件所在的路径完全可见
-        # 我们从 YAML 里动态读数据库位置，而不是写死
-        DB_PATH=$(get_yaml_val "database")
-        if [ -n "$DB_PATH" ]; then
-            while [ ! -f "$DB_PATH" ] &amp;&amp; [ ! -d "/mnt/user" ]; do
-                echo "哨兵 - 等待数据库文件就绪: $DB_PATH" >> /var/log/syslog
-                sleep 5
-            done
-        fi
-
-        # 5. 点火
-        echo "哨兵 - 阵列已就绪，正在点火启动程序..." >> /var/log/syslog
-        cd "$APP_DATA"
-        nohup "$BINARY" -c "$CONF_FILE" >> "$LOG_FILE" 2>&1 &
-        
-        # 验证是否启动成功
-        sleep 2
-        if pgrep -x "filebrowser" > /dev/null; then
-            echo "FileBrowser 启动成功，PID: $(pgrep -x filebrowser)" >> /var/log/syslog
-        else
-            echo "FileBrowser 启动失败，请检查 $LOG_FILE" >> /var/log/syslog
-        fi
-    ) &
+filebrowser_start() {
+    local target_path=$(get_config_path)
+    [ ! -d "$target_path" ] && return
+    pgrep -x filebrowser >/dev/null && return
+    mkdir -p "$CONF_DIR/cache"
+    if [ ! -f "$CONF_FILE" ]; then
+      cat > "$CONF_FILE" <<EOT
+server:
+  port: 8081
+  database: "$CONF_DIR/database.db"
+  cacheDir: "$CONF_DIR/cache"
+  sources:
+    - path: "$target_path"
+EOT
+    fi
+    cd "$CONF_DIR"
+    nohup "$BIN" -c "$CONF_FILE" > execution.log 2>&1 &
 }
 
 filebrowser_stop() {
-    echo "正在停止 FileBrowser..."
-    # 使用优雅停止
-    pid=$(pgrep -x "filebrowser")
-    if [ -n "$pid" ]; then
-        kill "$pid"
-        sleep 2
-        # 如果还没死，强杀
-        kill -9 "$pid" > /dev/null 2>&1
-    fi
-}
-
-filebrowser_status() {
-    if pgrep -x "filebrowser" > /dev/null; then
-        port=$(get_yaml_val "port")
-        echo "FileBrowser 正在运行，监听端口: ${port:-未知}"
-    else
-        echo "FileBrowser 未运行。"
-    fi
+    killall filebrowser >/dev/null 2>&1
+    fuser -k $(get_config_port)/tcp > /dev/null 2>&1
 }
 
 case "$1" in
     'start')   filebrowser_start ;;
     'stop')    filebrowser_stop ;;
     'restart') filebrowser_stop; sleep 2; filebrowser_start ;;
-    'status')  filebrowser_status ;;
-    *) echo "Usage: $0 {start|stop|restart|status}" ;;
 esac
-</INLINE>
-</FILE>
-
-<FILE Run="/bin/bash">
-<INLINE>
-  # 释放二进制文件
-  tar -zxf &plugin;/filebrowser.tar.gz -C &bin;/ filebrowser
-  chmod +x &bin;/filebrowser
-
-  # 如果 U 盘里没有模板，生成一个初始模板
-  if [ ! -f "&plugin;/config.yaml.template" ]; then
-cat &lt;&lt;EOF > "&plugin;/config.yaml.template"
-server:
-  port: 8081
-  baseURL: "/"
-  address: "0.0.0.0"
-  database: "&appdata;/database.db"
-  log: "&appdata;/log/execution.log"
-userDefaults:
-  scope: "/mnt"
 EOF
-  fi
+chmod +x /etc/rc.d/rc.filebrowser
 
-  # 启动服务
-  /etc/rc.d/rc.&name; start
+# --- 2. 异步监控脚本 (参照 v1.2.1) ---
+PLG_PATH="/usr/local/emhttp/plugins/$PLG_NAME"
+mkdir -p "$PLG_PATH/event"
+cat << 'EOF' > "$PLG_PATH/monitor.sh"
+#!/bin/bash
+sleep 30
+for i in {1..60}; do
+    if grep -q "mdState=STARTED" /var/local/emhttp/var.ini 2>/dev/null; then
+        /etc/rc.d/rc.filebrowser start
+        break
+    fi
+    sleep 10
+done
+EOF
+chmod +x "$PLG_PATH/monitor.sh"
 
-  echo "----------------------------------------------------"
-  echo " &name; 安装完成！"
-  echo " 哨兵已在后台启动，将自动检测阵列挂载情况。"
-  echo "----------------------------------------------------"
-</INLINE>
+# --- 3. 注册系统事件 ---
+echo "/etc/rc.d/rc.filebrowser start" > "$PLG_PATH/event/started"
+echo "/etc/rc.d/rc.filebrowser stop" > "$PLG_PATH/event/stopping_svcs"
+chmod +x "$PLG_PATH/event/"*
+
+# --- 4. 立即启动逻辑 ---
+/etc/rc.d/rc.filebrowser start
+("$PLG_PATH/monitor.sh" &) > /dev/null 2>&1
+
+echo "----------------------------------------------------"
+echo " FileBrowser Quantum 安装完成！"
+echo " 插件版本: v1.2.6"
+echo " 请保证默认端口8081未被占用，如需修改，前往'设置-用户程序-FileBrowser Q'进行修改。"
+echo " 从顶部标签页'FB'点击打开，即可使用。"
+echo " 默认用户名(user): admin"
+echo " 默认密码(password): admin"
+echo "----------------------------------------------------"
+]]></INLINE>
 </FILE>
 
 <FILE Run="/bin/bash" Method="remove">
-<INLINE>
-  /etc/rc.d/rc.&name; stop
-  rm -f &bin;/filebrowser
-  rm -f /etc/rc.d/rc.&name;
-  # 保持 AppData 目录完整，不进行删除
-  echo "插件系统文件已移除。您的数据和配置保留在 &appdata;"
-</INLINE>
+<INLINE><![CDATA[
+/etc/rc.d/rc.filebrowser stop 2>/dev/null
+pkill -f monitor.sh >/dev/null 2>&1
+rm -rf /usr/local/emhttp/plugins/filebrowser-quantum
+rm -f /etc/rc.d/rc.filebrowser
+rm -f /usr/local/emhttp/plugins/dynamix/FB.page
+rm -f /usr/local/bin/filebrowser
+echo "卸载已完成。"
+]]></INLINE>
 </FILE>
-
 </PLUGIN>
