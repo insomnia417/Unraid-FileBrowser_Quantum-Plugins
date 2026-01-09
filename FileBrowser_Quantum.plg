@@ -6,7 +6,6 @@
 <!ENTITY version			"2026.01.09">
 <!ENTITY bundleversion		"2026.01.09">
 <!ENTITY launch				"Settings/filebrowser_quantum">
-<!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/plugin/filebrowser_quantum.plg">
 <!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/filebrowser_quantum.plg">
 <!ENTITY bundleURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
 ]>
@@ -62,8 +61,6 @@ if [ ! -f /boot/config/plugins/filebrowser_quantum/settings.cfg ]; then
 WEBUI_START_PARAMS=--rc-no-auth
 WEBUI_PORT=5572" > /boot/config/plugins/filebrowser_quantum/settings.cfg
 fi
-
-/usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh "VERSION"
 
 rm -f $(ls /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum*.txz 2>/dev/null | grep -v '&bundleversion;')
 rm -f /usr/sbin/filebrowser_quantum
