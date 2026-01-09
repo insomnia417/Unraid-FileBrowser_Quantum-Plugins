@@ -150,7 +150,8 @@ Uninstall script
 -->
 <FILE Run="/bin/bash" Method="remove">
 <INLINE>
-kill -SIGINT $(pgrep -f "filebrowser_quantum-orig.*--rc-web-gui")
+KILL_PID="$(pgrep -f "filebrowser_quantum-orig")"
+[[ ! -z "$KILL_PID" ]] && kill -SIGINT $KILL_PID
 rm -rf /boot/config/plugins/filebrowser_quantum/install
 rm -f /usr/sbin/filebrowser_quantum-orig
 rm -f /usr/sbin/filebrowser_quantum
