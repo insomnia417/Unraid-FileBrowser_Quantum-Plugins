@@ -1,4 +1,4 @@
-name: Run Package Build (v3)
+name: Run Package Build test(v4)
 
 on:
   push:
@@ -13,21 +13,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 安装打包 Unraid 插件所需的最小化工具集
-      - name: Install Build Tools
+      # 直接在环境里创建一个简易的 makepkg 命令
+      - name: Setup Makepkg Environment
         run: |
           sudo apt-get update
-          sudo apt-get install -y p7zip-full cpio
-          # 下载并安装 Slackware 的 makepkg 脚本模拟版
-          sudo wget https://raw.githubusercontent.com/corgan00/makepkg-standalone/master/makepkg -O /usr/local/bin/makepkg
+          sudo apt-get install -y cpio
+          # 创建一个模拟 Unraid makepkg 的脚本
+          cat << 'EOF' > makepkg
+          #!/bin/bash
+          PACKAGE_NAME=$1
+          if [ -z "$PACKAGE_NAME" ]; then echo "Usage: makepkg name.txz"; exit 1; fi
+          find . -print0 | xargs -0 touch -c -t 202401010000.00
+          find . ! -type d -print | sort | cpio -o -H newc --quiet | gzip -9 > "$PACKAGE_NAME"
+          EOF
+          sudo mv makepkg /usr/local/bin/makepkg
           sudo chmod +x /usr/local/bin/makepkg
 
       - name: Run build script
         run: |
           # 确保脚本有执行权限
           chmod +x ./source/pkg_build.sh
-          # 创建存放打包结果的文件夹，防止脚本里 cd 或写入失败
+          # 创建存放打包结果的文件夹
           mkdir -p archive
-          # 进入目录执行
+          # 执行打包
           cd source
           ./pkg_build.sh
+
+      # 打包完成后，把生成的 txz 文件上传到 GitHub 页面供你下载
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unraid-package
+          path: archive/*.txz
