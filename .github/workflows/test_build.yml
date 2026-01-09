@@ -1,9 +1,8 @@
-name: Run Package Build (v20)
+name: Run Package Build (v21)
 
 on:
   push:
     branches: [ "test" ]
-    # 仅当 source 文件夹或 plg 文件变动时触发
     paths:
       - 'source/**'
       - 'FileBrowser_Quantum.plg'
@@ -25,43 +24,37 @@ jobs:
       - name: Build Unraid Package
         run: |
           mkdir -p archive
-          # 明确文件名，避免变量传递为空
           PLG_FILE="FileBrowser_Quantum.plg"
           
-          # 1. 提取版本号
+          # 1. 获取版本号
           BUNDLE_VER=$(grep 'ENTITY bundleversion' "$PLG_FILE" | cut -d'"' -f2)
           PKG_NAME="filebrowser_quantum-${BUNDLE_VER}-x86_64.txz"
           
-          echo "Building: $PKG_NAME"
-
-          # 2. 打包 (v11 验证成功的标准结构)
+          # 2. 精准打包
           cd source/filebrowser_quantum
           tar -cvJf "../../archive/$PKG_NAME" *
           cd ../..
           
-          # 3. 计算并回填 MD5
+          # 3. 计算 MD5 并更新 PLG
           NEW_MD5=$(md5sum "archive/$PKG_NAME" | awk '{print $1}')
-          echo "New MD5: $NEW_MD5"
-          
-          # 使用更加稳健的 perl 替换，确保精准修改 md5bundle 字段
           perl -i -pe "s/(ENTITY md5bundle \").*?(\")/\${1}$NEW_MD5\${2}/g" "$PLG_FILE"
           
-          echo "Check PLG Result:"
-          grep "md5bundle" "$PLG_FILE"
+          # 4. 【关键修复】明确生成 .md5 物理文件
+          echo "$NEW_MD5" > "archive/$PKG_NAME.md5"
+          echo "Generated MD5 file: archive/$PKG_NAME.md5"
 
       - name: Commit and Push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # 直接指定具体文件，不再使用可能为空的变量名，彻底解决 pathspec 错误
-          git add archive/*.txz FileBrowser_Quantum.plg
+          # 5. 【关键修复】git add 必须包含 *.md5 匹配
+          git add archive/*.txz archive/*.md5 FileBrowser_Quantum.plg
           
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "No changes"
           else
-            git commit -m "auto: v20 final fix for md5 and push logic"
-            # 解决 image_0d6aa8 截图中的分支冲突问题
+            git commit -m "auto: v21 include md5 file and update plg"
             git pull origin test --rebase
             git push origin test
           fi
