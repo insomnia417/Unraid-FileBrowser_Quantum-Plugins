@@ -6,7 +6,7 @@ else
    fburl="https://github.com/gtsteffaniak/filebrowser/releases/download/v1.1.6-beta/linux-amd64-filebrowser"
 fi;
 
-version=`filebrowser_quantum-orig --version | head -n 1`
+version=`filebrowser_quantum-orig version | head -n 1`
   echo "-------------------------------------------------------------------"
   echo "Validating connection to internet"
   echo "-------------------------------------------------------------------"
@@ -32,7 +32,7 @@ else
   exit 1
 fi;
 
-current_version=`filebrowser_quantum-orig --version | head -n 1`
+current_version=`filebrowser_quantum-orig version | head -n 1`
 
 if [[ $version = $current_version ]]; then
   echo ""
