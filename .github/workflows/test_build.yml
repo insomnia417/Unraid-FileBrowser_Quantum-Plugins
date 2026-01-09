@@ -1,4 +1,4 @@
-name: Run Package Build (v8)
+name: Run Package Build (v9)
 
 on:
   push:
@@ -16,42 +16,46 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. 准备环境
       - name: Setup Makepkg Environment
         run: |
           sudo apt-get update && sudo apt-get install -y cpio
           cat << 'EOF' > makepkg
           #!/bin/bash
-          # 直接把当前目录打包到指定的输出文件
           PACKAGE_NAME=$1
-          find . ! -type d -print | sort | cpio -o -H newc --quiet | gzip -9 > "$PACKAGE_NAME"
+          # 修正打包逻辑：递归包含所有子目录和文件
+          find . ! -name "." ! -type d -print | sort | cpio -o -H newc --quiet | gzip -9 > "$PACKAGE_NAME"
           EOF
           sudo mv makepkg /usr/local/bin/makepkg
           sudo chmod +x /usr/local/bin/makepkg
 
-      # 2. 强制打包（不依赖脚本里的 archive 变量）
-      - name: Force Build to Root Archive
+      - name: Run Precision Build
         run: |
           mkdir -p archive
-          # 赋予脚本执行权限
-          chmod +x ./source/pkg_build.sh
-          # 获取版本号（模拟脚本里的逻辑）
+          # 获取当前日期作为版本
           VERSION=$(date +"%Y.%m.%d")
-          # 直接在 source 目录下手动执行打包，强行指定输出到根目录的 archive
-          cd source
-          makepkg ../archive/filebrowser_quantum-${VERSION}-x86_64.txz
-          echo "Package created in archive folder"
+          # 定义包名
+          PKG_NAME="filebrowser_quantum-${VERSION}-x86_64.txz"
+          
+          # 【关键修改】：进入到真正包含 usr 目录的那一层
+          # 根据 image_020a00.jpg 观察，路径应该是 source/filebrowser_quantum/
+          cd source/filebrowser_quantum
+          
+          # 执行打包，把生成的包扔回到根目录的 archive 里
+          makepkg ../../archive/$PKG_NAME
+          
+          # 在根目录生成 MD5（可选）
+          cd ../..
+          md5sum archive/$PKG_NAME > archive/$PKG_NAME.md5
+          echo "Build Completed: $PKG_NAME"
 
-      # 3. 提交文件回仓库
       - name: Commit and Push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add archive/*.txz
-          # 检查是否有文件可以提交
+          git add archive/*.txz archive/*.md5
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "auto: update package v8"
+            git commit -m "auto: fix package structure v9"
             git push
           fi
