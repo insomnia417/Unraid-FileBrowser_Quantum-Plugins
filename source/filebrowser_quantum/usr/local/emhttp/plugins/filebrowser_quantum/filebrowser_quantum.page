@@ -27,7 +27,7 @@ function updatefilebrowser_quantum(branch) {
 
 function webui(form) {
    var state = form.webui_status.value;
-   openBox('/usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh&arg1='+state,"filebrowser_quantum WebUI",450,800,true);
+   openBox('/usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh&arg1='+state,"filebrowser_quantum Control",450,800,true);
 }
 </script>
 
@@ -37,32 +37,15 @@ $defaultfile = "/boot/config/plugins/filebrowser_quantum/config.yaml";
 $text = file_get_contents($file);
 $default_text = @file_get_contents($defaultfile);
 $settings = parse_ini_file('/boot/config/plugins/filebrowser_quantum/settings.cfg');
-?>
 
-<?
-exec('filebrowser_quantum version --check | grep -Po "(([a-z])*:( )*)\K( )*([0-9])([^ ])*[0-9]"', $output);
+// 获取二进制程序版本
+exec('filebrowser_quantum-orig version | grep -Po "(([a-z])*:( )*)\K( )*([0-9])([^ ])*[0-9]"', $output);
 $currentversion = $output[0];
 
-if (!file('/boot/config/plugins/filebrowser_quantum/webui/latest')) {
-  exec('/usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh "VERSION"');
-  if (!file_exists('/boot/config/plugins/filebrowser_quantum/webui/latest')) {
-    $webui_latest = "Error fetching version number";
-  } else {
-    $webui_latest = exec('cat /boot/config/plugins/filebrowser_quantum/webui/latest | head -1');
-  }
-} else {
-  $webui_latest = exec('cat /boot/config/plugins/filebrowser_quantum/webui/latest | head -1');
-}
+// 检查进程是否运行 (匹配二进制原名)
+$webui_pid = exec('pgrep -f "filebrowser_quantum-orig.*-c /boot/config/plugins/filebrowser_quantum/config.yaml"');
 
-$webui_local = exec("ls -1 /boot/config/plugins/filebrowser_quantum/webui/*.zip 2>/dev/null | rev | cut -d '/' -f1 | cut -d '.' -f2- | rev | sort -V | head -1");
-if (empty($webui_local)) {
-  $webui_local = "not installed";
-}
-
-$webui_pid = exec('pgrep -f "filebrowser_quantum.*--rc-web-gui"');
-?>
-
-<?
+// 分支逻辑
 if (file_exists("/boot/config/plugins/filebrowser_quantum/install/beta") == true) {
   $branch = "2";
 } elseif (strpos($currentversion, 'beta') !== false) {
@@ -70,113 +53,83 @@ if (file_exists("/boot/config/plugins/filebrowser_quantum/install/beta") == true
 } else {
   $branch = "1";
 }
-?>
 
-<?
 if (isset($_POST['branch'])) {$branch = $_POST['branch'];}
 
 if ($branch == "1") {
     exec("rm -f /boot/config/plugins/filebrowser_quantum/install/beta");
     $latestversion = $output[1];
     ($latestversion == '') ? $latestversion = "Error fetching version number" : '';
-
 } elseif ($branch == "2") {
     exec("touch /boot/config/plugins/filebrowser_quantum/install/beta");
     $latestversion = $output[2];
     ($latestversion == '') ? $latestversion = "Error fetching version number" : '';
 }
 ?>
+
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-
-.row {
-  display: flex;
-}
-
-/* Create two unequal columns */
-.column {
-  padding: 10px;
-}
-
-.left {
-  flex: 1; /* Represents 25% of the container */
-}
-
-.right {
-  flex: 3; /* Represents 75% of the container */
-}
+.row { display: flex; }
+.column { padding: 10px; }
+.left { flex: 1; }
+.right { flex: 3; }
 </style>
 </head>
 <body>
 
 <div class="row">
   <div class="column left">
-    <h2>Branch</h2>
+    <h2>Branch & Update</h2>
+    <form action="" method="post"> 
+      <select name="branch" onchange="this.form.submit();"> 
+        <option value="1" <?php if($branch == 1) echo("selected")?>>Stable</option>
+        <option value="2" <?php if($branch == 2) echo("selected")?>>Beta</option>
+      </select> 
+    </form> 
+    <?
+    echo "Installed version: $currentversion<br>";
+    echo "Latest version: &nbsp;&nbsp;$latestversion";
+    ?>
+    <br><br>
+    <input type="button" value="Update Binary" <?php if ($currentversion == $latestversion){ ?> disabled <?php } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
-	<form action="" method="post"> 
-	<select name="branch" onchange="this.form.submit();"> 
-	<option value="1" <?php if($branch == 1) echo("selected")?>>Stable</option>
-	<option value="2" <?php if($branch == 2) echo("selected")?>>Beta</option>
-	</select> 
-	</form> 
-	<?
-	echo "Installed version: $currentversion";
-	echo "<br>";
-	echo "Latest version:&emsp;&ensp;$latestversion";
-	?>
-	<br>
-	<input type="button" value="Update filebrowser_quantum" <?php if ($currentversion == $latestversion){ ?> disabled <?php   } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
+    <hr>
 
-  <h2>WebUI<span style="font-size:0.6em; <? echo (!empty($webui_pid)) ? 'color:green;">&nbsp;&nbsp;&nbsp;running' : 'color:red;">&nbsp;&nbsp;&nbsp;stopped' ?></span></h2>
-
-	<form action="" method="post"> 
-	<select name="webui_status"> 
-	<option value="false" <?php if($settings['WEBUI_ENABLED'] == false) echo("selected")?>>Disabled</option>
-	<option value="true" <?php if($settings['WEBUI_ENABLED'] == true) echo("selected")?>>Enabled</option>
-	</select> 
-
-	<?
-  echo "<br>";
-	echo "Installed version: $webui_local";
-	echo "<br>";
-	echo "Latest version:&emsp;&ensp;$webui_latest";
-	?>
-	<br>
-	<input type="button" value="Update" onclick="webui(this.form)">
-  <?
-  if (!empty($webui_pid)) {
-    echo '<a href="http://' . $_SERVER['SERVER_ADDR'] . ':' . $settings['WEBUI_PORT'] . '" class="button" target="_blank">Open WebUI</a>';
-  }
-  ?>
-	</form> 
-
+    <h2>Service Control<span style="font-size:0.6em; <? echo (!empty($webui_pid)) ? 'color:green;">&nbsp;&nbsp;&nbsp;running' : 'color:red;">&nbsp;&nbsp;&nbsp;stopped' ?></span></h2>
+    <form action="" method="post"> 
+      <select name="webui_status"> 
+        <option value="false" <?php if($settings['WEBUI_ENABLED'] == "false") echo("selected")?>>Disabled</option>
+        <option value="true" <?php if($settings['WEBUI_ENABLED'] == "true") echo("selected")?>>Enabled</option>
+      </select> 
+      <br><br>
+      <input type="button" value="Apply Settings" onclick="webui(this.form)">
+      <?
+      if (!empty($webui_pid)) {
+        echo '<br><br><a href="http://' . $_SERVER['SERVER_ADDR'] . ':' . $settings['WEBUI_PORT'] . '" class="button" target="_blank">Open WebUI</a>';
+      }
+      ?>
+    </form> 
   </div>
+
   <div class="column right">
-    <h2>Edit config</h2>
-	<form markdown="1" method="POST" action="/update.php" target="progressFrame">
-	<input type="hidden" name="#include" value="/webGui/include/update.file.php">
-	<input type="hidden" name="#file" value="<?=$file;?>">
-	<textarea spellcheck="false" cols="80" rows="22" name="text" style="font-family:bitstream;width:100%"><?=$text;?></textarea>
-	<br>
-	<input type="submit" value="Apply"/><input type="button" value="Original" onclick="setDefault(this.form)">
-	</form> 
+    <h2>Edit Config (config.yaml)</h2>
+    <form method="POST" action="/update.php" target="progressFrame">
+      <input type="hidden" name="#include" value="/webGui/include/update.file.php">
+      <input type="hidden" name="#file" value="<?=$file;?>">
+      <textarea spellcheck="false" cols="80" rows="22" name="text" style="font-family:monospace;width:100%"><?=$text;?></textarea>
+      <br><br>
+      <input type="submit" value="Apply Config"/>
+      <input type="button" value="Original" onclick="setDefault(this.form)">
+    </form> 
   </div>
 </div>
-
-</body>
-</html>
 
 <script>
 function setDefault(form) {
   form.elements['text'].value = <?=json_encode($default_text);?>;
 }
 </script>
-
-> Click the **Apply** button to commit the current edits.
->
-> Click the **Original** button to initialize the edit box with the
-> original contents.  You still need to click **Apply** in order to
->commit the change.
-</form>
+</body>
+</html>
