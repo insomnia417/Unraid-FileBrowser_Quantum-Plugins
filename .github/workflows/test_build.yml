@@ -1,0 +1,25 @@
+name: Run Package Build (v2)
+
+on:
+  push:
+    branches: [ "test" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    # 使用包含 Slackware/Unraid 打包工具的容器
+    runs-on: ubuntu-latest
+    container:
+      image: flandsoft/unraid-plugin-build:latest # 这是一个常用的 Unraid 打包辅助镜像
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run build script
+        run: |
+          # 确保脚本有执行权限
+          chmod +x ./source/pkg_build.sh
+          # 进入目录并执行
+          cd source
+          ./pkg_build.sh
