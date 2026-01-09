@@ -1,8 +1,8 @@
-name: Build rclone Unraid Package (v5)
+name: Build filebrowser_quantum Unraid Package (v6)
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ master, main, test ]
   workflow_dispatch:
 
 jobs:
@@ -13,32 +13,33 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 关键步骤：在 Ubuntu 上安装 Slackware 打包工具
-      - name: Setup Slackware pkgtools
+      - name: Install Slackware pkgtools (makepkg)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget xz-utils
-          # 下载 Slackware 的 pkgtools (包含 makepkg)
+          # 下载 Slackware 的工具包 (包含 makepkg)
           wget http://mirrors.slackware.com/slackware/slackware64-15.0/slackware64/a/pkgtools-15.0-noarch-3.txz
-          # 解压出 makepkg 脚本
+          # 解压并提取 makepkg
           mkdir pkgtools
           tar -C pkgtools -xf pkgtools-15.0-noarch-3.txz
-          # 将 makepkg 移动到系统路径并赋予权限
           sudo cp pkgtools/sbin/makepkg /usr/local/bin/
           sudo chmod +x /usr/local/bin/makepkg
           # 验证安装
-          makepkg --version || echo "makepkg installed"
+          makepkg --version
 
-      - name: Build Package (v5)
+      - name: Run Build Script (v6)
         run: |
-          # 进入脚本所在目录
-          cd ./source/rclone/
+          # 1. 确保构建所需的目录存在
+          mkdir -p archive
+          
+          # 2. 进入脚本所在目录
+          cd source/
           chmod +x pkg_build.sh
-          # 运行构建脚本
+          
+          # 3. 执行脚本
+          # 根据你的图片代码，脚本会查找当前目录下除了它自身和 sftp-config.json 以外的文件并打包
           ./pkg_build.sh
 
-      - name: Upload Artifact
+      - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
-          name: rclone-unraid-pkg
-          path: ./source/rclone/*.txz
+          name: Unraid-Package-v6
+          path: archive/*.txz
