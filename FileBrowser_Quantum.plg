@@ -137,7 +137,7 @@ Create wrapper
 <INLINE>
 #!/bin/bash
 config=/boot/config/plugins/filebrowser_quantum/config.yaml
-	filebrowser_quantum-orig --config $config "$@";
+	filebrowser_quantum-orig -c $config "$@";
 </INLINE>
 </FILE>
 	
