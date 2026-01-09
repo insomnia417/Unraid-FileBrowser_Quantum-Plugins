@@ -1,4 +1,4 @@
-name: Run Package Build (v15)
+name: Run Package Build (v17)
 
 on:
   push:
@@ -20,41 +20,44 @@ jobs:
         run: |
           mkdir -p archive
           
-          # 1. 设置统一的文件名变量（大写开头）
+          # 1. 锁定你修正后的文件名
           PLG_FILE="FileBrowser_Quantum.plg"
           
-          # 2. 提取你在 PLG 中手动定义的版本号
-          # 这样打包出的文件名会和你 PLG 里的下载链接完全对应
-          VERSION=$(grep 'ENTITY version' $PLG_FILE | cut -d'"' -f2)
-          BUNDLE_VER=$(grep 'ENTITY bundleversion' $PLG_FILE | cut -d'"' -f2)
+          # 提取版本号（增加判断，防止文件没改对再次报错）
+          if [ ! -f "$PLG_FILE" ]; then
+            echo "错误: 依然找不到 $PLG_FILE，请检查仓库中的文件名是否完全一致！"
+            exit 1
+          fi
+
+          VERSION=$(grep 'ENTITY version' "$PLG_FILE" | cut -d'"' -f2)
+          BUNDLE_VER=$(grep 'ENTITY bundleversion' "$PLG_FILE" | cut -d'"' -f2)
           PKG_NAME="filebrowser_quantum-${BUNDLE_VER}-x86_64.txz"
           
-          echo "Processing PLG: $PLG_FILE"
-          echo "Detected Bundle Version: $BUNDLE_VER"
+          echo "Processing: $PLG_FILE"
           
-          # 3. 执行打包（保持 v11 验证成功的目录结构）
+          # 2. 精准打包 (保持 v11 验证成功的目录结构)
           cd source/filebrowser_quantum
-          tar -cvJf ../../archive/$PKG_NAME *
+          tar -cvJf "../../archive/$PKG_NAME" *
           cd ../..
           
-          # 4. 计算并自动更新 MD5 值
-          NEW_MD5=$(md5sum archive/$PKG_NAME | awk '{print $1}')
+          # 3. 计算并自动更新 MD5
+          NEW_MD5=$(md5sum "archive/$PKG_NAME" | awk '{print $1}')
           echo "New MD5: $NEW_MD5"
           
-          # 使用 sed 自动替换 PLG 文件中的 md5bundle 这一行
-          sed -i "s/ENTITY md5bundle \".*\"/ENTITY md5bundle \"$NEW_MD5\"/" $PLG_FILE
+          # 自动将新的 MD5 写回 .plg 文件
+          sed -i "s/ENTITY md5bundle \".*\"/ENTITY md5bundle \"$NEW_MD5\"/" "$PLG_FILE"
 
       - name: Commit and Push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # 这里的文件名也要对应大写
+          # 提交修改后的 plg 和新包
           git add archive/*.txz FileBrowser_Quantum.plg
           
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "No changes"
           else
-            git commit -m "auto: v15 update md5 in FileBrowser_Quantum.plg"
+            git commit -m "auto: v17 final release with correct casing"
             git push
           fi
