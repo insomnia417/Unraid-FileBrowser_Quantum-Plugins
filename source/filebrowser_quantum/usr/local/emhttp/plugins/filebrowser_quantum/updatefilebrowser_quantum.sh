@@ -10,7 +10,7 @@ version=`filebrowser_quantum-orig --version | head -n 1`
   echo "-------------------------------------------------------------------"
   echo "Validating connection to internet"
   echo "-------------------------------------------------------------------"
-ping -q -c2 https://github.com/gtsteffaniak/filebrowser/releases/download/latest >/dev/null || ping -q -c2 1.1.1.1 >/dev/null || ping -q -c2 8.8.8.8 >/dev/null
+ping -q -c2 github.com >/dev/null || ping -q -c2 1.1.1.1 >/dev/null || ping -q -c2 8.8.8.8 >/dev/null
 if [ $? -eq 0 ]
 then
   echo "-------------------------------------------------------------------"
