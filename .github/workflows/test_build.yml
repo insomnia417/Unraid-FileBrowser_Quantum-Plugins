@@ -1,4 +1,4 @@
-name: Run Package Build test(v4)
+name: Run Package Build (v5)
 
 on:
   push:
@@ -13,17 +13,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 直接在环境里创建一个简易的 makepkg 命令
       - name: Setup Makepkg Environment
         run: |
           sudo apt-get update
           sudo apt-get install -y cpio
-          # 创建一个模拟 Unraid makepkg 的脚本
           cat << 'EOF' > makepkg
           #!/bin/bash
+          # 简单的模拟打包逻辑
           PACKAGE_NAME=$1
-          if [ -z "$PACKAGE_NAME" ]; then echo "Usage: makepkg name.txz"; exit 1; fi
-          find . -print0 | xargs -0 touch -c -t 202401010000.00
           find . ! -type d -print | sort | cpio -o -H newc --quiet | gzip -9 > "$PACKAGE_NAME"
           EOF
           sudo mv makepkg /usr/local/bin/makepkg
@@ -31,17 +28,20 @@ jobs:
 
       - name: Run build script
         run: |
-          # 确保脚本有执行权限
+          # 1. 强制在仓库根目录创建 archive 文件夹
+          mkdir -p $(pwd)/archive
+          
+          # 2. 赋予脚本执行权限
           chmod +x ./source/pkg_build.sh
-          # 创建存放打包结果的文件夹
-          mkdir -p archive
-          # 执行打包
+          
+          # 3. 执行脚本
           cd source
           ./pkg_build.sh
-
-      # 打包完成后，把生成的 txz 文件上传到 GitHub 页面供你下载
+          
       - name: Upload Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: unraid-package
+          # 这里的路径改为匹配仓库根目录下的 archive 文件夹
           path: archive/*.txz
