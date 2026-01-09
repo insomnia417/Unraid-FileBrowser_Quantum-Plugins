@@ -1,4 +1,4 @@
-name: Run Package Build (v21)
+name: Run Package Build (v22)
 
 on:
   push:
@@ -21,40 +21,58 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build Unraid Package
+      - name: Build and Update
         run: |
           mkdir -p archive
           PLG_FILE="FileBrowser_Quantum.plg"
           
-          # 1. 获取版本号
+          # 1. 提取版本号
           BUNDLE_VER=$(grep 'ENTITY bundleversion' "$PLG_FILE" | cut -d'"' -f2)
           PKG_NAME="filebrowser_quantum-${BUNDLE_VER}-x86_64.txz"
           
-          # 2. 精准打包
+          # 2. 打包
           cd source/filebrowser_quantum
           tar -cvJf "../../archive/$PKG_NAME" *
           cd ../..
           
-          # 3. 计算 MD5 并更新 PLG
+          # 3. 计算 MD5
           NEW_MD5=$(md5sum "archive/$PKG_NAME" | awk '{print $1}')
+          echo "Calculated MD5: $NEW_MD5"
+          
+          # 4. 【强制更新 PLG】
+          # 先打印旧行
+          echo "Before update:"
+          grep "md5bundle" "$PLG_FILE"
+          
+          # 执行替换
           perl -i -pe "s/(ENTITY md5bundle \").*?(\")/\${1}$NEW_MD5\${2}/g" "$PLG_FILE"
           
-          # 4. 【关键修复】明确生成 .md5 物理文件
+          # 打印新行确认
+          echo "After update:"
+          grep "md5bundle" "$PLG_FILE"
+          
+          # 5. 生成 MD5 物理文件
           echo "$NEW_MD5" > "archive/$PKG_NAME.md5"
-          echo "Generated MD5 file: archive/$PKG_NAME.md5"
 
       - name: Commit and Push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # 5. 【关键修复】git add 必须包含 *.md5 匹配
-          git add archive/*.txz archive/*.md5 FileBrowser_Quantum.plg
+          # 6. 【关键变动】拉取远程变更后再添加文件，防止覆盖
+          git pull origin test --rebase
+          
+          # 重新添加所有受影响的文件
+          git add FileBrowser_Quantum.plg
+          git add archive/*.txz
+          git add archive/*.md5
+          
+          # 调试：查看 git 状态
+          git status
           
           if git diff --staged --quiet; then
-            echo "No changes"
+            echo "Warning: No changes detected by Git!"
           else
-            git commit -m "auto: v21 include md5 file and update plg"
-            git pull origin test --rebase
+            git commit -m "auto: v22 fix plg md5 sync"
             git push origin test
           fi
