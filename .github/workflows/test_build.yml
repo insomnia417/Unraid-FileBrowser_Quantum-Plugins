@@ -1,4 +1,4 @@
-name: Run Package Build (v9)
+name: Run Package Build (v10)
 
 on:
   push:
@@ -16,37 +16,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Makepkg Environment
-        run: |
-          sudo apt-get update && sudo apt-get install -y cpio
-          cat << 'EOF' > makepkg
-          #!/bin/bash
-          PACKAGE_NAME=$1
-          # 修正打包逻辑：递归包含所有子目录和文件
-          find . ! -name "." ! -type d -print | sort | cpio -o -H newc --quiet | gzip -9 > "$PACKAGE_NAME"
-          EOF
-          sudo mv makepkg /usr/local/bin/makepkg
-          sudo chmod +x /usr/local/bin/makepkg
-
-      - name: Run Precision Build
+      # 使用 tar 代替复杂的 cpio 模拟脚本，兼容性更好
+      - name: Run Build with Professional Structure
         run: |
           mkdir -p archive
-          # 获取当前日期作为版本
+          # 定义版本号和包名
           VERSION=$(date +"%Y.%m.%d")
-          # 定义包名
           PKG_NAME="filebrowser_quantum-${VERSION}-x86_64.txz"
           
-          # 【关键修改】：进入到真正包含 usr 目录的那一层
-          # 根据 image_020a00.jpg 观察，路径应该是 source/filebrowser_quantum/
+          # 进入包含 usr 文件夹的目录
           cd source/filebrowser_quantum
           
-          # 执行打包，把生成的包扔回到根目录的 archive 里
-          makepkg ../../archive/$PKG_NAME
+          # 核心修改：使用 tar 打包
+          # Unraid 的 .txz 本质上就是用 xz 压缩的 tar 包
+          # -c: 创建, -J: 使用 xz 压缩, -f: 指定文件名
+          tar -cvJf ../../archive/$PKG_NAME .
           
-          # 在根目录生成 MD5（可选）
+          # 生成 MD5
           cd ../..
           md5sum archive/$PKG_NAME > archive/$PKG_NAME.md5
-          echo "Build Completed: $PKG_NAME"
+          echo "Build Success: archive/$PKG_NAME"
 
       - name: Commit and Push changes
         run: |
@@ -54,8 +43,8 @@ jobs:
           git config --local user.name "GitHub Action"
           git add archive/*.txz archive/*.md5
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "No changes"
           else
-            git commit -m "auto: fix package structure v9"
+            git commit -m "auto: v10 use tar for professional structure"
             git push
           fi
