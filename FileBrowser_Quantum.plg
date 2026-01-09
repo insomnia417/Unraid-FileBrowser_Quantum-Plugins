@@ -57,7 +57,7 @@ if [ -f /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum ]; 
 fi;
 
 if [ ! -f /boot/config/plugins/filebrowser_quantum/settings.cfg ]; then
-  echo "WEBUI_ENABLED=true
+  echo "WEBUI_ENABLED=true"
 fi
 
 rm -f $(ls /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum*.txz 2>/dev/null | grep -v '&bundleversion;')
