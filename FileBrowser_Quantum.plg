@@ -9,7 +9,7 @@
 <!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/plugin/filebrowser_quantum.plg">
 <!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/filebrowser_quantum.plg">
 <!ENTITY bundleURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
-<!ENTITY md5bundle			"f0bca3e4e362ddeaaf99dabb5737a8bc">
+<!ENTITY md5bundle			"5e10ce84e57a38c67a60f484f0547c7f">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
