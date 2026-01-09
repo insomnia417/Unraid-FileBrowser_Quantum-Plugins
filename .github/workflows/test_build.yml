@@ -1,4 +1,4 @@
-name: Run Package Build (v10)
+name: Run Package Build (v11)
 
 on:
   push:
@@ -16,26 +16,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 使用 tar 代替复杂的 cpio 模拟脚本，兼容性更好
-      - name: Run Build with Professional Structure
+      - name: Build Unraid Package
         run: |
+          # 1. 创建存放目录
           mkdir -p archive
-          # 定义版本号和包名
+          
+          # 2. 确定版本号
           VERSION=$(date +"%Y.%m.%d")
           PKG_NAME="filebrowser_quantum-${VERSION}-x86_64.txz"
           
-          # 进入包含 usr 文件夹的目录
+          # 3. 核心修正：进入插件根目录进行打包
+          # 我们必须在 usr 文件夹的上一层执行
           cd source/filebrowser_quantum
           
-          # 核心修改：使用 tar 打包
-          # Unraid 的 .txz 本质上就是用 xz 压缩的 tar 包
-          # -c: 创建, -J: 使用 xz 压缩, -f: 指定文件名
-          tar -cvJf ../../archive/$PKG_NAME .
+          # 使用 tar 强制打包。注意参数：
+          # -c: 创建归档
+          # -v: 显示过程
+          # -J: 使用 xz (lzma) 压缩，这是 .txz 的标准
+          # -f: 输出文件路径
+          # * : 代表打包当前目录下所有的内容（包含 usr 文件夹）
+          tar -cvJf ../../archive/$PKG_NAME *
           
-          # 生成 MD5
+          # 4. 生成校验码
           cd ../..
           md5sum archive/$PKG_NAME > archive/$PKG_NAME.md5
-          echo "Build Success: archive/$PKG_NAME"
+          echo "Package Created: $PKG_NAME"
 
       - name: Commit and Push changes
         run: |
@@ -45,6 +50,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "auto: v10 use tar for professional structure"
+            git commit -m "auto: v11 fix txz internal structure"
             git push
           fi
