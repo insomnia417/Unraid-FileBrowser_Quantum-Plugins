@@ -3,9 +3,8 @@
 CFG="/boot/config/plugins/filebrowser_quantum/settings.cfg"
 YAML="/boot/config/plugins/filebrowser_quantum/config.yaml"
 
-# 获取用户设置
-PORT=$(grep "WEBUI_PORT=" $CFG | cut -d'=' -f2 | sed 's/\"//g')
-START_PARAMS=$(grep "WEBUI_START_PARAMS=" $CFG | cut -d'=' -f2- | sed 's/\"//g')
+# PORT=$(grep "WEBUI_PORT=" $CFG | cut -d'=' -f2 | sed 's/\"//g')
+# START_PARAMS=$(grep "WEBUI_START_PARAMS=" $CFG | cut -d'=' -f2- | sed 's/\"//g')
 
 if [ "${1}" == "true" ]; then
   echo "Enabling filebrowser_quantum, please wait..."
@@ -18,9 +17,9 @@ if [ "${1}" == "true" ]; then
   fi
   
   # 启动命令：使用内置 WebUI 参数
-  # -a 0.0.0.0 监听所有地址, -p 端口, -c 配置文件
-  /usr/sbin/filebrowser_quantum-orig -a 0.0.0.0 -p ${PORT} -c ${YAML} ${START_PARAMS} > /dev/null 2>&1 &
-  echo "filebrowser_quantum started on port: ${PORT}"
+  # -c 配置文件
+  /usr/sbin/filebrowser_quantum-orig -c ${YAML} > /dev/null 2>&1 &
+  echo "filebrowser_quantum started"
 
 elif [ "${1}" == "false" ]; then
   echo "Disabling filebrowser_quantum..."
