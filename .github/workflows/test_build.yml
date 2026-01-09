@@ -1,4 +1,4 @@
-name: Run Package Build (v14)
+name: Run Package Build (v15)
 
 on:
   push:
@@ -20,38 +20,41 @@ jobs:
         run: |
           mkdir -p archive
           
-          # 1. 修正文件名：使用小写的 filebrowser_quantum.plg
-          PLG_FILE="filebrowser_quantum.plg"
+          # 1. 设置统一的文件名变量（大写开头）
+          PLG_FILE="FileBrowser_Quantum.plg"
           
-          # 提取你手动定义的版本号
+          # 2. 提取你在 PLG 中手动定义的版本号
+          # 这样打包出的文件名会和你 PLG 里的下载链接完全对应
           VERSION=$(grep 'ENTITY version' $PLG_FILE | cut -d'"' -f2)
           BUNDLE_VER=$(grep 'ENTITY bundleversion' $PLG_FILE | cut -d'"' -f2)
           PKG_NAME="filebrowser_quantum-${BUNDLE_VER}-x86_64.txz"
           
-          echo "Detected Version: $VERSION"
+          echo "Processing PLG: $PLG_FILE"
+          echo "Detected Bundle Version: $BUNDLE_VER"
           
-          # 2. 打包 (保持 v11 成功的结构)
+          # 3. 执行打包（保持 v11 验证成功的目录结构）
           cd source/filebrowser_quantum
           tar -cvJf ../../archive/$PKG_NAME *
           cd ../..
           
-          # 3. 计算新包的 MD5
+          # 4. 计算并自动更新 MD5 值
           NEW_MD5=$(md5sum archive/$PKG_NAME | awk '{print $1}')
           echo "New MD5: $NEW_MD5"
           
-          # 4. 自动将 MD5 写回 .plg 文件
-          # 这样你以后只需改版本号，MD5 自动对齐
+          # 使用 sed 自动替换 PLG 文件中的 md5bundle 这一行
           sed -i "s/ENTITY md5bundle \".*\"/ENTITY md5bundle \"$NEW_MD5\"/" $PLG_FILE
 
       - name: Commit and Push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          # 提交修改后的 plg 和新生成的包
-          git add archive/*.txz filebrowser_quantum.plg
+          
+          # 这里的文件名也要对应大写
+          git add archive/*.txz FileBrowser_Quantum.plg
+          
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "auto: v14 updated md5 in plg"
+            git commit -m "auto: v15 update md5 in FileBrowser_Quantum.plg"
             git push
           fi
