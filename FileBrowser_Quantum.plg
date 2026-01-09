@@ -53,7 +53,7 @@ if [ -f /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum ]; 
   mv /usr/sbin/filebrowser_quantum-orig.new /usr/sbin/filebrowser_quantum-orig
   chown root:root /usr/sbin/filebrowser_quantum-orig
   chmod 755 /usr/sbin/filebrowser_quantum-orig
-  version=`filebrowser_quantum-orig --version | head -n 1`
+  version=`filebrowser_quantum-orig version | head -n 1`
 fi;
 
 if [ ! -f /boot/config/plugins/filebrowser_quantum/settings.cfg ]; then
