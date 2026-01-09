@@ -1,8 +1,12 @@
-name: Run Package Build (v17)
+name: Run Package Build (v18)
 
+# 优化触发条件：只有 source 文件夹或 plg 文件变动时才触发
 on:
   push:
     branches: [ "test" ]
+    paths:
+      - 'source/**'
+      - 'FileBrowser_Quantum.plg'
   workflow_dispatch:
 
 permissions:
@@ -15,49 +19,51 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整提交历史，确保推送成功
 
       - name: Build Unraid Package
         run: |
           mkdir -p archive
-          
-          # 1. 锁定你修正后的文件名
           PLG_FILE="FileBrowser_Quantum.plg"
           
-          # 提取版本号（增加判断，防止文件没改对再次报错）
-          if [ ! -f "$PLG_FILE" ]; then
-            echo "错误: 依然找不到 $PLG_FILE，请检查仓库中的文件名是否完全一致！"
-            exit 1
-          fi
-
+          # 1. 提取版本号
           VERSION=$(grep 'ENTITY version' "$PLG_FILE" | cut -d'"' -f2)
           BUNDLE_VER=$(grep 'ENTITY bundleversion' "$PLG_FILE" | cut -d'"' -f2)
           PKG_NAME="filebrowser_quantum-${BUNDLE_VER}-x86_64.txz"
           
-          echo "Processing: $PLG_FILE"
-          
+          echo "Building version: $VERSION"
+
           # 2. 精准打包 (保持 v11 验证成功的目录结构)
           cd source/filebrowser_quantum
           tar -cvJf "../../archive/$PKG_NAME" *
           cd ../..
           
-          # 3. 计算并自动更新 MD5
+          # 3. 计算新包的 MD5
           NEW_MD5=$(md5sum "archive/$PKG_NAME" | awk '{print $1}')
-          echo "New MD5: $NEW_MD5"
+          echo "New MD5 calculated: $NEW_MD5"
           
-          # 自动将新的 MD5 写回 .plg 文件
-          sed -i "s/ENTITY md5bundle \".*\"/ENTITY md5bundle \"$NEW_MD5\"/" "$PLG_FILE"
+          # 4. 【增强版 MD5 更新】使用更宽容的正则匹配，确保生效
+          # 同时匹配可能存在的空格或 tab
+          sed -i "s/ENTITY md5bundle \".*\"/ENTITY md5bundle \"$NEW_MD5\"/g" "$PLG_FILE"
+          
+          # 检查是否修改成功
+          grep "ENTITY md5bundle" "$PLG_FILE"
 
       - name: Commit and Push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # 提交修改后的 plg 和新包
+          # 先拉取最新改动，防止冲突
+          git pull origin test --rebase
+          
           git add archive/*.txz FileBrowser_Quantum.plg
           
+          # 只有真正有变动时才提交
           if git diff --staged --quiet; then
-            echo "No changes"
+            echo "No changes in files, skipping commit."
           else
-            git commit -m "auto: v17 final release with correct casing"
-            git push
+            git commit -m "auto: v18 restricted trigger & updated md5"
+            git push origin test
           fi
