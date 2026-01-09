@@ -1,11 +1,10 @@
-name: Run Package Build (v7)
+name: Run Package Build (v8)
 
 on:
   push:
     branches: [ "test" ]
   workflow_dispatch:
 
-# 必须增加权限，否则 Actions 无法把文件写回仓库
 permissions:
   contents: write
 
@@ -17,31 +16,42 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 1. 准备环境
       - name: Setup Makepkg Environment
         run: |
           sudo apt-get update && sudo apt-get install -y cpio
           cat << 'EOF' > makepkg
           #!/bin/bash
+          # 直接把当前目录打包到指定的输出文件
           PACKAGE_NAME=$1
           find . ! -type d -print | sort | cpio -o -H newc --quiet | gzip -9 > "$PACKAGE_NAME"
           EOF
           sudo mv makepkg /usr/local/bin/makepkg
           sudo chmod +x /usr/local/bin/makepkg
 
-      - name: Run build script
+      # 2. 强制打包（不依赖脚本里的 archive 变量）
+      - name: Force Build to Root Archive
         run: |
           mkdir -p archive
+          # 赋予脚本执行权限
           chmod +x ./source/pkg_build.sh
+          # 获取版本号（模拟脚本里的逻辑）
+          VERSION=$(date +"%Y.%m.%d")
+          # 直接在 source 目录下手动执行打包，强行指定输出到根目录的 archive
           cd source
-          # 运行打包，忽略最后的 md5sum 报错
-          ./pkg_build.sh || echo "Build finished with expected path adjustments"
+          makepkg ../archive/filebrowser_quantum-${VERSION}-x86_64.txz
+          echo "Package created in archive folder"
 
-      # 【新增步骤】将生成的 txz 文件提交并推送到仓库
+      # 3. 提交文件回仓库
       - name: Commit and Push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add archive/*.txz
-          # 只有当有新文件生成时才执行提交
-          git diff --quiet && git diff --staged --quiet || git commit -m "auto: update package version $(date +%F)"
-          git push
+          # 检查是否有文件可以提交
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "auto: update package v8"
+            git push
+          fi
