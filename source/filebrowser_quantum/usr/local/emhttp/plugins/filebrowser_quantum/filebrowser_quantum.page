@@ -20,8 +20,8 @@ Icon="filebrowser_quantum.png"
 
 
 <script>
-function updateupdatefilebrowser_quantum(branch) {
-   var path = "/usr/local/emhttp/plugins/filebrowser_quantum/updateupdatefilebrowser_quantum.sh"
+function updatefilebrowser_quantum(branch) {
+   var path = "/usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh"
    openBox('/usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh&arg1='+path+'&arg2='+branch,"Update filebrowser_quantum",450,800,true);
 }
 
@@ -127,7 +127,7 @@ if ($branch == "1") {
 	echo "Latest version:&emsp;&ensp;$latestversion";
 	?>
 	<br>
-	<input type="button" value="Update filebrowser_quantum" <?php if ($currentversion == $latestversion){ ?> disabled <?php   } ?> onclick="updateupdatefilebrowser_quantum('<?php echo $branch; ?>')">
+	<input type="button" value="Update filebrowser_quantum" <?php if ($currentversion == $latestversion){ ?> disabled <?php   } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
   <h2>WebUI<span style="font-size:0.6em; <? echo (!empty($webui_pid)) ? 'color:green;">&nbsp;&nbsp;&nbsp;running' : 'color:red;">&nbsp;&nbsp;&nbsp;stopped' ?></span></h2>
 
