@@ -14,30 +14,16 @@
 
 <CHANGES>
 ##&name;
-
-###2026.01.08
-- Add filebrowser_quantum WebUI 
-
+###2026.01.09 (v2.1)
+- 移除对 settings.cfg 的所有依赖逻辑。
+- 修复因全角空格导致的 XML 解析错误。
+- 修正卸载脚本中的符号转义。
 </CHANGES>
 
-<!--
-
-This plugin installs filebrowser_quantum on unRAID systems.
-This work is based upon the plugin created by aschamberger: https://lime-technology.com/forum/index.php?topic=46663.msg501372
-Thanks to stignz for his original guide: https://lime-technology.com/forum/index.php?topic=46663.0
-
--->
-
-<!--
-Get bundle.
--->
 <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
 <URL>&bundleURL;</URL>
 </FILE>
 
-<!--
-Install script.
--->
 <FILE Run="/bin/bash" Method="install">
 <INLINE>
 if [ -f /boot/config/plugins/filebrowser_quantum/install/beta ]; then
@@ -56,9 +42,7 @@ if [ -f /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum ]; 
   version=`filebrowser_quantum-orig version | head -n 1`
 fi;
 
-if [ "$(grep "WEBUI_ENABLED=" /boot/config/plugins/filebrowser_quantum/settings.cfg | cut -d'=' -f2)" == "true" ]; then
-  /usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh "true"
-fi
+# 【修改：删除了原先这里对 settings.cfg 的检测和 grep 启动逻辑】
 
 rm -f $(ls /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum*.txz 2>/dev/null | grep -v '&bundleversion;')
 rm -f /usr/sbin/filebrowser_quantum
@@ -99,22 +83,20 @@ if [ ! -f /boot/config/plugins/filebrowser_quantum/config.yaml ]; then
   touch /boot/config/plugins/filebrowser_quantum/config.yaml;
 fi;
 
-if [ "$(cat /boot/config/plugins/filebrowser_quantum/settings.cfg | grep -n "^WEBUI_ENABLED=" | cut -d '=' -f2 | sed 's/\"//g')" == "true" ]; then
+# 【修改：直接启动，不再通过 settings.cfg 判断 ENABLED 状态】
+if [ -f /usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh ]; then
   /usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh "true"
 fi
 
 echo ""
 echo "-----------------------------------------------------------"
-echo " filebrowser_quantum has been installed. "
+echo " &name; has been installed. "
 echo "-----------------------------------------------------------"
 echo ""
 
 </INLINE>
 </FILE>
 
-<!--
-Check if fusermount is present
--->
 <FILE Run="/bin/bash">
 <INLINE>
 if ! [ -f /bin/fusermount ]; then
@@ -125,29 +107,20 @@ fi;
 </INLINE>
 </FILE>
 
-<!--
-Create wrapper
--->
 <FILE Name="/usr/sbin/filebrowser_quantum" Mode="0755">
 <INLINE>
 #!/bin/bash
 config=/boot/config/plugins/filebrowser_quantum/config.yaml
-	filebrowser_quantum-orig -c $config "$@";
+filebrowser_quantum-orig -c $config "$@";
 </INLINE>
 </FILE>
 	
-<!--
-Create gitignore
--->
 <FILE Name="/boot/config/plugins/filebrowser_quantum/.gitignore" Mode="0600">
 <INLINE>
 config.yaml
 </INLINE>
 </FILE>
 
-<!--
-Uninstall script
--->
 <FILE Run="/bin/bash" Method="remove">
 <INLINE>
 KILL_PID="$(pgrep -f "filebrowser_quantum-orig")"
@@ -161,10 +134,9 @@ rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
 
 echo ""
 echo "-----------------------------------------------------------"
-echo " filebrowser_quantum has been uninstalled."
+echo " &name; has been uninstalled."
 echo "-----------------------------------------------------------"
 echo ""
-
 </INLINE>
 </FILE>
 
