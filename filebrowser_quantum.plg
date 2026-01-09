@@ -1,0 +1,179 @@
+<?xml version='1.0' standalone='yes'?>
+
+<!DOCTYPE PLUGIN [
+<!ENTITY name				"filebrowser_quantum">
+<!ENTITY author				"insomnia417">
+<!ENTITY version			"2026.01.09">
+<!ENTITY bundleversion		"2026.01.09">
+<!ENTITY launch				"Settings/filebrowser_quantum">
+<!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/plugin/filebrowser_quantum.plg">
+<!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/filebrowser_quantum.plg">
+<!ENTITY bundleURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
+<!ENTITY md5bundle			"051920efd86b03fc856bfe0b55a8a0fb">
+]>
+
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
+
+<CHANGES>
+##&name;
+
+###2026.01.08
+- Add filebrowser_quantum WebUI 
+
+</CHANGES>
+
+<!--
+
+This plugin installs filebrowser_quantum on unRAID systems.
+This work is based upon the plugin created by aschamberger: https://lime-technology.com/forum/index.php?topic=46663.msg501372
+Thanks to stignz for his original guide: https://lime-technology.com/forum/index.php?topic=46663.0
+
+-->
+
+<!--
+Get bundle.
+-->
+<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
+<URL>&bundleURL;</URL>
+<MD5>&md5bundle;</MD5>
+</FILE>
+
+<!--
+Install script.
+-->
+<FILE Run="/bin/bash" Method="install">
+<INLINE>
+if [ -f /boot/config/plugins/filebrowser_quantum/install/beta ]; then
+  fburl="https://github.com/gtsteffaniak/filebrowser/releases/latest/download/linux-amd64-filebrowser"
+  versionurl="https://github.com/gtsteffaniak/filebrowser/tags"
+else
+  fburl="https://github.com/gtsteffaniak/filebrowser/releases/download/v1.1.6-beta/linux-amd64-filebrowser"
+  versionurl="https://github.com/gtsteffaniak/filebrowser/tags"
+fi;	
+
+if [ -f /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum ]; then 
+  cp /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum /usr/sbin/filebrowser_quantum-orig.new
+  mv /usr/sbin/filebrowser_quantum-orig.new /usr/sbin/filebrowser_quantum-orig
+  chown root:root /usr/sbin/filebrowser_quantum-orig
+  chmod 755 /usr/sbin/filebrowser_quantum-orig
+  version=`filebrowser_quantum-orig --version | head -n 1`
+fi;
+
+if [ ! -f /boot/config/plugins/filebrowser_quantum/settings.cfg ]; then
+  echo "WEBUI_ENABLED=false
+WEBUI_START_PARAMS=--rc-no-auth
+WEBUI_PORT=5572" > /boot/config/plugins/filebrowser_quantum/settings.cfg
+fi
+
+/usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh "VERSION"
+
+rm -f $(ls /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum*.txz 2>/dev/null | grep -v '&bundleversion;')
+rm -f /usr/sbin/filebrowser_quantum
+
+ping -q -c6 https://github.com/gtsteffaniak/filebrowser/releases/latest/download/linux-amd64-filebrowser >/dev/null
+if [ $? -eq 0 ]; then
+  current_version=`curl $versionurl`
+  if [[ $version = $current_version ]]; then
+    echo "Local filebrowser_quantum binary up-to-date"  
+  else
+    echo "Downloading and installing filebrowser_quantum"
+    curl --connect-timeout 15 --retry 3 --retry-delay 2 --retry-max-time 30 -o /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum.zip --create-dirs $fburl
+    unzip -o -j "/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum.zip" "*/filebrowser_quantum" -d "/boot/config/plugins/filebrowser_quantum/install"
+    rm -f /boot/config/plugins/filebrowser_quantum/install/*.zip
+    cp /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum /usr/sbin/filebrowser_quantum-orig.new
+    mv /usr/sbin/filebrowser_quantum-orig.new /usr/sbin/filebrowser_quantum-orig
+    chown root:root /usr/sbin/filebrowser_quantum-orig
+    chmod 755 /usr/sbin/filebrowser_quantum-orig
+  fi;
+else
+  echo "Connection error - Could not reach filebrowser_quantum servers - Will try fallback to existing binary"
+  if [ ! -f /usr/sbin/filebrowser_quantum-orig ]; then
+    echo "Install failed - No binary found"
+    removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
+    rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
+    rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
+    exit 1
+  fi;
+fi;
+
+if [ ! -f /usr/sbin/filebrowser_quantum-orig ]; then
+  echo "Install failed - No binary found"
+  removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
+  rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
+  rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
+  exit 1
+fi;	
+	
+if [ ! -f /boot/config/plugins/filebrowser_quantum/config.yaml ]; then
+  touch /boot/config/plugins/filebrowser_quantum/config.yaml;
+fi;
+
+if [ "$(cat /boot/config/plugins/filebrowser_quantum/settings.cfg | grep -n "^WEBUI_ENABLED=" | cut -d '=' -f2 | sed 's/\"//g')" == "true" ]; then
+  /usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh "true"
+fi
+
+echo ""
+echo "-----------------------------------------------------------"
+echo " filebrowser_quantum has been installed. "
+echo "-----------------------------------------------------------"
+echo ""
+
+</INLINE>
+</FILE>
+
+<!--
+Check if fusermount is present
+-->
+<FILE Run="/bin/bash">
+<INLINE>
+if ! [ -f /bin/fusermount ]; then
+  if [ -f /usr/bin/fusermount3 ]; then
+    ln -s /usr/bin/fusermount3 /bin/fusermount
+  fi;
+fi;
+</INLINE>
+</FILE>
+
+<!--
+Create wrapper
+-->
+<FILE Name="/usr/sbin/filebrowser_quantum" Mode="0755">
+<INLINE>
+#!/bin/bash
+config=/boot/config/plugins/filebrowser_quantum/config.yaml
+	filebrowser_quantum-orig --config $config "$@";
+</INLINE>
+</FILE>
+	
+<!--
+Create gitignore
+-->
+<FILE Name="/boot/config/plugins/filebrowser_quantum/.gitignore" Mode="0600">
+<INLINE>
+config.yaml
+</INLINE>
+</FILE>
+
+<!--
+Uninstall script
+-->
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+kill -SIGINT $(pgrep -f "filebrowser_quantum-orig.*--rc-web-gui")
+rm -rf /boot/config/plugins/filebrowser_quantum/install
+rm -f /usr/sbin/filebrowser_quantum-orig
+rm -f /usr/sbin/filebrowser_quantum
+removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
+rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
+rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
+
+echo ""
+echo "-----------------------------------------------------------"
+echo " filebrowser_quantum has been uninstalled."
+echo "-----------------------------------------------------------"
+echo ""
+
+</INLINE>
+</FILE>
+
+</PLUGIN>
