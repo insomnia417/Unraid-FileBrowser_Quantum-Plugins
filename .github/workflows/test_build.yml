@@ -1,38 +1,44 @@
-name: Build filebrowser_quantum Unraid Package (v4)
+name: Build rclone Unraid Package (v5)
 
 on:
   push:
     branches: [ master, main ]
-  workflow_dispatch: # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # 使用 Slackware 容器，因为它内置了 makepkg 工具
-    container: slackware:latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install Dependencies
+      # 关键步骤：在 Ubuntu 上安装 Slackware 打包工具
+      - name: Setup Slackware pkgtools
         run: |
-          # 安装构建所需的工具：curl, wget, tar, xz
-          # Slackware 下使用 slackpkg 或直接确认工具是否存在
-          which curl || (slackpkg update && slackpkg install curl)
-          which makepkg || echo "Error: makepkg not found"
+          sudo apt-get update
+          sudo apt-get install -y wget xz-utils
+          # 下载 Slackware 的 pkgtools (包含 makepkg)
+          wget http://mirrors.slackware.com/slackware/slackware64-15.0/slackware64/a/pkgtools-15.0-noarch-3.txz
+          # 解压出 makepkg 脚本
+          mkdir pkgtools
+          tar -C pkgtools -xf pkgtools-15.0-noarch-3.txz
+          # 将 makepkg 移动到系统路径并赋予权限
+          sudo cp pkgtools/sbin/makepkg /usr/local/bin/
+          sudo chmod +x /usr/local/bin/makepkg
+          # 验证安装
+          makepkg --version || echo "makepkg installed"
 
-      - name: Run Build Script (v4)
+      - name: Build Package (v5)
         run: |
-          # 给予脚本执行权限
-          chmod +x ./source/filebrowser_quantum/pkg_build.sh
-          # 执行脚本
-          # 注意：脚本内部可能会根据当前目录结构寻找文件，确保路径正确
-          cd ./source/filebrowser_quantum/
+          # 进入脚本所在目录
+          cd ./source/rclone/
+          chmod +x pkg_build.sh
+          # 运行构建脚本
           ./pkg_build.sh
-        
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: filebrowser_quantum-unraid-package
-          path: ./source/filebrowser_quantum/*.txz # 脚本生成的打包文件
+          name: rclone-unraid-pkg
+          path: ./source/rclone/*.txz
