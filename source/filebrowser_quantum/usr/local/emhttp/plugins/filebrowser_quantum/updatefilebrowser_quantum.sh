@@ -21,7 +21,7 @@ then
   rm -f /boot/config/plugins/filebrowser_quantum/install/*.zip
   cp /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum /usr/sbin/filebrowser_quantum-orig.new
   mv /usr/sbin/filebrowser_quantum-orig.new /usr/sbin/filebrowser_quantum-orig
-  chown root:root /usr/sbin/filebrowser_quantumrig
+  chown root:root /usr/sbin/filebrowser_quantum-orig
   chmod 755 /usr/sbin/filebrowser_quantum-orig
 else
   echo ""
