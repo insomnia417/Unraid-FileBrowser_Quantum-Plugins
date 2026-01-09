@@ -1,4 +1,4 @@
-name: Run Package Build (v22)
+name: Run Package Build (v23)
 
 on:
   push:
@@ -35,23 +35,11 @@ jobs:
           tar -cvJf "../../archive/$PKG_NAME" *
           cd ../..
           
-          # 3. 计算 MD5
+          # 3. 计算并更新 MD5
           NEW_MD5=$(md5sum "archive/$PKG_NAME" | awk '{print $1}')
-          echo "Calculated MD5: $NEW_MD5"
-          
-          # 4. 【强制更新 PLG】
-          # 先打印旧行
-          echo "Before update:"
-          grep "md5bundle" "$PLG_FILE"
-          
-          # 执行替换
           perl -i -pe "s/(ENTITY md5bundle \").*?(\")/\${1}$NEW_MD5\${2}/g" "$PLG_FILE"
           
-          # 打印新行确认
-          echo "After update:"
-          grep "md5bundle" "$PLG_FILE"
-          
-          # 5. 生成 MD5 物理文件
+          # 4. 生成 MD5 物理文件
           echo "$NEW_MD5" > "archive/$PKG_NAME.md5"
 
       - name: Commit and Push changes
@@ -59,20 +47,21 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # 6. 【关键变动】拉取远程变更后再添加文件，防止覆盖
+          # 1. 先把所有修改过的文件 add 进来
+          git add FileBrowser_Quantum.plg archive/*.txz archive/*.md5
+          
+          # 2. 检查是否有变动
+          if git diff --staged --quiet; then
+            echo "No changes detected."
+            exit 0
+          fi
+
+          # 3. 提交到本地记录
+          git commit -m "auto: v23 fix plg md5 and package"
+          
+          # 4. 关键：先拉取远程，如果有冲突，以本地修改为准
+          # 使用 --rebase 保持提交历史整洁
           git pull origin test --rebase
           
-          # 重新添加所有受影响的文件
-          git add FileBrowser_Quantum.plg
-          git add archive/*.txz
-          git add archive/*.md5
-          
-          # 调试：查看 git 状态
-          git status
-          
-          if git diff --staged --quiet; then
-            echo "Warning: No changes detected by Git!"
-          else
-            git commit -m "auto: v22 fix plg md5 sync"
-            git push origin test
-          fi
+          # 5. 推送
+          git push origin test
