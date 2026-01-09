@@ -1,0 +1,38 @@
+name: Build filebrowser_quantum Unraid Package (v4)
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # 使用 Slackware 容器，因为它内置了 makepkg 工具
+    container: slackware:latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          # 安装构建所需的工具：curl, wget, tar, xz
+          # Slackware 下使用 slackpkg 或直接确认工具是否存在
+          which curl || (slackpkg update && slackpkg install curl)
+          which makepkg || echo "Error: makepkg not found"
+
+      - name: Run Build Script (v4)
+        run: |
+          # 给予脚本执行权限
+          chmod +x ./source/filebrowser_quantum/pkg_build.sh
+          # 执行脚本
+          # 注意：脚本内部可能会根据当前目录结构寻找文件，确保路径正确
+          cd ./source/filebrowser_quantum/
+          ./pkg_build.sh
+        
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: filebrowser_quantum-unraid-package
+          path: ./source/filebrowser_quantum/*.txz # 脚本生成的打包文件
