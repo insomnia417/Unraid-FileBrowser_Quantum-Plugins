@@ -75,9 +75,7 @@ if [ $? -eq 0 ]; then
     echo "Local filebrowser_quantum binary up-to-date"  
   else
     echo "Downloading and installing filebrowser_quantum"
-    curl --connect-timeout 15 --retry 3 --retry-delay 2 --retry-max-time 30 -o /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum.zip --create-dirs $fburl
-    unzip -o -j "/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum.zip" "*/filebrowser_quantum" -d "/boot/config/plugins/filebrowser_quantum/install"
-    rm -f /boot/config/plugins/filebrowser_quantum/install/*.zip
+    curl --connect-timeout 15 --retry 3 --retry-delay 2 --retry-max-time 30 -L -o /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum --create-dirs $fburl
     cp /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum /usr/sbin/filebrowser_quantum-orig.new
     mv /usr/sbin/filebrowser_quantum-orig.new /usr/sbin/filebrowser_quantum-orig
     chown root:root /usr/sbin/filebrowser_quantum-orig
