@@ -125,7 +125,7 @@ if ($branch == "1") {
 	<br>
 	<input type="button" value="Update filebrowser_quantum" <?php if ($currentversion == $latestversion){ ?> disabled <?php   } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
-  <h2>WebUI<span style="font-size:0.6em; <? echo (!empty($webui_pid)) ? 'color:green;">&nbsp;&nbsp;&nbsp;running' : 'color:red;">&nbsp;&nbsp;&nbsp;stopped' ?></span></h2>
+  <h2>服务<span style="font-size:0.6em; <? echo (!empty($webui_pid)) ? 'color:green;">&nbsp;&nbsp;&nbsp;running' : 'color:red;">&nbsp;&nbsp;&nbsp;stopped' ?></span></h2>
 
 	<form action="" method="post"> 
 	<select name="webui_status"> 
