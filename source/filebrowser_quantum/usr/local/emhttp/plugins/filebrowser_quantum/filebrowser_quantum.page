@@ -47,7 +47,7 @@ $dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "G
 $currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
 
 // --- 3. 获取云端最新版本 (沿用你的 webui/latest 逻辑，但简化读取) ---
-$latest_file = '/boot/config/plugins/filebrowser_quantum/install';
+$latest_file = '/boot/config/plugins/filebrowser_quantum/install/latest';
 
 // 如果文件不存在，或者文件太旧(可选)，触发一次更新
 if (!file_exists($latest_file)) {
@@ -63,7 +63,7 @@ $webui_pid = exec('pgrep "filebrowser_quantumorig"');
 ?>
 
 <?
-if (file_exists("/boot/config/plugins/filebrowser_quantum/install") == true) {
+if (file_exists("/boot/config/plugins/filebrowser_quantum/install/beta") == true) {
   $branch = "2";
 } elseif (strpos($currentversion, 'beta') !== false) {
   $branch = "2";
@@ -76,14 +76,10 @@ if (file_exists("/boot/config/plugins/filebrowser_quantum/install") == true) {
 if (isset($_POST['branch'])) {$branch = $_POST['branch'];}
 
 if ($branch == "1") {
-    exec("rm -f /boot/config/plugins/filebrowser_quantum/install");
-    $latestversion = $filebrowser_quantum_version[1];
-    ($latestversion == '') ? $latestversion = "Error fetching version number" : '';
+    exec("rm -f /boot/config/plugins/filebrowser_quantum/install/beta");
 
 } elseif ($branch == "2") {
-    exec("touch /boot/config/plugins/filebrowser_quantum/install");
-    $latestversion = $filebrowser_quantum_version[2];
-    ($latestversion == '') ? $latestversion = "Error fetching version number" : '';
+    exec("touch /boot/config/plugins/filebrowser_quantum/install/beta");
 }
 ?>
 <html>
@@ -137,12 +133,7 @@ if ($branch == "1") {
 	<option value="true" <?php if($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') echo("selected")?>>Enabled</option>
 	</select> 
 
-	<?
-  echo "<br>";
-	echo "Installed version: $webui_local";
-	echo "<br>";
-	echo "Latest version:&emsp;&ensp;$webui_latest";
-	?>
+
 	<br>
 	<input type="button" value="Update" onclick="webui(this.form)">
   <?
@@ -178,5 +169,4 @@ function setDefault(form) {
 >
 > Click the **Original** button to initialize the edit box with the
 > original contents.  You still need to click **Apply** in order to
->commit the change.
-</form>
+> commit the change.
