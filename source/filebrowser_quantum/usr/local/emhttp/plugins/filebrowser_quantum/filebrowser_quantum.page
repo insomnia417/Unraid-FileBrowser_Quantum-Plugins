@@ -181,17 +181,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
   </div>
 
-  <div class="column right">
-    <h2>Edit config</h2>
-  <form method="POST">
+<div class="column right">
+  <h2>Edit config</h2>
+  <form id="config_form" method="POST">
     <textarea spellcheck="false" cols="80" rows="22" name="config_text" 
-    oninput="this.form.save_config_btn.style.color='#fff'; this.form.save_config_btn.style.background='#4caf50';" 
-    style="font-family:bitstream;width:100%"><?=$text;?></textarea>
+      oninput="document.getElementById('real_save_btn').style.background='#4caf50'; document.getElementById('real_save_btn').style.color='#fff';" 
+      style="font-family:bitstream;width:100%"><?=$text;?></textarea>
     <br>
-    <input type="submit" name="save_config_btn" value="Apply" style="padding: 2px 20px; cursor: pointer;"/>
+    
+    <input type="button" id="real_save_btn" value="Apply" 
+      style="padding: 2px 20px; cursor: pointer; border: 1px solid #ccc;" 
+      onclick="submitConfigForm()"/>
+    
+    <input type="hidden" name="save_config_btn" value="1">
+    
     <input type="button" value="Original" onclick="setDefault(this.form)">
   </form> 
 </div>
+
+<script>
+// 增加一个显式的提交函数
+function submitConfigForm() {
+    const form = document.getElementById('config_form');
+    // 手动调用提交
+    form.submit();
+}
+</script>
 
 </div>
 
