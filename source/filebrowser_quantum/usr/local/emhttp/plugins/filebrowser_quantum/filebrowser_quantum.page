@@ -82,20 +82,23 @@ if (empty($latestversion)) $latestversion = "Unknown";
 $webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['text'])) {
-    // 只有在服务是 Enabled 的状态下，改配置才需要重启服务
     if ($settings['filebrowser_ENABLED'] == 'true') {
-        // 1. 停止旧进程
-        exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "false"');
+        // 使用绝对路径，并且使用 bash 明确执行
+        // 增加 logger 记录，方便你在 Unraid 的 syslog 中查看是否触发
+        exec("logger -t 'FileBrowser-Plugin' 'Detect config change, restarting service...'");
         
-        // 2. 这里的代码运行到这时，Unraid 已经把新配置写入文件了
-        // 我们稍等 1 秒确保文件 IO 完成
-        sleep(1);
+        // 1. 强制停止 (使用脚本中的逻辑)
+        exec("bash /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh 'false' > /dev/null 2>&1");
+        
+        // 2. 稍微多等一会儿，确保旧端口彻底释放
+        sleep(2);
         
         // 3. 启动新进程
-        exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "true"');
+        exec("bash /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh 'true' > /dev/null 2>&1");
         
-        // 4. 更新一下当前的 PID，防止页面刷新显示的还是旧状态或 Stopped
-        $webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
+        // 4. 强制刷新页面数据
+        header("Refresh:0");
+        exit;
     }
 }
 // ========================================================
