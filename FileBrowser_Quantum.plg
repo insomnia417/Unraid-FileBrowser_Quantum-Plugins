@@ -51,7 +51,10 @@ if [ -f /boot/config/plugins/filebrowser_quantum/install/beta ]; then
 else
     # 提取最新的 stable 版本号 (例如 v1.1.0-stable)
     current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
+	echo "-----------------------------------------------------------"
     echo "Stable mode detected. Target version: $current_version"
+    echo "在线检测 , 最新稳定版号为 : $current_version"
+	echo "-----------------------------------------------------------"
 fi;	
 
 INSTALLED_BINARY="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-$current_version"
@@ -82,8 +85,10 @@ if [ $? -eq 0 ]; then
     echo "Local filebrowser_quantum binary ($current_version) up-to-date"  
     echo "本地已存在 ($current_version) "  
   else
+	echo "-----------------------------------------------------------"
     echo "New version found: $current_version.Downloading and installing filebrowser_quantum binary"
-    echo "发现新版本 : $current_version.下载安装中..."
+    echo "发现新版本 : $current_version 下载安装中..."
+	echo "-----------------------------------------------------------"
     curl --connect-timeout 15 --retry 3 --retry-delay 2 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
     cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig
     chown root:root /usr/sbin/filebrowser_quantumorig
