@@ -89,13 +89,16 @@ echo "正在启动FileBrowser..." | tee >(logger -t "$TAG")
 # -c 指定配置文件。at now 确保在后台持续运行。
 echo "$BINARY -c $CONF_DIR/config.yaml" | at now -M > /dev/null 2>&1
 
-sleep 2
+# 循环检测 5 次，每次等 1 秒
+for i in {1..5}; do
+    sleep 1
+    if pgrep -f "filebrowser_quantumorig" > /dev/null 2>&1 ; then
+        echo ""
+        echo " FileBrowser 启动成功 ! " | tee >(logger -t "$TAG")
+        exit 0
+    fi
+done
 
-# 最终检查
-if pgrep "filebrowser_quantumorig" > /dev/null 2>&1 ; then
-  echo
-  echo " FileBrowser 启动成功 ! " | tee >(logger -t "$TAG")
-else
-  echo ""
-  echo " FileBrowser 启动失败 , 请检查设置和日志 . " | tee >(logger -t "$TAG")
-fi
+# 如果 5 秒后还没起来，才报失败
+echo ""
+echo " FileBrowser 启动失败 , 请检查设置和日志 . " | tee >(logger -t "$TAG")
