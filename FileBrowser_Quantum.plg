@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name				"filebrowser_quantum">
 <!ENTITY author				"insomnia417">
-<!ENTITY version			"2026.01.08.3">
+<!ENTITY version			"2026.01.08.4">
 <!ENTITY bundleversion			"2026.01.08">
 <!ENTITY launch				"Settings/filebrowser_quantum">
 <!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
@@ -71,6 +71,10 @@ if [ ! -f /boot/config/plugins/filebrowser_quantum/settings.cfg ]; then
     echo "filebrowser_ENABLED=true" > /boot/config/plugins/filebrowser_quantum/settings.cfg
 fi
 
+chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh
+chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh
+chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh
+
 /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"
 
 rm -f $(ls /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum*.txz 2>/dev/null | grep -v '&bundleversion;')
@@ -114,10 +118,6 @@ if [ ! -f /boot/config/plugins/filebrowser_quantum/config.yaml ]; then
   echo "未找到配置文件(confg.yaml)，正在下载默认配置..."
   curl --connect-timeout 15 --retry 3 -L -o /boot/config/plugins/filebrowser_quantum/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/config.yaml"
 fi;
-
-chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh
-chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh
-chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh
 
 if [ "$(cat /boot/config/plugins/filebrowser_quantum/settings.cfg | grep -n "^filebrowser_ENABLED=" | cut -d '=' -f2 | sed 's/\"//g')" == "true" ]; then
   /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "true"
