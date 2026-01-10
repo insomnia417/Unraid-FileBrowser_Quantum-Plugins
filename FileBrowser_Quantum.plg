@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name				"filebrowser_quantum">
 <!ENTITY author				"insomnia417">
-<!ENTITY version			"2026.01.08v4">
+<!ENTITY version			"2026.01.08.v88">
 <!ENTITY bundleversion			"2026.01.08">
 <!ENTITY launch				"Settings/filebrowser_quantum">
 <!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
@@ -51,7 +51,7 @@ if [ -f /boot/config/plugins/filebrowser_quantum/install/beta ]; then
 else
     # 提取最新的 stable 版本号 (例如 v1.1.0-stable)
     current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
-    echo "在线检测 , 最新稳定版号为 : $current_version"
+    echo "检测到最新稳定版号为 : $current_version"
 fi;	
 
 INSTALLED_BINARY="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-$current_version"
@@ -86,7 +86,7 @@ if [ $? -eq 0 ]; then
     echo "Local filebrowser_quantum binary ($current_version) up-to-date"  
     echo "本地已存在 ($current_version) "  
   else
-    echo "发现新版本 : $current_version 下载安装中..."
+    echo " 开始下载并安装 ($current_version) ... "
     curl --connect-timeout 15 --retry 3 --retry-delay 2 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
     cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig
     chown root:root /usr/sbin/filebrowser_quantumorig
