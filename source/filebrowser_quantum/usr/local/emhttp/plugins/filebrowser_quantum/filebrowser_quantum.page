@@ -134,8 +134,8 @@ if ($branch == "1") {
 
 	<form action="" method="post"> 
 	<select name="webui_status"> 
-	<option value="false" <?php if($settings['filebrowser_ENABLED'] == false) echo("selected")?>>Disabled</option>
-	<option value="true" <?php if($settings['filebrowser_ENABLED'] == true) echo("selected")?>>Enabled</option>
+	<option value="false" <?php if($settings['filebrowser_ENABLED'] == 'false' || empty($settings['filebrowser_ENABLED'])) echo("selected")?>>Disabled</option>
+	<option value="true" <?php if($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') echo("selected")?>>Enabled</option>
 	</select> 
 
 	<?
