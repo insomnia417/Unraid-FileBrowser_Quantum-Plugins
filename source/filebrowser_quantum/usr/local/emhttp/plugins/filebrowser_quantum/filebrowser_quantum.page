@@ -1,135 +1,42 @@
-Menu="Utilities"
-Title="filebrowser_quantum"
-Icon="filebrowser_quantum.png"
+Menu="&launch;"
+Icon="&name;.png"
+Title="&name;"
 ---
-<?PHP
-/* Copyright 2005-2016, Lime Technology
- * Copyright 2012-2016, Bergware International.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License version 2,
- * as published by the Free Software Foundation.
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- */
-?>
-> Use this page to make changes to your `config.yaml` file as well as update filebrowser_quantum if a newer version is available.
->
-> 
-
-
-<script>
-function updatefilebrowser_quantum(branch) {
-   var path = "/usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh"
-   openBox('/usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh&arg1='+path+'&arg2='+branch,"Update filebrowser_quantum",450,800,true);
-}
-
-function webui(form) {
-   var state = form.webui_status.value;
-   openBox('/usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh&arg1='+state,"filebrowser_quantum Control",450,800,true);
-}
-</script>
-
-<?
-$file = "/boot/config/plugins/filebrowser_quantum/config.yaml";
-$defaultfile = "/boot/config/plugins/filebrowser_quantum/config.yaml";
-$text = file_get_contents($file);
-$default_text = @file_get_contents($defaultfile);
-$settings = parse_ini_file('/boot/config/plugins/filebrowser_quantum/settings.cfg');
-
-// 获取二进制程序版本
-exec('filebrowser_quantum-orig version | grep -Po "(([a-z])*:( )*)\K( )*([0-9])([^ ])*[0-9]"', $output);
-$currentversion = $output[0];
-
-// 检查进程是否运行 (匹配二进制原名)
-$webui_pid = exec('pgrep -f "filebrowser_quantum-orig.*-c /boot/config/plugins/filebrowser_quantum/config.yaml"');
-
-// 分支逻辑
-if (file_exists("/boot/config/plugins/filebrowser_quantum/install/beta") == true) {
-  $branch = "2";
-} elseif (strpos($currentversion, 'beta') !== false) {
-  $branch = "2";
-} else {
-  $branch = "1";
-}
-
-if (isset($_POST['branch'])) {$branch = $_POST['branch'];}
-
-if ($branch == "1") {
-    exec("rm -f /boot/config/plugins/filebrowser_quantum/install/beta");
-    $latestversion = $output[1];
-    ($latestversion == '') ? $latestversion = "Error fetching version number" : '';
-} elseif ($branch == "2") {
-    exec("touch /boot/config/plugins/filebrowser_quantum/install/beta");
-    $latestversion = $output[2];
-    ($latestversion == '') ? $latestversion = "Error fetching version number" : '';
-}
+<?php
+$name = "filebrowser_quantum";
+// 获取本地当前版本
+$current_version = shell_exec("/usr/local/emhttp/plugins/".$name."/webuiScript.sh VERSION");
+// 获取由 webuiScript.sh 异步抓取的远程版本号
+$newest_version = @file_get_contents("/tmp/".$name."_newest_version");
 ?>
 
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-.row { display: flex; }
-.column { padding: 10px; }
-.left { flex: 1; }
-.right { flex: 3; }
-</style>
-</head>
-<body>
-
-<div class="row">
-  <div class="column left">
-    <h2>Branch & Update</h2>
-    <form action="" method="post"> 
-      <select name="branch" onchange="this.form.submit();"> 
-        <option value="1" <?php if($branch == 1) echo("selected")?>>Stable</option>
-        <option value="2" <?php if($branch == 2) echo("selected")?>>Beta</option>
-      </select> 
-    </form> 
-    <?
-    echo "Installed version: $currentversion<br>";
-    echo "Latest version: &nbsp;&nbsp;$latestversion";
-    ?>
-    <br><br>
-    <input type="button" value="Update Binary" <?php if ($currentversion == $latestversion){ ?> disabled <?php } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
-
-    <hr>
-
-    <h2>Service Control<span style="font-size:0.6em; <? echo (!empty($webui_pid)) ? 'color:green;">&nbsp;&nbsp;&nbsp;running' : 'color:red;">&nbsp;&nbsp;&nbsp;stopped' ?></span></h2>
-    <form action="" method="post"> 
-      <select name="webui_status"> 
-        <option value="false" <?php if($settings['WEBUI_ENABLED'] == "false") echo("selected")?>>Disabled</option>
-        <option value="true" <?php if($settings['WEBUI_ENABLED'] == "true") echo("selected")?>>Enabled</option>
-      </select> 
-      <br><br>
-      <input type="button" value="Apply Settings" onclick="webui(this.form)">
-      <?
-      if (!empty($webui_pid)) {
-        echo '<br><br><a href="http://' . $_SERVER['SERVER_ADDR'] . ':' . $settings['WEBUI_PORT'] . '" class="button" target="_blank">Open WebUI</a>';
-      }
-      ?>
-    </form> 
-  </div>
-
-  <div class="column right">
-    <h2>Edit Config (config.yaml)</h2>
-    <form method="POST" action="/update.php" target="progressFrame">
-      <input type="hidden" name="#include" value="/webGui/include/update.file.php">
-      <input type="hidden" name="#file" value="<?=$file;?>">
-      <textarea spellcheck="false" cols="80" rows="22" name="text" style="font-family:monospace;width:100%"><?=$text;?></textarea>
-      <br><br>
-      <input type="submit" value="Apply Config"/>
-      <input type="button" value="Original" onclick="setDefault(this.form)">
-    </form> 
-  </div>
+<div style="width: 500px;">
+    <table class="settings">
+        <tr>
+            <td>当前程序版本:</td>
+            <td><span style="color: green; font-weight: bold;"><?= $current_version ?: "未知" ?></span></td>
+        </tr>
+        <tr>
+            <td>GitHub 最新版本:</td>
+            <td><span style="color: blue; font-weight: bold;"><?= $newest_version ?: "正在获取..." ?></span></td>
+        </tr>
+        <tr>
+            <td>二进制文件操作:</td>
+            <td>
+                <input type="button" value="更新二进制文件" onclick="updateBinary()">
+                <p style="font-size: 0.9em; color: #666;">* 更新将下载最新的 GitHub Release 并重启服务</p>
+            </td>
+        </tr>
+    </table>
 </div>
 
 <script>
-function setDefault(form) {
-  form.elements['text'].value = <?=json_encode($default_text);?>;
+function updateBinary() {
+    if (confirm('确认要更新 filebrowser_quantum 二进制文件吗？\n更新过程中服务将短暂停止。')) {
+        // 调用 updaterclone.sh 脚本
+        $.post('/plugins/filebrowser_quantum/updaterclone.sh', {action:'update'}, function(data) {
+            alert('更新脚本已触发！请等待 10-30 秒后刷新页面查看新版本。');
+        });
+    }
 }
 </script>
-</body>
-</html>
