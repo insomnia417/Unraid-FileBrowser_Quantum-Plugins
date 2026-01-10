@@ -1,18 +1,18 @@
 <?xml version='1.0' standalone='yes'?>
 
 <!DOCTYPE PLUGIN [
-<!ENTITY name               "filebrowser_quantum">
-<!ENTITY author             "insomnia417">
-<!ENTITY version            "2026.01.10">
-<!ENTITY bundleversion      "2026.01.10">
-<!ENTITY launch             "Settings/filebrowser_quantum">
-<!ENTITY description        "FileBrowser Quantum 的 Unraid 插件移植版本。提供强大的 Web 侧管理功能。">
-<!ENTITY support            "https://github.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins">
-<!ENTITY pluginURL          "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
-<!ENTITY bundleURL          "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/&name;-&bundleversion;-x86_64.txz">
+  <!ENTITY name       "filebrowser_quantum">
+  <!ENTITY author     "insomnia417">
+  <!ENTITY version    "2026.01.11">
+  <!ENTITY launch     "Settings/filebrowser_quantum">
+  <!ENTITY description "FileBrowser Quantum 的 Unraid 插件移植版本。提供强大的 Web 侧管理功能。">
+  <!ENTITY support    "https://github.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins">
+  <!ENTITY pluginURL  "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
+  <!ENTITY bundleversion "2026.01.11">
+  <!ENTITY bundleURL  "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/&name;-&bundleversion;-x86_64.txz">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.9.2">
 
 <BR/>
 <p align="center">
@@ -22,7 +22,7 @@
   &description;
 </p>
 <p align="center">
-  <a href="&support;" target="_blank">Support Forum</a>
+  <a href="&support;" target="_blank">支持论坛 (Support Forum)</a>
 </p>
 <BR/>
 <hr/>
@@ -30,8 +30,8 @@
 <CHANGES>
 ##&name;
 ###2026.01.11
-- 插件重构
-- 改进前后端分离逻辑
+- 版本重构
+- 优化 UI 逻辑
 </CHANGES>
 
 <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
