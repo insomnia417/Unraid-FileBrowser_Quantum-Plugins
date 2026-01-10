@@ -82,8 +82,7 @@ elif [ "${1}" == "VERSION" ]; then
         exit 1
     fi
 fi
-echo "正在启动FileBrowser..." | tee >(logger -t "$TAG")
-# 【关键修改】：移除了 rclone 特有的参数，改为 filebrowser 启动格式
+echo "FileBrowser正在启动中..." | tee >(logger -t "$TAG")
 # -c 指定配置文件。at now 确保在后台持续运行。
 echo "$BINARY -c $CONF_DIR/config.yaml" | at now -M > /dev/null 2>&1
 
@@ -92,7 +91,7 @@ for i in {1..5}; do
     sleep 1
     if pgrep -f "filebrowser_quantumorig" > /dev/null 2>&1 ; then
         echo ""
-        echo " FileBrowser 启动成功 ! " | tee >(logger -t "$TAG")
+        echo "FileBrowser启动成功" | tee >(logger -t "$TAG")
         exit 0
     fi
 done
