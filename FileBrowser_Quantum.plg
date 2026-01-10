@@ -1,197 +1,193 @@
-Menu="Utilities"
-Title="filebrowser_quantum"
-Icon="filebrowser_quantum.png"
----
-<?PHP
-/* Copyright 2005-2016, Lime Technology
- * Copyright 2012-2016, Bergware International.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License version 2,
- * as published by the Free Software Foundation.
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- */
-?>
-> Use this page to make changes to your `config.yaml` file as well as update filebrowser_quantum if a newer version is available.
->
-> To setup filebrowser_quantum for the first time execute the command `filebrowser_quantum config` in command line.
+<?xml version='1.0' standalone='yes'?>
 
+<!DOCTYPE PLUGIN [
+<!ENTITY name				"filebrowser_quantum">
+<!ENTITY author				"insomnia417">
+<!ENTITY version			"2026.01.08.v8">
+<!ENTITY bundleversion			"2026.01.08">
+<!ENTITY launch				"Settings/filebrowser_quantum">
+<!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
+<!ENTITY bundleURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/&name;-&bundleversion;-x86_64.txz">
+<!ENTITY md5bundle			"373d70009e7fc1ee5fdcd37cc359f829">
+]>
 
-<script>
-function updatefilebrowser_quantum(branch) {
-   var path = "/usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh"
-   openBox('/usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh&arg1='+path+'&arg2='+branch,"Update filebrowser_quantum",450,800,true);
-}
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
-function webui(form) {
-   var state = form.webui_status.value;
-   // 弹窗执行 Daemon.sh
-   // 注意：这里我们加入了一个回调，当弹窗关闭时，刷新当前页面
-   openBox('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh&arg1='+state,"filebrowser_quantum WebUI",450,800,true);
-   
-   // 这是一个小技巧：当窗口重新获得焦点（通常是黑窗口关闭后），自动刷新页面
-   $(window).once('focus', function() {
-       window.location.reload();
-   });
-}
-</script>
+<CHANGES>
+##&name;
 
-<?
-// --- A. 基础路径定义 ---
-$file = "/boot/config/plugins/filebrowser_quantum/config.yaml";
-$defaultfile = "/boot/config/plugins/filebrowser_quantum/config.yaml";
-$settings_file = '/boot/config/plugins/filebrowser_quantum/settings.cfg';
-$latest_file = '/boot/config/plugins/filebrowser_quantum/install/latest';
-$beta_marker = '/boot/config/plugins/filebrowser_quantum/install/beta';
+###2026.01.08
+- rebuild
 
-// --- B. 处理分支切换逻辑 (必须在读取版本号之前执行) ---
-// 1. 先探测磁盘上的实际状态
-$branch = file_exists($beta_marker) ? "2" : "1";
+</CHANGES>
 
-// 2. 如果用户提交了新选择，则更新状态并立即重新拉取云端版本
-if (isset($_POST['branch']) && $_POST['branch'] != $branch) {
-    $branch = $_POST['branch'];
-    if ($branch == "1") {
-        @unlink($beta_marker);
-    } else {
-        @touch($beta_marker);
-    }
-    // 分支变了，立刻同步云端最新版本号
-    exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
-}
+<!--
 
-// --- C. 获取各种动态数据 ---
-$text = file_get_contents($file);
-$default_text = @file_get_contents($defaultfile);
-$settings = parse_ini_file($settings_file);
+This plugin installs filebrowser_quantum on unRAID systems.
+This work is based upon the plugin created by aschamberger: 
+Thanks to stignz for his original guide: 
 
-// 获取端口,本地版本
-$dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
-$currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
+-->
 
-// 如果 latest 文件不存在，初始化一次
-if (!file_exists($latest_file)) {
-    exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
-}
-$latestversion = @exec("head -n 1 $latest_file");
-if (empty($latestversion)) $latestversion = "Unknown";
+<!--
+Get bundle.
+-->
+<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
+<URL>&bundleURL;</URL>
+<!-- <MD5>&md5bundle;</MD5> -->
+</FILE>
 
-// 进程状态检测 (pgrep -f 匹配更精准)
-$webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
+<!--
+Install script.
+-->
+<FILE Run="/bin/bash" Method="install">
+<INLINE>
+GITHUB_REPO="gtsteffaniak/filebrowser"
+TAG_LIST=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['text'])) {
-    if ($settings['filebrowser_ENABLED'] == 'true') {
-        // 使用绝对路径，并且使用 bash 明确执行
-        // 增加 logger 记录，方便你在 Unraid 的 syslog 中查看是否触发
-        exec("logger -t 'FileBrowser-Plugin' 'Detect config change, restarting service...'");
-        
-        // 1. 强制停止 (使用脚本中的逻辑)
-        exec("bash /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh 'false' > /dev/null 2>&1");
-        
-        // 2. 稍微多等一会儿，确保旧端口彻底释放
-        sleep(2);
-        
-        // 3. 启动新进程
-        exec("bash /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh 'true' > /dev/null 2>&1");
-        
-        // 4. 强制刷新页面数据
-        header("Refresh:0");
-        exit;
-    }
-}
-// ========================================================
+if [ -f /boot/config/plugins/filebrowser_quantum/install/beta ]; then
+    current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
+    echo "Beta mode detected. Target version: $current_version"
+else
+    # 提取最新的 stable 版本号 (例如 v1.1.0-stable)
+    current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
+    echo "检测到最新稳定版号为 : $current_version"
+fi;	
 
-?>
+INSTALLED_BINARY="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-$current_version"
+filebrowser_quantumurl="https://github.com/$GITHUB_REPO/releases/download/$current_version/linux-amd64-filebrowser"
 
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
+if [ -f "$INSTALLED_BINARY" ]; then 
+  cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig.new
+  mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
+  chown root:root /usr/sbin/filebrowser_quantumorig
+  chmod 755 /usr/sbin/filebrowser_quantumorig
+  version=`/usr/sbin/filebrowser_quantumorig version | head -n 1`
+  echo "$INSTALLED_BINARY 已存在 ($version) "
+fi;
 
-.row {
-  display: flex;
-}
+# settings.cfg
+if [ ! -f /boot/config/plugins/filebrowser_quantum/settings.cfg ]; then
+    echo "filebrowser_ENABLED=true" > /boot/config/plugins/filebrowser_quantum/settings.cfg
+fi
 
-/* Create two unequal columns */
-.column {
-  padding: 10px;
-}
+chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh
+chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh
+chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh
 
-.left {
-  flex: 1; /* Represents 25% of the container */
-}
+/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"
 
-.right {
-  flex: 3; /* Represents 75% of the container */
-}
-</style>
-</head>
-<body>
+rm -f $(ls /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum*.txz 2>/dev/null | grep -v '&bundleversion;')
+rm -f /usr/sbin/filebrowser_quantum
 
-<div class="row">
-  <div class="column left">
-    <h2>Branch</h2>
+ping -q -c3 github.com >/dev/null
+if [ $? -eq 0 ]; then
+    if [ -f "$INSTALLED_BINARY" ] &amp;&amp; [[ "$version" == *"$current_version"* ]]; then
+    echo "Local filebrowser_quantum binary ($current_version) up-to-date"  
+    echo "本地已存在 ($current_version) "  
+  else
+    echo " 开始下载并安装 ($current_version) ... "
+    curl --connect-timeout 15 --retry 3 --retry-delay 2 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
+    cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig
+    chown root:root /usr/sbin/filebrowser_quantumorig
+    chmod 755 /usr/sbin/filebrowser_quantumorig
+  fi;
+else
+  echo "Connection error - Could not reach filebrowser_quantum servers - Will try fallback to existing binary"
+  echo "连接错误 - 无法访问 filebrowser_quantum 下载地址 - 将尝试回退到现有的二进制文件"
+  if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
+    echo "Install failed - No binary found"
+    removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
+    rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
+    rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
+    exit 1
+  fi;
+fi;
 
-	<form action="" method="post"> 
-	<select name="branch" onchange="this.form.submit();"> 
-	<option value="1" <?php if($branch == 1) echo("selected")?>>Stable</option>
-	<option value="2" <?php if($branch == 2) echo("selected")?>>Beta</option>
-	</select> 
-	</form> 
-	<?
-	echo "Installed version: $currentversion";
-	echo "<br>";
-	echo "Latest version:&emsp;&ensp;$latestversion";
-	?>
-	<br>
-	<input type="button" value="升级filebrowser_quantum版本" <?php if ($currentversion == $latestversion){ ?> disabled <?php   } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
+if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
+  echo "Install failed - No binary found"
+  echo "安装失败 - 二进制文件丢失"
+  removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
+  rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
+  rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
+  exit 1
+fi;	
+	
+if [ ! -f /boot/config/plugins/filebrowser_quantum/config.yaml ]; then
+  echo "Config not found, downloading from GitHub..."
+  echo "未找到配置文件(confg.yaml)，正在下载默认配置..."
+  curl --connect-timeout 15 --retry 3 -L -o /boot/config/plugins/filebrowser_quantum/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/config.yaml"
+fi;
 
-<h2>服务
-  <span style="font-size:0.6em; color: <?= !empty($webui_pid) ? 'green' : 'red' ?>;">
-    &nbsp;&nbsp;&nbsp;<?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?>
-  </span>
-  </h2>
+if [ "$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/filebrowser_quantum/settings.cfg)" == "true" ]; then
+  /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "true"
+echo "开始运行filebrowser守护进程"
+echo "          ◆"
+echo "          ◆"
+echo "          ◆"
+fi
 
-  <form action="" method="post"> 
-    <select name="webui_status" onchange="this.form.apply_btn.disabled=false; this.form.apply_btn.className='submit';"> 
-      <option value="false" <?php if($settings['filebrowser_ENABLED'] == 'false' || empty($settings['filebrowser_ENABLED'])) echo("selected")?>>Disabled</option>
-      <option value="true" <?php if($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') echo("selected")?>>Enabled</option>
-    </select> 
+echo ""
+echo " filebrowser_quantum 安装成功 "
+echo "-----------------------------------------------------------"
+echo ""
 
-    <br><br>
-    <input type="button" name="apply_btn" value="Apply" disabled onclick="webui(this.form)">
+</INLINE>
+</FILE>
 
-    <? if (!empty($webui_pid)): ?>
-      <input type="button" class="localURL" value="Open WebUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
-    <? endif; ?>
-  </form>
+<!--
+Check if fusermount is present
+-->
+<FILE Run="/bin/bash">
+<INLINE>
+if ! [ -f /bin/fusermount ]; then
+  if [ -f /usr/bin/fusermount3 ]; then
+    ln -s /usr/bin/fusermount3 /bin/fusermount
+  fi;
+fi;
+</INLINE>
+</FILE>
 
-  </div>
-  <div class="column right">
-    <h2>Edit config</h2>
-	<form markdown="1" method="POST" action="/update.php" target="progressFrame">
-	<input type="hidden" name="#include" value="/webGui/include/update.file.php">
-	<input type="hidden" name="#file" value="<?=$file;?>">
-	<textarea spellcheck="false" cols="80" rows="22" name="text" style="font-family:bitstream;width:100%"><?=$text;?></textarea>
-	<br>
-	<input type="submit" value="Apply"/><input type="button" value="Original" onclick="setDefault(this.form)">
-	</form> 
-  </div>
-</div>
+<!--
+Create wrapper
+-->
+<FILE Name="/usr/sbin/filebrowser_quantum" Mode="0755">
+<INLINE>
+#!/bin/bash
+config=/boot/config/plugins/filebrowser_quantum/config.yaml
+	filebrowser_quantumorig -c $config "$@";
+</INLINE>
+</FILE>
+	
+<!--
+Create gitignore
+-->
+<FILE Name="/boot/config/plugins/filebrowser_quantum/.gitignore" Mode="0600">
+<INLINE>
+config.yaml
+</INLINE>
+</FILE>
 
-</body>
-</html>
+<!--
+Uninstall script
+-->
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
+rm -rf /boot/config/plugins/filebrowser_quantum/install
+rm -f /usr/sbin/filebrowser_quantumorig
+rm -f /usr/sbin/filebrowser_quantum
+removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
+rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
+rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
 
-<script>
-function setDefault(form) {
-  form.elements['text'].value = <?=json_encode($default_text);?>;
-}
-</script>
+echo ""
+echo "-----------------------------------------------------------"
+echo " filebrowser_quantum has been uninstalled."
+echo "-----------------------------------------------------------"
+echo ""
 
-> Click the **Apply** button to commit the current edits.
->
-> Click the **Original** button to initialize the edit box with the
-> original contents.  You still need to click **Apply** in order to
-> commit the change.
+</INLINE>
+</FILE>
+
+</PLUGIN>
