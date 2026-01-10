@@ -198,7 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
 <script>
 function setDefault(form) {
-  form.elements['text'].value = <?=json_encode($default_text);?>;
+  form.elements['config_text'].value = <?=json_encode($default_text);?>;
 }
 </script>
 
