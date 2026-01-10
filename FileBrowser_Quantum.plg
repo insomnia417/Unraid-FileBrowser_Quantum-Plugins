@@ -34,7 +34,7 @@ Get bundle.
 -->
 <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
 <URL>&bundleURL;</URL>
-##<MD5>&md5bundle;</MD5>
+<!-- <MD5>&md5bundle;</MD5> -->
 </FILE>
 
 <!--
