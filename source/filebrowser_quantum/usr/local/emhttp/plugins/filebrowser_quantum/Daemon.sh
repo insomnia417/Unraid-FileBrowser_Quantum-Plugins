@@ -64,7 +64,7 @@ elif [ "${1}" == "VERSION" ]; then
   [ ! -d "$CONF_DIR/install" ] && mkdir -p "$CONF_DIR/install"
   
   # 获取 GitHub 最新版本号
-  LAT_V=$(wget -qO- https://api.github.com/repos/filebrowser/filebrowser/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+  LAT_V=$(wget -qO- https://api.github.com/repos/gtsteffaniak/filebrowser/releases/latest | jq -r '.tag_name' | sed 's/^v//')
   
   if [ ! -z "$LAT_V" ] && [ "$LAT_V" != "null" ]; then
     # 【关键】把版本号写进 install 目录下的 latest 文件
