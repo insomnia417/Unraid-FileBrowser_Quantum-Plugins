@@ -1,5 +1,9 @@
 #!/bin/bash
-export HOME=$(grep $(whoami) /etc/passwd | cut -d: -f 6)
-source ${HOME}/.bashrc
-echo "<font color='red'> ##### Note that closing this window will abort the execution of this script ##### </font>"
-"$1" "$2"
+NAME="filebrowser_quantum"
+
+# 确保脚本权限
+chmod 755 /usr/local/emhttp/plugins/$NAME/*.sh
+chmod 755 /usr/sbin/$NAME-orig
+
+# 执行启动
+/usr/local/emhttp/plugins/$NAME/webuiScript.sh "true"
