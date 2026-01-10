@@ -26,7 +26,7 @@ elif [ "${1}" == "false" ]; then
   # 停止进程
   KILL_PID=$(pgrep "filebrowser_quantumorig")
   echo "停止 FileBrowser , 请稍后..." | tee >(logger -t "$TAG")
-  [ ! -z "$KILL_PID" ] && kill $KILL_PID
+  pkill -9 -f "filebrowser_quantumorig"
   # 修改配置文件中的使能开关 (filebrowser_ENABLED=false)
   sed -i "/filebrowser_ENABLED=/c\filebrowser_ENABLED=${1}" "$SETTINGS"
   echo "FileBrowser 已停止" | tee >(logger -t "$TAG")
