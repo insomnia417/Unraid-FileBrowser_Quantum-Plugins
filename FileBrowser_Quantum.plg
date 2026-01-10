@@ -14,17 +14,19 @@
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
+
 <BR/>
 <p align="center">
-  <font color="orange" size="4"><strong>&name;</strong></font>
+  <font color="orange" size="4"><strong>FileBrowser Quantum</strong></font>
 </p>
 <p align="justify">
   &description;
 </p>
 <p align="center">
-  <a href="&support;" target="_blank">支持论坛 (Support Forum)</a>
+  <a href="&support;" target="_blank">Support Forum</a>
 </p>
-<hr/>
+<BR/>
+
 <CHANGES>
 ##&name;
 
