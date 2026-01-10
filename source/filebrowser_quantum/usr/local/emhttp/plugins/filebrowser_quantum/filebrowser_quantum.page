@@ -37,6 +37,7 @@ $defaultfile = "/boot/config/plugins/filebrowser_quantum/config.yaml";
 $text = file_get_contents($file);
 $default_text = @file_get_contents($defaultfile);
 $settings = parse_ini_file('/boot/config/plugins/filebrowser_quantum/settings.cfg');
+$dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
 ?>
 
 <?
@@ -147,7 +148,7 @@ if ($branch == "1") {
 	<input type="button" value="Update" onclick="webui(this.form)">
   <?
   if (!empty($webui_pid)) {
-    echo '<input type="button" class="localURL" value="Open WebUI" onclick="window.open(\'http://' . $_SERVER['SERVER_ADDR'] . ':' . $settings['WEBUI_PORT'] . '\', \'_blank\')" />';
+    echo '<input type="button" class="localURL" value="Open WebUI" onclick="window.open(\'http://' . $_SERVER['SERVER_ADDR'] . ':' . $dynamic_port . '\', \'_blank\')" />';
   }
   ?>
 	</form> 
