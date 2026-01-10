@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name				"filebrowser_quantum">
 <!ENTITY author				"insomnia417">
-<!ENTITY version			"2026.01.08">
+<!ENTITY version			"2026.01.08.1">
 <!ENTITY bundleversion			"2026.01.08">
 <!ENTITY launch				"Settings/filebrowser_quantum">
 <!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
@@ -108,7 +108,8 @@ if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
 fi;	
 	
 if [ ! -f /boot/config/plugins/filebrowser_quantum/config.yaml ]; then
-  touch /boot/config/plugins/filebrowser_quantum/config.yaml;
+  echo "Config not found, downloading from GitHub..."
+  curl --connect-timeout 15 --retry 3 -L -o /boot/config/plugins/filebrowser_quantum/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/config.yaml"
 fi;
 
 if [ "$(cat /boot/config/plugins/filebrowser_quantum/settings.cfg | grep -n "^filebrowser_ENABLED=" | cut -d '=' -f2 | sed 's/\"//g')" == "true" ]; then
