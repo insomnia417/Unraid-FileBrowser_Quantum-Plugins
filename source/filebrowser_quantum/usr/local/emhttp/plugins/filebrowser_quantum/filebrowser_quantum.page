@@ -83,31 +83,25 @@ $webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
 
 // --- Section D: 接管配置保存与重启逻辑 ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
-    // 1. 获取前端传来的新配置内容
     $new_content = $_POST['config_text'];
     
-    // 2. 核心操作：手动将新内容写入 config.yaml 文件
-    // 因为我们去掉了 action="/update.php"，所以必须由我们自己来写文件
     if (file_put_contents($file, $new_content) !== false) {
-        
-        // 3. 写入成功后，判断是否需要重启服务
-        if ($settings['filebrowser_ENABLED'] == 'true') {
+        // 判定依据：配置文件里是 true，或者当前系统里已经有进程在运行
+        $is_running = !empty(exec('pgrep -f "filebrowser_quantumorig"'));
+        $is_enabled = ($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1');
+
+        if ($is_enabled || $is_running) {
             exec("logger -t 'FileBrowser-Plugin' 'Manual config save. Restarting service...'");
             
-            // 执行停止 (调用你的 Daemon.sh)
+            // 停止
             exec("bash /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh 'false' > /dev/null 2>&1");
-            
-            // 缓冲 2 秒确保旧进程退出、端口释放
             sleep(2);
-            
-            // 执行启动
+            // 启动
             exec("bash /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh 'true' > /dev/null 2>&1");
             
-            // 弹出提示并刷新页面（确保页面看到的是最新 PID 和端口）
-            echo "<script>alert('配置已成功保存，服务已重启！'); window.location.href=window.location.href;</script>";
+            echo "<script>alert('配置已成功保存，服务已完成重启！'); window.location.href=window.location.href;</script>";
         } else {
-            // 如果服务本身是 Disabled，只保存文件，不启动
-            echo "<script>alert('配置已保存！(当前服务未开启，无需重启)'); window.location.href=window.location.href;</script>";
+            echo "<script>alert('配置已保存！(当前服务处于关闭状态，修改将在下次开启时生效)'); window.location.href=window.location.href;</script>";
         }
         exit;
     }
@@ -185,28 +179,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   <h2>Edit config</h2>
   <form id="config_form" method="POST">
     <textarea spellcheck="false" cols="80" rows="22" name="config_text" 
-      oninput="document.getElementById('real_save_btn').style.background='#4caf50'; document.getElementById('real_save_btn').style.color='#fff';" 
+      oninput="var btn=document.getElementById('fake_apply_btn'); btn.style.background='#4caf50'; btn.style.color='#fff'; btn.style.borderColor='#4caf50';" 
       style="font-family:bitstream;width:100%"><?=$text;?></textarea>
     <br>
     
-    <input type="button" id="real_save_btn" value="Apply" 
-      style="padding: 2px 20px; cursor: pointer; border: 1px solid #ccc;" 
-      onclick="submitConfigForm()"/>
-    
+    <a id="fake_apply_btn" href="javascript:void(0);" 
+       onclick="if(confirm('确定要保存配置并重启服务吗？')){ document.getElementById('config_form').submit(); }"
+       style="display: inline-block; 
+              padding: 0 25px;            /* 增加左右内边距，让它变宽 */
+              height: 32px;               /* 增加高度 */
+              line-height: 30px;          /* 让文字垂直居中，比高度小2px即可 */
+              background: #f2f2f2; 
+              color: #333; 
+              border: 1px solid #ccc; 
+              cursor: pointer; 
+              text-decoration: none; 
+              border-radius: 2px; 
+              font-family: 'Clear Sans', sans-serif; 
+              font-size: 12px;            /* 字体保持你满意的状态 */
+              font-weight: bold; 
+              text-transform: uppercase; 
+              letter-spacing: 2px; 
+              box-sizing: border-box; 
+              vertical-align: middle;">
+       Apply
+    </a>
+
     <input type="hidden" name="save_config_btn" value="1">
     
-    <input type="button" value="Original" onclick="setDefault(this.form)">
+    <input type="button" value="Original" onclick="setDefault(this.form)" style="margin-left: 10px; vertical-align: middle;">
   </form> 
 </div>
-
-<script>
-// 增加一个显式的提交函数
-function submitConfigForm() {
-    const form = document.getElementById('config_form');
-    // 手动调用提交
-    form.submit();
-}
-</script>
 
 </div>
 
