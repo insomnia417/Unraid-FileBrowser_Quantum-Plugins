@@ -31,6 +31,22 @@ elif [ "${1}" == "false" ]; then
   echo "FileBrowser 已停止" | tee >(logger -t "$TAG")
   exit 0
 
+# --- GET config.yaml PORT ---
+elif [ "${1}" == "GET_PORT" ]; then
+  # 1. 检查配置文件是否存在
+  if [ -f "$CONF_DIR/config.yaml" ]; then
+    # 2. 优雅解析：查找 port: 开头的行，提取数字，并去掉可能的引号或空格
+    # 使用 awk '{print $2}' 获取冒号后的值，tr -d ' "' 去掉双引号和空格
+    PORT=$(grep '^port:' "$CONF_DIR/config.yaml" | awk '{print $2}' | tr -d '" ' )
+    
+    # 3. 如果解析结果为空（比如配置文件格式错乱），则给一个保底端口
+    echo "${PORT:-8081}"
+  else
+    # 配置文件不存在时，返回默认端口
+    echo "8081"
+  fi
+  exit 0
+
 elif [ "${1}" == "VERSION" ]; then
   # VERSION 逻辑：原脚本用于通过 API 获取 GitHub 最新版并记录到文件
   [ ! -d "$CONF_DIR/webui" ] && mkdir -p "$CONF_DIR/webui"
