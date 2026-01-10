@@ -37,30 +37,29 @@ $defaultfile = "/boot/config/plugins/filebrowser_quantum/config.yaml";
 $text = file_get_contents($file);
 $default_text = @file_get_contents($defaultfile);
 $settings = parse_ini_file('/boot/config/plugins/filebrowser_quantum/settings.cfg');
-$dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
 ?>
 
 <?
-exec('filebrowser_quantum version --check | grep -Po "(([a-z])*:( )*)\K( )*([0-9])([^ ])*[0-9]"', $filebrowser_quantum_version);
-$currentversion = $filebrowser_quantum_version[0];
+// --- 1. 获取动态端口 ---
+$dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
 
-if (!file('/boot/config/plugins/filebrowser_quantum/webui/latest')) {
-  exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
-  if (!file_exists('/boot/config/plugins/filebrowser_quantum/webui/latest')) {
-    $webui_latest = "Error fetching version number";
-  } else {
-    $webui_latest = exec('cat /boot/config/plugins/filebrowser_quantum/webui/latest | head -1');
-  }
-} else {
-  $webui_latest = exec('cat /boot/config/plugins/filebrowser_quantum/webui/latest | head -1');
+// --- 2. 获取本地版本 (调用你刚验证成功的接口) ---
+$currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
+
+// --- 3. 获取云端最新版本 (沿用你的 webui/latest 逻辑，但简化读取) ---
+$latest_file = '/boot/config/plugins/filebrowser_quantum/install';
+
+// 如果文件不存在，或者文件太旧(可选)，触发一次更新
+if (!file_exists($latest_file)) {
+    exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
 }
 
-$webui_local = exec("ls -1 /boot/config/plugins/filebrowser_quantum/webui/*.zip 2>/dev/null | rev | cut -d '/' -f1 | cut -d '.' -f2- | rev | sort -V | head -1");
-if (empty($webui_local)) {
-  $webui_local = "not installed";
-}
+// 直接读取第一行作为最新版本号
+$latestversion = @exec("head -n 1 $latest_file");
+if (empty($latestversion)) $latestversion = "Unknown";
 
-$webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
+// --- 4. 进程状态检测 (安全匹配) ---
+$webui_pid = exec('pgrep "filebrowser_quantumorig"');
 ?>
 
 <?
