@@ -1,111 +1,68 @@
 #!/bin/bash
+
+# --- 基础路径定义 ---
+CONF_DIR="/boot/config/plugins/filebrowser_quantum"
+SETTINGS="$CONF_DIR/settings.cfg"
+BINARY="/usr/sbin/filebrowser_quantumorig"
+
+# --- 1. 处理启动指令 (true) ---
 if [ "${1}" == "true" ]; then
-  echo "Enabling rclone WebUI, please wait..."
-  sed -i "/WEBUI_ENABLED=/c\WEBUI_ENABLED=${1}" "/boot/config/plugins/rclone/settings.cfg"
-  if pgrep -f "rcloneorig.*--rc-web-gui" > /dev/null 2>&1 ; then
-    echo
-    echo "rclone WebUI already started!"
+  echo "正在启动 FileBrowser..."
+  
+  # 使用 sed 修改配置文件，确保状态同步为 true
+  sed -i "/filebrowser_ENABLED=/c\filebrowser_ENABLED=${1}" "$SETTINGS"
+  
+  # 检查进程是否已在运行 (pgrep -f 匹配进程名)
+  if pgrep -f "filebrowser_quantumorig" > /dev/null 2>&1 ; then
+    echo "FileBrowser 已经在运行中！"
     exit 0
   fi
-elif [ "${1}" == "false" ]; then
-  KILL_PID="$(pgrep -f "rcloneorig.*--rc-web-gui")"
-  echo "Disabling rclone WebUI, please wait..."
-  kill -SIGINT $KILL_PID
-  sed -i "/WEBUI_ENABLED=/c\WEBUI_ENABLED=${1}" "/boot/config/plugins/rclone/settings.cfg"
-  echo "rclone WebUI disabled"
-  exit 0
-elif [ "${1}" == "VERSION" ]; then
-  if [ ! -d /boot/config/plugins/rclone/webui ]; then
-    mkdir -p /boot/config/plugins/rclone/webui
-  fi
-  if [ -f /boot/config/plugins/rclone/webui/latest ]; then
-    rm -f /boot/config/plugins/rclone/webui/latest
-  fi
-  API_RESULT="$(wget -qO- https://api.github.com/repos/rclone/rclone-webui-react/releases/latest)"
-  echo "${API_RESULT}" | jq -r '.tag_name' | sed 's/^v//' > /boot/config/plugins/rclone/webui/latest
-  echo "${API_RESULT}" | jq -r '.assets[].browser_download_url' >> /boot/config/plugins/rclone/webui/latest
-  LAT_V="$(cat /boot/config/plugins/rclone/webui/latest | head -1)"
-  if [ -z "${LAT_V}" ] || [ "${LAT_V}" == "null" ]; then
-    rm -f /boot/config/plugins/rclone/webui/latest
+  
+  # 读取用户定义的端口（如果 settings.cfg 里有定义，没有则默认 8080）
+  PORT=$(grep "^PORT=" "$SETTINGS" | cut -d'=' -f2 | sed 's/"//g')
+  PORT=${PORT:-8080}
+
+  # 【核心启动命令】
+  # 使用 'at now' 让程序在后台独立运行，不随脚本结束而关闭
+  # -c 指定配置文件，-p 指定端口
+  echo "$BINARY -c $CONF_DIR/config.yaml -p $PORT" | at now -M > /dev/null 2>&1
+  
+  sleep 2
+  # 验证是否启动成功
+  if pgrep -f "filebrowser_quantumorig" > /dev/null 2>&1 ; then
+    echo "FileBrowser 启动成功！端口：$PORT"
   else
-    exit 0
+    echo "启动失败，请检查日志。"
   fi
+
+# --- 2. 处理停止指令 (false) ---
+elif [ "${1}" == "false" ]; then
+  echo "正在停止 FileBrowser..."
+  
+  # 获取进程 PID 并杀死
+  KILL_PID="$(pgrep -f "filebrowser_quantumorig")"
+  if [ ! -z "$KILL_PID" ]; then
+    kill -SIGINT $KILL_PID
+  fi
+  
+  # 修改配置文件状态为 false
+  sed -i "/filebrowser_ENABLED=/c\filebrowser_ENABLED=${1}" "$SETTINGS"
+  echo "FileBrowser 已关闭。"
+  exit 0
+
+# --- 3. 处理版本显示指令 (VERSION) ---
+elif [ "${1}" == "VERSION" ]; then
+  # 创建版本信息临时文件给 Unraid 网页界面读取
+  # 运行二进制文件的 version 命令并截取第一行
+  if [ -f "$BINARY" ]; then
+    $BINARY version | head -n 1 > /tmp/filebrowser_quantum_version
+  else
+    echo "未知版本" > /tmp/filebrowser_quantum_version
+  fi
+  exit 0
+
+# --- 4. 错误处理 ---
 else
-  echo "Error"
+  echo "未知参数: ${1}. 请使用 true, false 或 VERSION。"
   exit 1
-fi
-
-echo "Executing version check"
-if [ ! -f /boot/config/plugins/rclone/webui/latest ]; then
-  API_RESULT="$(wget -qO- https://api.github.com/repos/rclone/rclone-webui-react/releases/latest)"
-  echo "${API_RESULT}" | jq -r '.tag_name' | sed 's/^v//' > /boot/config/plugins/rclone/webui/latest
-  echo "${API_RESULT}" | jq -r '.assets[].browser_download_url' >> /boot/config/plugins/rclone/webui/latest
-  LAT_V="$(cat /boot/config/plugins/rclone/webui/latest | head -1)"
-  DL_URL="$(cat /boot/config/plugins/rclone/webui/latest | head -2 | tail -1)"
-  CUR_V="$(ls -1 /boot/config/plugins/rclone/webui/*.zip 2>/dev/null | rev | cut -d '/' -f1 | cut -d '.' -f2- | rev | sort -V | head -1 | sed 's/^v//')"
-  if [ -z "${LAT_V}" ] || [ "${LAT_V}" == "null" ]; then
-    rm -f /boot/config/plugins/rclone/webui/latest
-    if [ -z "${CUR_V}" ]; then
-      echo "ERROR: Can't get latest version and no current version from rclone webgui installed"
-      exit 1
-    else
-      echo "Can't get latest version from rclone webgui, falling back to installed version: ${CUR_V}"
-      LAT_V="${CUR_V}"
-    fi
-  fi
-else
-  LAT_V="$(cat /boot/config/plugins/rclone/webui/latest | head -1)"
-  DL_URL="$(cat /boot/config/plugins/rclone/webui/latest | head -2 | tail -1)"
-  CUR_V="$(ls -1 /boot/config/plugins/rclone/webui/*.zip 2>/dev/null | rev | cut -d '/' -f1 | cut -d '.' -f2- | rev | sort -V | head -1 | sed 's/^v//')"
-fi
-
-if [ ! -d /root/.cache/rclone/webui ]; then
-  mkdir -p /root/.cache/rclone/webui
-fi
-
-if [ -z "$CUR_V" ]; then
-  echo "rclone WebUI not installed, downloading..."
-  if ! wget -q -O /boot/config/plugins/rclone/webui/${LAT_V}.zip "${DL_URL}" ; then
-    echo "Download failed!"
-    rm -f /boot/config/plugins/rclone/webui/${LAT_V}.zip
-    exit 1
-  fi
-  unzip -qq /boot/config/plugins/rclone/webui/${LAT_V}.zip -d /root/.cache/rclone/webui
-elif [ "$CUR_V" != "$LAT_V" ]; then
-  echo "Newer rclone WebUI version found, downloading..."
-  if [ -d /root/.cache/rclone/webui/build ]; then
-    rm -rf /root/.cache/rclone/webui/build
-  fi
-  if ! wget -q -O /boot/config/plugins/rclone/webui/${LAT_V}.zip "${DL_URL}" ; then
-    echo "rclone WebUI download failed!"
-    LAT_V="${CUR_V}"
-    rm -f /boot/config/plugins/rclone/webui/${LAT_V}.zip
-    EXIT_STATUS=1
-  fi
-  if [ "${EXIT_STATUS}" != 1 ]; then
-    unzip -qq /boot/config/plugins/rclone/webui/${LAT_V}.zip -d /root/.cache/rclone/webui
-  fi
-fi
-
-if [ ! -d /root/.cache/rclone/webui/build ]; then
-  unzip -qq /boot/config/plugins/rclone/webui/${LAT_V}.zip -d /root/.cache/rclone/webui
-fi
-
-# Remove old versions
-rm -f $(ls -1 /boot/config/plugins/rclone/webui/*.zip 2>/dev/null|grep -v "${LAT_V}")
-
-START_PARAMS="$(cat /boot/config/plugins/rclone/settings.cfg | grep -n "^WEBUI_START_PARAMS=" | cut -d '=' -f2- | sed 's/\"//g')"
-PORT="$(cat /boot/config/plugins/rclone/settings.cfg | grep -n "^WEBUI_PORT=" | cut -d '=' -f2- | sed 's/\"//g')"
-
-echo "Starting rclone WebUI"
-echo "rcloneorig --config="/boot/config/plugins/rclone/.rclone.conf" rcd --rc-web-gui --rc-web-gui-no-open-browser --rc-addr=0.0.0.0:${PORT} --rc-files /root/.cache/rclone/webui/build ${START_PARAMS}" | at now -M > /dev/null 2>&1
-
-sleep 2
-
-if pgrep -f "rcloneorig.*--rc-web-gui" > /dev/null 2>&1 ; then
-  echo
-  echo "rclone WebUI started, you can now connect to the WebUI through Port: ${PORT}"
-else
-  echo
-  echo "rclone WebUI start failed, please check your settings and your logs what went wrong."
 fi
