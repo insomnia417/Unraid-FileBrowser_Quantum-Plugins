@@ -32,56 +32,51 @@ function webui(form) {
 </script>
 
 <?
+// --- A. 基础路径定义 ---
 $file = "/boot/config/plugins/filebrowser_quantum/config.yaml";
 $defaultfile = "/boot/config/plugins/filebrowser_quantum/config.yaml";
-$text = file_get_contents($file);
-$default_text = @file_get_contents($defaultfile);
-$settings = parse_ini_file('/boot/config/plugins/filebrowser_quantum/settings.cfg');
-?>
-
-<?
-// --- 1. 获取动态端口 ---
-$dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
-
-// --- 2. 获取本地版本 (调用你刚验证成功的接口) ---
-$currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
-
-// --- 3. 获取云端最新版本 (沿用你的 webui/latest 逻辑，但简化读取) ---
+$settings_file = '/boot/config/plugins/filebrowser_quantum/settings.cfg';
 $latest_file = '/boot/config/plugins/filebrowser_quantum/install/latest';
+$beta_marker = '/boot/config/plugins/filebrowser_quantum/install/beta';
 
-// 如果文件不存在，或者文件太旧(可选)，触发一次更新
-if (!file_exists($latest_file)) {
+// --- B. 处理分支切换逻辑 (必须在读取版本号之前执行) ---
+// 1. 先探测磁盘上的实际状态
+$branch = file_exists($beta_marker) ? "2" : "1";
+
+// 2. 如果用户提交了新选择，则更新状态并立即重新拉取云端版本
+if (isset($_POST['branch']) && $_POST['branch'] != $branch) {
+    $branch = $_POST['branch'];
+    if ($branch == "1") {
+        @unlink($beta_marker);
+    } else {
+        @touch($beta_marker);
+    }
+    // 分支变了，立刻同步云端最新版本号
     exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
 }
 
-// 直接读取第一行作为最新版本号
+// --- C. 获取各种动态数据 ---
+$text = file_get_contents($file);
+$default_text = @file_get_contents($defaultfile);
+$settings = parse_ini_file($settings_file);
+
+// 获取端口
+$dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
+
+// 获取本地版本
+$currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
+
+// 如果 latest 文件不存在，初始化一次
+if (!file_exists($latest_file)) {
+    exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
+}
 $latestversion = @exec("head -n 1 $latest_file");
 if (empty($latestversion)) $latestversion = "Unknown";
 
-// --- 4. 进程状态检测 (安全匹配) ---
-$webui_pid = exec('pgrep "filebrowser_quantumorig"');
+// 进程状态检测 (pgrep -f 匹配更精准)
+$webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
 ?>
 
-<?
-if (file_exists("/boot/config/plugins/filebrowser_quantum/install/beta") == true) {
-  $branch = "2";
-} elseif (strpos($currentversion, 'beta') !== false) {
-  $branch = "2";
-} else {
-  $branch = "1";
-}
-?>
-
-<?
-if (isset($_POST['branch'])) {$branch = $_POST['branch'];}
-
-if ($branch == "1") {
-    exec("rm -f /boot/config/plugins/filebrowser_quantum/install/beta");
-
-} elseif ($branch == "2") {
-    exec("touch /boot/config/plugins/filebrowser_quantum/install/beta");
-}
-?>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
