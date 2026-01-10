@@ -1,34 +1,21 @@
 <?xml version='1.0' standalone='yes'?>
-
 <!DOCTYPE PLUGIN [
-<!ENTITY name               "filebrowser_quantum">
-<!ENTITY author             "insomnia417">
-<!ENTITY version            "2026.01.10">
-<!ENTITY bundleversion      "2026.01.10">
-<!ENTITY launch             "Settings/filebrowser_quantum">
-<!ENTITY description        "FileBrowser Quantum 的 Unraid 插件移植版本。提供强大的 Web 侧管理功能。">
-<!ENTITY support            "https://github.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins">
-<!ENTITY pluginURL          "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
-<!ENTITY bundleURL          "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/&name;-&bundleversion;-x86_64.txz">
+  <!ENTITY name      "filebrowser_quantum">
+  <!ENTITY author    "insomnia417">
+  <!ENTITY version   "2026.01.11">
+  <!ENTITY launch    "Settings/filebrowser_quantum">
+  <!ENTITY description    "Settings/filebrowser_quantum">
+  <!ENTITY support    "https://github.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins"">
+  <!ENTITY gitURL    "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
+  <!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/&name;-&bundleversion;-x86_64.txz">
+  <!ENTITY bundleversion    "2026.01.11">
+  <!ENTITY description  "FileBrowser Quantum 的 Unraid 插件移植版本。提供强大的 Web 侧管理功能。">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
-
-<BR/>
-<p align="center">
-  <font color="orange" size="4"><strong>FileBrowser Quantum</strong></font>
-</p>
-<p align="justify">
-  &description;
-</p>
-<p align="center">
-  <a href="&support;" target="_blank">Support Forum</a>
-</p>
-<BR/>
-<hr/>
+<PLUGIN  name="&name;" author="&author;" version="&version;" launch="&launch;" support="&support;" gitURL="&gitURL;" pluginURL="&pluginURL;" bundleURL="&bundleURL;" bundleversion="&bundleversion;" description="&description;" min="6.9.2" support="https://forums.unraid.net/topic/109314-plugin-corefreq/">
 
 <CHANGES>
-##&name;
 ###2026.01.11
 - 插件重构
 - 改进前后端分离逻辑
