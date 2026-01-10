@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name				"filebrowser_quantum">
 <!ENTITY author				"insomnia417">
-<!ENTITY version			"2026.01.08.1">
+<!ENTITY version			"2026.01.08.2">
 <!ENTITY bundleversion			"2026.01.08">
 <!ENTITY launch				"Settings/filebrowser_quantum">
 <!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
@@ -57,7 +57,7 @@ fi;
 filebrowser_quantumurl="https://github.com/$GITHUB_REPO/releases/download/$current_version/linux-amd64-filebrowser"
 INSTALLED_BINARY="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-$current_version"
 
-
+# 建议删除这段?
 if [ -f /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum ]; then 
   cp /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum /usr/sbin/filebrowser_quantumorig.new
   mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
@@ -66,7 +66,7 @@ if [ -f /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum ]; 
   version=`filebrowser_quantumorig version | head -n 1`
 fi;
 
-# Make sure that --rc-serve is in the settings.cfg
+# settings.cfg
 if [ ! -f /boot/config/plugins/filebrowser_quantum/settings.cfg ]; then
     echo "filebrowser_ENABLED=false" > /boot/config/plugins/filebrowser_quantum/settings.cfg
 fi
@@ -83,8 +83,7 @@ if [ $? -eq 0 ]; then
   else
     echo "New version found: $current_version.Downloading and installing filebrowser_quantum binary"
     curl --connect-timeout 15 --retry 3 --retry-delay 2 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
-    cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig.new
-    mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
+    cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig
     chown root:root /usr/sbin/filebrowser_quantumorig
     chmod 755 /usr/sbin/filebrowser_quantumorig
   fi;
