@@ -47,6 +47,16 @@ elif [ "${1}" == "GET_PORT" ]; then
   fi
   exit 0
 
+elif [ "${1}" == "GET_LOCAL_VER" ]; then
+    # 直接调用二进制文件获取版本，不通过 wrapper，最安全
+    # 如果文件不存在，返回 "not installed"
+    if [ -f "/usr/sbin/filebrowser_quantumorig" ]; then
+        /usr/sbin/filebrowser_quantumorig version | head -n 1
+    else
+        echo "not installed"
+    fi
+    exit 0
+
 elif [ "${1}" == "VERSION" ]; then
   # VERSION 逻辑：原脚本用于通过 API 获取 GitHub 最新版并记录到文件
   [ ! -d "$CONF_DIR/webui" ] && mkdir -p "$CONF_DIR/webui"
