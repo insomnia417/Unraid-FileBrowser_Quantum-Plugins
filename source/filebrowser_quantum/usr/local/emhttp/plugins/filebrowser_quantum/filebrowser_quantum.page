@@ -27,7 +27,7 @@ function updatefilebrowser_quantum(branch) {
 
 function webui(form) {
    var state = form.webui_status.value;
-   openBox('/usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh&arg1='+state,"filebrowser_quantum WebUI",450,800,true);
+   openBox('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh&arg1='+state,"filebrowser_quantum WebUI",450,800,true);
 }
 </script>
 
@@ -44,7 +44,7 @@ exec('filebrowser_quantum version --check | grep -Po "(([a-z])*:( )*)\K( )*([0-9
 $currentversion = $filebrowser_quantum_version[0];
 
 if (!file('/boot/config/plugins/filebrowser_quantum/webui/latest')) {
-  exec('/usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh "VERSION"');
+  exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
   if (!file_exists('/boot/config/plugins/filebrowser_quantum/webui/latest')) {
     $webui_latest = "Error fetching version number";
   } else {
@@ -59,7 +59,7 @@ if (empty($webui_local)) {
   $webui_local = "not installed";
 }
 
-$webui_pid = exec('pgrep -f "filebrowser_quantumorig.*--rc-web-gui"');
+$webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
 ?>
 
 <?
@@ -133,8 +133,8 @@ if ($branch == "1") {
 
 	<form action="" method="post"> 
 	<select name="webui_status"> 
-	<option value="false" <?php if($settings['WEBUI_ENABLED'] == false) echo("selected")?>>Disabled</option>
-	<option value="true" <?php if($settings['WEBUI_ENABLED'] == true) echo("selected")?>>Enabled</option>
+	<option value="false" <?php if($settings['filebrowser_ENABLED'] == false) echo("selected")?>>Disabled</option>
+	<option value="true" <?php if($settings['filebrowser_ENABLED'] == true) echo("selected")?>>Enabled</option>
 	</select> 
 
 	<?
