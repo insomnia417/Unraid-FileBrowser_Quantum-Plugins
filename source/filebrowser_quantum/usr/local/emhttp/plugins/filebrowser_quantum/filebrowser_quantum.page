@@ -127,27 +127,25 @@ $webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
 	<br>
 	<input type="button" value="升级filebrowser_quantum版本" <?php if ($currentversion == $latestversion){ ?> disabled <?php   } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
-	<h2>服务
-	<span style="font-size:0.6em; color: <?= !empty($webui_pid) ? 'green' : 'red' ?>;">
-		&nbsp;&nbsp;&nbsp;<?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?>
-	</span>
-	</h2>
+<h2>服务
+  <span style="font-size:0.6em; color: <?= !empty($webui_pid) ? 'green' : 'red' ?>;">
+    &nbsp;&nbsp;&nbsp;<?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?>
+  </span>
+  </h2>
 
-	<form action="" method="post"> 
-	<select name="webui_status"> 
-	<option value="false" <?php if($settings['filebrowser_ENABLED'] == 'false' || empty($settings['filebrowser_ENABLED'])) echo("selected")?>>Disabled</option>
-	<option value="true" <?php if($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') echo("selected")?>>Enabled</option>
-	</select> 
+  <form action="" method="post"> 
+    <select name="webui_status" onchange="this.form.apply_btn.disabled=false; this.form.apply_btn.className='submit';"> 
+      <option value="false" <?php if($settings['filebrowser_ENABLED'] == 'false' || empty($settings['filebrowser_ENABLED'])) echo("selected")?>>Disabled</option>
+      <option value="true" <?php if($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') echo("selected")?>>Enabled</option>
+    </select> 
 
+    <br><br>
+    <input type="button" name="apply_btn" value="Apply" disabled onclick="webui(this.form)">
 
-	<br>
-	<input type="button" value="Apply" onclick="webui(this.form)">
-  <?
-  if (!empty($webui_pid)) {
-    echo '<input type="button" class="localURL" value="Open WebUI" onclick="window.open(\'http://' . $_SERVER['SERVER_ADDR'] . ':' . $dynamic_port . '\', \'_blank\')" />';
-  }
-  ?>
-	</form> 
+    <? if (!empty($webui_pid)): ?>
+      <input type="button" class="localURL" value="Open WebUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
+    <? endif; ?>
+  </form>
 
   </div>
   <div class="column right">
