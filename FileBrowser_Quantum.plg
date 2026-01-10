@@ -13,9 +13,10 @@
 
 <CHANGES>
 ##&name;
-###2026.01.09 (v4.0)
-- 完美适配 rclone 风格的 WebUI 更新逻辑。
-- 增加前端版本对比与一键更新功能。
+###2026.01.09 (v4.1)
+- 修复：确保二进制文件在安装时正确部署到 /usr/sbin。
+- 智能化 Wrapper：支持 version/help 命令不带 -c 参数。
+- 完整继承 rclone 项目的安装与更新逻辑。
 </CHANGES>
 
 <FILE Name="/boot/config/plugins/&name;/install/&name;-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
@@ -24,24 +25,25 @@
 
 <FILE Run="/bin/bash" Method="install">
 <INLINE>
-# 基础目录准备
+# 1. 基础路径准备
 mkdir -p /boot/config/plugins/&name;/install
 
-# 部署本地二进制
+# 2. 部署二进制文件（解决你遇到的 No such file 错误）
 if [ -f /boot/config/plugins/&name;/install/&name; ]; then 
   cp /boot/config/plugins/&name;/install/&name; /usr/sbin/&name;-orig
+  chown root:root /usr/sbin/&name;-orig
   chmod 755 /usr/sbin/&name;-orig
 fi;
 
-# 默认配置文件
+# 3. 确保配置文件存在
 if [ ! -f /boot/config/plugins/&name;/config.yaml ]; then
   touch /boot/config/plugins/&name;/config.yaml;
 fi;
 
-# 初始化版本信息供 WebUI 读取
+# 4. 初始化版本信息（供前端读取）
 /usr/local/emhttp/plugins/&name;/webuiScript.sh "VERSION"
 
-# 尝试启动
+# 5. 启动服务
 /usr/local/emhttp/plugins/&name;/webuiScript.sh "true"
 
 echo "-----------------------------------------------------------"
@@ -55,6 +57,7 @@ echo "-----------------------------------------------------------"
 #!/bin/bash
 DAEMON="/usr/sbin/&name;-orig"
 CONFIG="/boot/config/plugins/&name;/config.yaml"
+# 智能判断：如果是 version 或 help 命令，不带 -c 参数执行
 if [[ $# -eq 0 ]] || [[ "$1" != "version" &amp;&amp; "$1" != "help" ]]; then
     $DAEMON -c "$CONFIG" "$@"
 else
@@ -67,7 +70,8 @@ fi
 <INLINE>
 /usr/local/emhttp/plugins/&name;/webuiScript.sh "false"
 rm -rf /boot/config/plugins/&name;/install
-rm -f /usr/sbin/&name;-orig /usr/sbin/&name;
+rm -f /usr/sbin/&name;-orig
+rm -f /usr/sbin/&name;
 removepkg &name;-&bundleversion;-bundle
 rm -rf /usr/local/emhttp/plugins/&name;
 </INLINE>
