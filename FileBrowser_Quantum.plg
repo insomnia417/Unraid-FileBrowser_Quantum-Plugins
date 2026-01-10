@@ -63,7 +63,7 @@ if [ -f /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum ]; 
   mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
   chown root:root /usr/sbin/filebrowser_quantumorig
   chmod 755 /usr/sbin/filebrowser_quantumorig
-  version=`filebrowser_quantumorig --version | head -n 1`
+  version=`filebrowser_quantumorig version | head -n 1`
 fi;
 
 # Make sure that --rc-serve is in the settings.cfg
@@ -144,7 +144,7 @@ Create wrapper
 <INLINE>
 #!/bin/bash
 config=/boot/config/plugins/filebrowser_quantum/config.yaml
-	filebrowser_quantumorig --config $config "$@";
+	filebrowser_quantumorig -c $config "$@";
 </INLINE>
 </FILE>
 	
