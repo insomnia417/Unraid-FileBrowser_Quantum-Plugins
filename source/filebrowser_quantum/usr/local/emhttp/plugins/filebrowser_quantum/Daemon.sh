@@ -60,20 +60,28 @@ elif [ "${1}" == "GET_LOCAL_VER" ]; then
     exit 0
 
 elif [ "${1}" == "VERSION" ]; then
-  # 确保 install 目录存在
-  [ ! -d "$CONF_DIR/install" ] && mkdir -p "$CONF_DIR/install"
-  
-  # 获取 GitHub 最新版本号
-  LAT_V=$(wget -qO- https://api.github.com/repos/gtsteffaniak/filebrowser/releases/latest | jq -r '.tag_name' | sed 's/^v//')
-  
-  if [ ! -z "$LAT_V" ] && [ "$LAT_V" != "null" ]; then
-    # 【关键】把版本号写进 install 目录下的 latest 文件
-    echo "$LAT_V" > "$CONF_DIR/install/latest"
-    exit 0
-  else
-    exit 1
-  fi
-fi
+    # 1. 确保目录存在
+    [ ! -d "$CONF_DIR/install" ] && mkdir -p "$CONF_DIR/install"
+
+    # 2. 获取 GitHub 所有的标签列表 (假设你之前定义了 TAG_LIST，如果没有，用下面这行获取)
+    TAG_LIST=$(wget -qO- https://api.github.com/repos/filebrowser/filebrowser/releases | jq -r '.[].tag_name')
+
+    # 3. 套用你 PLG 里的逻辑来决定获取哪个版本
+    if [ -f "$CONF_DIR/install/beta" ]; then
+        # 提取最新的 beta 版本号
+        LAT_V=$(echo "$TAG_LIST" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
+    else
+        # 提取最新的 stable 版本号
+        LAT_V=$(echo "$TAG_LIST" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
+    fi
+
+    # 4. 写入文件供 .page 读取
+    if [ ! -z "$LAT_V" ] && [ "$LAT_V" != "null" ]; then
+        echo "$LAT_V" > "$CONF_DIR/install/latest"
+        exit 0
+    else
+        exit 1
+    fi
 
 echo "正在启动FileBrowser" | tee >(logger -t "$TAG")
 # 【关键修改】：移除了 rclone 特有的参数，改为 filebrowser 启动格式
