@@ -64,7 +64,7 @@ elif [ "${1}" == "VERSION" ]; then
     [ ! -d "$CONF_DIR/install" ] && mkdir -p "$CONF_DIR/install"
 
     # 2. 获取 GitHub 所有的标签列表 (假设你之前定义了 TAG_LIST，如果没有，用下面这行获取)
-    TAG_LIST=$(wget -qO- https://api.github.com/repos/gtsteffaniak/filebrowser/releases | jq -r '.[].tag_name')
+    TAG_LIST=$(wget -qO- https://api.github.com/repos/filebrowser/filebrowser/releases | jq -r '.[].tag_name')
 
     # 3. 套用你 PLG 里的逻辑来决定获取哪个版本
     if [ -f "$CONF_DIR/install/beta" ]; then
@@ -93,8 +93,8 @@ sleep 2
 # 最终检查
 if pgrep "filebrowser_quantumorig" > /dev/null 2>&1 ; then
   echo
-  echo "FileBrowser 启动成功!" | tee >(logger -t "$TAG")
+  echo " FileBrowser 启动成功 ! " | tee >(logger -t "$TAG")
 else
   echo
-  echo "FileBrowser 启动失败 , 请检查设置和日志 . " | tee >(logger -t "$TAG")
+  echo " FileBrowser 启动失败 , 请检查设置和日志 . " | tee >(logger -t "$TAG")
 fi
