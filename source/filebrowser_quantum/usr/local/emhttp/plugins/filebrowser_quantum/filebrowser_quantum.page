@@ -63,7 +63,7 @@ $webui_pid = exec('pgrep "filebrowser_quantumorig"');
 ?>
 
 <?
-if (file_exists("/boot/config/plugins/filebrowser_quantum/install/beta") == true) {
+if (file_exists("/boot/config/plugins/filebrowser_quantum/install") == true) {
   $branch = "2";
 } elseif (strpos($currentversion, 'beta') !== false) {
   $branch = "2";
@@ -76,12 +76,12 @@ if (file_exists("/boot/config/plugins/filebrowser_quantum/install/beta") == true
 if (isset($_POST['branch'])) {$branch = $_POST['branch'];}
 
 if ($branch == "1") {
-    exec("rm -f /boot/config/plugins/filebrowser_quantum/install/beta");
+    exec("rm -f /boot/config/plugins/filebrowser_quantum/install");
     $latestversion = $filebrowser_quantum_version[1];
     ($latestversion == '') ? $latestversion = "Error fetching version number" : '';
 
 } elseif ($branch == "2") {
-    exec("touch /boot/config/plugins/filebrowser_quantum/install/beta");
+    exec("touch /boot/config/plugins/filebrowser_quantum/install");
     $latestversion = $filebrowser_quantum_version[2];
     ($latestversion == '') ? $latestversion = "Error fetching version number" : '';
 }
