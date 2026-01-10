@@ -60,26 +60,19 @@ elif [ "${1}" == "GET_LOCAL_VER" ]; then
     exit 0
 
 elif [ "${1}" == "VERSION" ]; then
-  # VERSION 逻辑：原脚本用于通过 API 获取 GitHub 最新版并记录到文件
-  [ ! -d "$CONF_DIR/webui" ] && mkdir -p "$CONF_DIR/webui"
-  [ -f "$CONF_DIR/webui/latest" ] && rm -f "$CONF_DIR/webui/latest"
+  # 确保 install 目录存在
+  [ ! -d "$CONF_DIR/install" ] && mkdir -p "$CONF_DIR/install"
   
-  # 获取 FileBrowser 官方仓库的最新 Release 标签
-  API_RESULT="$(wget -qO- https://api.github.com/repos/filebrowser/filebrowser/releases/latest)"
-  # 记录版本号到 latest 文件第一行
-  echo "${API_RESULT}" | jq -r '.tag_name' | sed 's/^v//' > "$CONF_DIR/webui/latest"
-  # 记录下载链接到 latest 文件第二行（这里保留逻辑，你可以改写为下载特定的资源包）
-  echo "${API_RESULT}" | jq -r '.assets[].browser_download_url' >> "$CONF_DIR/webui/latest"
+  # 获取 GitHub 最新版本号
+  LAT_V=$(wget -qO- https://api.github.com/repos/filebrowser/filebrowser/releases/latest | jq -r '.tag_name' | sed 's/^v//')
   
-  LAT_V="$(cat "$CONF_DIR/webui/latest" | head -1)"
-  if [ -z "${LAT_V}" ] || [ "${LAT_V}" == "null" ]; then
-    rm -f "$CONF_DIR/webui/latest"
-  else
+  if [ ! -z "$LAT_V" ] && [ "$LAT_V" != "null" ]; then
+    # 【关键】把版本号写进 install 目录下的 latest 文件
+    echo "$LAT_V" > "$CONF_DIR/install/latest"
     exit 0
+  else
+    exit 1
   fi
-else
-  echo "Error: Unknown parameter ${1}"
-  exit 1
 fi
 
 echo "正在启动FileBrowser" | tee >(logger -t "$TAG")
