@@ -184,9 +184,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   <div class="column right">
     <h2>Edit config</h2>
   <form method="POST">
-    <textarea spellcheck="false" cols="80" rows="22" name="config_text" style="font-family:bitstream;width:100%"><?=$text;?></textarea>
+    <textarea spellcheck="false" cols="80" rows="22" name="config_text" 
+    oninput="this.form.save_config_btn.style.color='#fff'; this.form.save_config_btn.style.background='#4caf50';" 
+    style="font-family:bitstream;width:100%"><?=$text;?></textarea>
     <br>
-    <input type="submit" name="save_config_btn" value="Apply"/>
+    <input type="submit" name="save_config_btn" value="Apply" style="padding: 2px 20px; cursor: pointer;"/>
     <input type="button" value="Original" onclick="setDefault(this.form)">
   </form> 
 </div>
