@@ -81,6 +81,7 @@ if (empty($latestversion)) $latestversion = "Unknown";
 // 进程状态检测 (pgrep -f 匹配更精准)
 $webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
 
+//Section D
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['text'])) {
     if ($settings['filebrowser_ENABLED'] == 'true') {
         // 使用绝对路径，并且使用 bash 明确执行
