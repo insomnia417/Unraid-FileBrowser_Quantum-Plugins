@@ -3,8 +3,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name               "filebrowser_quantum">
 <!ENTITY author             "insomnia417">
-<!ENTITY version            "2026.01.11">
-<!ENTITY bundleversion      "2026.01.11">
+<!ENTITY version            "2026.01.10">
+<!ENTITY bundleversion      "2026.01.10">
 <!ENTITY launch             "Settings/filebrowser_quantum">
 <!ENTITY description        "FileBrowser Quantum 的 unRAID 插件移植版本">
 <!ENTITY support            "https://github.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins">
@@ -13,15 +13,24 @@
 <!ENTITY md5bundle			"373d70009e7fc1ee5fdcd37cc359f829">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" support="&support;" pluginURL="&pluginURL;">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" support="&support;" pluginURL="&pluginURL;" description="&description;">
+
+<BR/>
+<p align="center">
+  <font color="orange" size="4"><strong>FileBrowser Quantum</strong></font>
+</p>
+<p align="justify">
+  &description;
+</p>
+<p align="center">
+  <a href="&support;" target="_blank">Support Forum</a>
+</p>
+<BR/>
 
 <CHANGES>
-### 2026.01.11
-- 修复插件列表显示空白的问题
+### 2026.01.10
+- 重构脚本
 - 优化 XML 结构
-
-### 2026.01.08
-- rebuild
 </CHANGES>
 
 <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
