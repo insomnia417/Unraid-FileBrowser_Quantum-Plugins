@@ -122,6 +122,8 @@ if [ ! -f /boot/config/plugins/filebrowser_quantum/config.yaml ]; then
 fi;
 
 chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh
+chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh
+chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh
 
 if [ "$(cat /boot/config/plugins/filebrowser_quantum/settings.cfg | grep -n "^filebrowser_ENABLED=" | cut -d '=' -f2 | sed 's/\"//g')" == "true" ]; then
   /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "true"
