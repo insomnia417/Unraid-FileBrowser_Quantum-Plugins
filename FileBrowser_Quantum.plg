@@ -1,143 +1,75 @@
 <?xml version='1.0' standalone='yes'?>
-
 <!DOCTYPE PLUGIN [
 <!ENTITY name				"filebrowser_quantum">
 <!ENTITY author				"insomnia417">
 <!ENTITY version			"2026.01.09">
 <!ENTITY bundleversion		"2026.01.09">
-<!ENTITY launch				"Settings/filebrowser_quantum">
-<!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/filebrowser_quantum.plg">
-<!ENTITY bundleURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
+<!ENTITY launch				"Settings/&name;">
+<!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/&name;.plg">
+<!ENTITY bundleURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/&name;-&bundleversion;-x86_64.txz">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <CHANGES>
 ##&name;
-###2026.01.09 (v2.1)
-- 移除对 settings.cfg 的所有依赖逻辑。
-- 修复因全角空格导致的 XML 解析错误。
-- 修正卸载脚本中的符号转义。
+###2026.01.09 (v4.0)
+- 完美适配 rclone 风格的 WebUI 更新逻辑。
+- 增加前端版本对比与一键更新功能。
 </CHANGES>
 
-<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
+<FILE Name="/boot/config/plugins/&name;/install/&name;-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
 <URL>&bundleURL;</URL>
 </FILE>
 
 <FILE Run="/bin/bash" Method="install">
 <INLINE>
-if [ -f /boot/config/plugins/filebrowser_quantum/install/beta ]; then
-  fburl="https://github.com/gtsteffaniak/filebrowser/releases/latest/download/linux-amd64-filebrowser"
-  versionurl="https://github.com/gtsteffaniak/filebrowser/tags"
-else
-  fburl="https://github.com/gtsteffaniak/filebrowser/releases/download/v1.1.6-beta/linux-amd64-filebrowser"
-  versionurl="https://github.com/gtsteffaniak/filebrowser/tags"
-fi;	
+# 基础目录准备
+mkdir -p /boot/config/plugins/&name;/install
 
-if [ -f /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum ]; then 
-  cp /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum /usr/sbin/filebrowser_quantum-orig.new
-  mv /usr/sbin/filebrowser_quantum-orig.new /usr/sbin/filebrowser_quantum-orig
-  chown root:root /usr/sbin/filebrowser_quantum-orig
-  chmod 755 /usr/sbin/filebrowser_quantum-orig
-  version=`filebrowser_quantum-orig version | head -n 1`
+# 部署本地二进制
+if [ -f /boot/config/plugins/&name;/install/&name; ]; then 
+  cp /boot/config/plugins/&name;/install/&name; /usr/sbin/&name;-orig
+  chmod 755 /usr/sbin/&name;-orig
 fi;
 
-# 【修改：删除了原先这里对 settings.cfg 的检测和 grep 启动逻辑】
-
-rm -f $(ls /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum*.txz 2>/dev/null | grep -v '&bundleversion;')
-rm -f /usr/sbin/filebrowser_quantum
-
-ping -q -c6 github.com >/dev/null
-if [ $? -eq 0 ]; then
-  current_version=`curl $versionurl`
-  if [[ $version = $current_version ]]; then
-    echo "Local filebrowser_quantum binary up-to-date"  
-  else
-    echo "Downloading and installing filebrowser_quantum"
-    curl --connect-timeout 15 --retry 3 --retry-delay 2 --retry-max-time 30 -L -o /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum --create-dirs $fburl
-    cp /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum /usr/sbin/filebrowser_quantum-orig.new
-    mv /usr/sbin/filebrowser_quantum-orig.new /usr/sbin/filebrowser_quantum-orig
-    chown root:root /usr/sbin/filebrowser_quantum-orig
-    chmod 755 /usr/sbin/filebrowser_quantum-orig
-  fi;
-else
-  echo "Connection error - Could not reach filebrowser_quantum servers - Will try fallback to existing binary"
-  if [ ! -f /usr/sbin/filebrowser_quantum-orig ]; then
-    echo "Install failed - No binary found"
-    removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
-    rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
-    rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
-    exit 1
-  fi;
+# 默认配置文件
+if [ ! -f /boot/config/plugins/&name;/config.yaml ]; then
+  touch /boot/config/plugins/&name;/config.yaml;
 fi;
 
-if [ ! -f /usr/sbin/filebrowser_quantum-orig ]; then
-  echo "Install failed - No binary found"
-  removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
-  rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
-  rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
-  exit 1
-fi;	
-	
-if [ ! -f /boot/config/plugins/filebrowser_quantum/config.yaml ]; then
-  touch /boot/config/plugins/filebrowser_quantum/config.yaml;
-fi;
+# 初始化版本信息供 WebUI 读取
+/usr/local/emhttp/plugins/&name;/webuiScript.sh "VERSION"
 
-# 【修改：直接启动，不再通过 settings.cfg 判断 ENABLED 状态】
-if [ -f /usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh ]; then
-  /usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh "true"
-fi
+# 尝试启动
+/usr/local/emhttp/plugins/&name;/webuiScript.sh "true"
 
-echo ""
 echo "-----------------------------------------------------------"
 echo " &name; has been installed. "
 echo "-----------------------------------------------------------"
-echo ""
-
 </INLINE>
 </FILE>
 
-<FILE Run="/bin/bash">
-<INLINE>
-if ! [ -f /bin/fusermount ]; then
-  if [ -f /usr/bin/fusermount3 ]; then
-    ln -s /usr/bin/fusermount3 /bin/fusermount
-  fi;
-fi;
-</INLINE>
-</FILE>
-
-<FILE Name="/usr/sbin/filebrowser_quantum" Mode="0755">
+<FILE Name="/usr/sbin/&name;" Mode="0755">
 <INLINE>
 #!/bin/bash
-config=/boot/config/plugins/filebrowser_quantum/config.yaml
-filebrowser_quantum-orig -c $config "$@";
-</INLINE>
-</FILE>
-	
-<FILE Name="/boot/config/plugins/filebrowser_quantum/.gitignore" Mode="0600">
-<INLINE>
-config.yaml
+DAEMON="/usr/sbin/&name;-orig"
+CONFIG="/boot/config/plugins/&name;/config.yaml"
+if [[ $# -eq 0 ]] || [[ "$1" != "version" &amp;&amp; "$1" != "help" ]]; then
+    $DAEMON -c "$CONFIG" "$@"
+else
+    $DAEMON "$@"
+fi
 </INLINE>
 </FILE>
 
 <FILE Run="/bin/bash" Method="remove">
 <INLINE>
-KILL_PID="$(pgrep -f "filebrowser_quantum-orig")"
-[[ ! -z "$KILL_PID" ]] &amp;&amp; kill -SIGINT $KILL_PID
-rm -rf /boot/config/plugins/filebrowser_quantum/install
-rm -f /usr/sbin/filebrowser_quantum-orig
-rm -f /usr/sbin/filebrowser_quantum
-removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
-rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
-rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
-
-echo ""
-echo "-----------------------------------------------------------"
-echo " &name; has been uninstalled."
-echo "-----------------------------------------------------------"
-echo ""
+/usr/local/emhttp/plugins/&name;/webuiScript.sh "false"
+rm -rf /boot/config/plugins/&name;/install
+rm -f /usr/sbin/&name;-orig /usr/sbin/&name;
+removepkg &name;-&bundleversion;-bundle
+rm -rf /usr/local/emhttp/plugins/&name;
 </INLINE>
 </FILE>
-
 </PLUGIN>
