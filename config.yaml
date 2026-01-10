@@ -6,7 +6,7 @@ server:
     - levels: "info|warning|error"
   sources:
     - path: "/"
-      name: "/"
+      name: "/根目录"
       config:
         denyByDefault: false
         defaultEnabled: true
