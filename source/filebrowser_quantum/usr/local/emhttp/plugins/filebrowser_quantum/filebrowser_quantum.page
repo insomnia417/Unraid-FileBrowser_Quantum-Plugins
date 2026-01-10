@@ -123,7 +123,7 @@ if ($branch == "1") {
 	echo "Latest version:&emsp;&ensp;$latestversion";
 	?>
 	<br>
-	<input type="button" value="Update filebrowser_quantum" <?php if ($currentversion == $latestversion){ ?> disabled <?php   } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
+	<input type="button" value="升级filebrowser_quantum版本" <?php if ($currentversion == $latestversion){ ?> disabled <?php   } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
   <h2>服务<span style="font-size:0.6em; <? echo (!empty($webui_pid)) ? 'color:green;">&nbsp;&nbsp;&nbsp;running' : 'color:red;">&nbsp;&nbsp;&nbsp;stopped' ?></span></h2>
 
@@ -135,7 +135,7 @@ if ($branch == "1") {
 
 
 	<br>
-	<input type="button" value="Update" onclick="webui(this.form)">
+	<input type="button" value="Update启动?" onclick="webui(this.form)">
   <?
   if (!empty($webui_pid)) {
     echo '<input type="button" class="localURL" value="Open WebUI" onclick="window.open(\'http://' . $_SERVER['SERVER_ADDR'] . ':' . $dynamic_port . '\', \'_blank\')" />';
