@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name				"filebrowser_quantum">
 <!ENTITY author				"insomnia417">
-<!ENTITY version			"2026.01.08.v88">
+<!ENTITY version			"2026.01.08.3">
 <!ENTITY bundleversion			"2026.01.08">
 <!ENTITY launch				"Settings/filebrowser_quantum">
 <!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
@@ -122,9 +122,9 @@ fi;
 if [ "$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/filebrowser_quantum/settings.cfg)" == "true" ]; then
   /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "true"
 echo "开始运行filebrowser守护进程"
-echo "◆"
-echo "◆"
-echo "◆"
+echo "          ◆"
+echo "          ◆"
+echo "          ◆"
 fi
 
 echo ""
