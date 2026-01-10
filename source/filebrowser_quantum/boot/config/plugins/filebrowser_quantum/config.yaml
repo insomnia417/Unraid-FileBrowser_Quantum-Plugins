@@ -1,0 +1,18 @@
+server:
+  port: 8081
+  baseURL: "/"
+  database: "/boot/config/plugins/filebrowser_quantum/database.db"
+  logging:
+    - levels: "info|warning|error"
+  sources:
+    - path: "/"
+      name: "/根目录"
+      config:
+        denyByDefault: false
+        defaultEnabled: true
+userDefaults:
+  darkMode: true
+  permissions:
+    admin: true
+    modify: true
+    download: true
