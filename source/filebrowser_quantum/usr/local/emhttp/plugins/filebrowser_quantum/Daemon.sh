@@ -53,7 +53,7 @@ elif [ "${1}" == "GET_LOCAL_VER" ]; then
         # 1. 找到包含 "Version" 的行
         # 2. 用冒号 ":" 分割，取后半部分
         # 3. 去掉空格和字符 'v'
-        /usr/sbin/filebrowser_quantumorig version | grep "Version" | cut -d':' -f2 | tr -d ' v'
+        /usr/sbin/filebrowser_quantumorig version | grep "Version" | cut -d':' -f2 | tr -d ' '
     else
         echo "not installed"
     fi
@@ -64,19 +64,20 @@ elif [ "${1}" == "VERSION" ]; then
     [ ! -d "$CONF_DIR/install" ] && mkdir -p "$CONF_DIR/install"
 
     # 2. 获取 GitHub 所有的标签列表 (假设你之前定义了 TAG_LIST，如果没有，用下面这行获取)
-    TAG_LIST=$(wget -qO- https://api.github.com/repos/filebrowser/filebrowser/releases | jq -r '.[].tag_name')
+    GITHUB_REPO="gtsteffaniak/filebrowser"
+    TAG_LIST=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
 
     # 3. 套用你 PLG 里的逻辑来决定获取哪个版本
     if [ -f "$CONF_DIR/install/beta" ]; then
-        # 提取最新的 beta 版本号
-        LAT_V=$(echo "$TAG_LIST" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
+        # 提取带 v 的最新 beta 版本号
+        LAT_V=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
     else
-        # 提取最新的 stable 版本号
-        LAT_V=$(echo "$TAG_LIST" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
+        # 提取带 v 的最新 stable 版本号
+        LAT_V=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
     fi
 
     # 4. 写入文件供 .page 读取
-    if [ ! -z "$LAT_V" ] && [ "$LAT_V" != "null" ]; then
+    if [ ! -z "$LAT_V" ]; then
         echo "$LAT_V" > "$CONF_DIR/install/latest"
         exit 0
     else
@@ -95,6 +96,6 @@ if pgrep "filebrowser_quantumorig" > /dev/null 2>&1 ; then
   echo
   echo " FileBrowser 启动成功 ! " | tee >(logger -t "$TAG")
 else
-  echo
+  echo ""
   echo " FileBrowser 启动失败 , 请检查设置和日志 . " | tee >(logger -t "$TAG")
 fi
