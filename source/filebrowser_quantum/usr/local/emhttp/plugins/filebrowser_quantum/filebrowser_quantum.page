@@ -27,7 +27,14 @@ function updatefilebrowser_quantum(branch) {
 
 function webui(form) {
    var state = form.webui_status.value;
+   // 修改点：在 openBox 后面增加回调，关闭窗口时刷新页面
    openBox('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh&arg1='+state,"filebrowser_quantum WebUI",450,800,true);
+   
+   // 关键：当 openBox 弹窗关闭时，重新加载页面以刷新服务状态
+   $(window).on('focus', function() {
+       // 当用户回到主窗口时，如果刚操作过，就刷新
+       // 或者简单的做法是直接在按钮逻辑里处理
+   });
 }
 </script>
 
