@@ -1,17 +1,19 @@
 <?xml version='1.0' standalone='yes'?>
 
 <!DOCTYPE PLUGIN [
-<!ENTITY name				"filebrowser_quantum">
-<!ENTITY author				"insomnia417">
-<!ENTITY version			"2026.01.10.v1"> <!ENTITY bundleversion		"2026.01.10">
-<!ENTITY launch				"Settings/filebrowser_quantum">
-<!ENTITY description        "FileBrowser Quantum 的 Unraid 插件移植版本。提供强大的 Web 侧管理功能。">
+<!ENTITY name               "filebrowser_quantum">
+<!ENTITY author             "insomnia417">
+<!ENTITY version            "2026.01.11">
+<!ENTITY bundleversion      "2026.01.11">
+<!ENTITY launch             "Settings/filebrowser_quantum">
+<!ENTITY description        "FileBrowser Quantum 的 unRAID 插件移植版本">
 <!ENTITY support            "https://github.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins">
 <!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
-<!ENTITY bundleURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
+<!ENTITY bundleURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/&name;-&bundleversion;-x86_64.txz">
+<!ENTITY md5bundle			"373d70009e7fc1ee5fdcd37cc359f829">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.9.2">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
 
 <BR/>
 <p align="center">
@@ -21,26 +23,23 @@
   &description;
 </p>
 <p align="center">
-  <a href="&support;" target="_blank">支持论坛 (Support Forum)</a>
+  <a href="&support;" target="_blank">Support Forum</a>
 </p>
 <BR/>
-<hr/>
 
 <CHANGES>
-##&name;
-###2026.01.10.v1
-- 修复插件列表页描述不显示的问题
-- 更新安装脚本逻辑
+### 2026.01.11
+- 修复插件列表显示空白的问题
+- 优化 XML 结构
+
+### 2026.01.08
+- rebuild
 </CHANGES>
 
 <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
 <URL>&bundleURL;</URL>
-<!-- <MD5>&md5bundle;</MD5> -->
 </FILE>
 
-<!--
-Install script.
--->
 <FILE Run="/bin/bash" Method="install">
 <INLINE>
 GITHUB_REPO="gtsteffaniak/filebrowser"
