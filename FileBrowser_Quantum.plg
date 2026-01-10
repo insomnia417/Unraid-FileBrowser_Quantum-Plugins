@@ -13,10 +13,10 @@
 
 <CHANGES>
 ##&name;
-###2026.01.09 (v4.1)
-- 修复：确保二进制文件在安装时正确部署到 /usr/sbin。
-- 智能化 Wrapper：支持 version/help 命令不带 -c 参数。
-- 完整继承 rclone 项目的安装与更新逻辑。
+###2026.01.09 (v4.2)
+- 彻底修复二进制文件丢失导致的 "No such file or directory" 错误。
+- 完整移植 rclone 风格的安装、更新、卸载逻辑。
+- 修复 Wrapper 脚本在 version 指令下的路径判定。
 </CHANGES>
 
 <FILE Name="/boot/config/plugins/&name;/install/&name;-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
@@ -25,26 +25,40 @@
 
 <FILE Run="/bin/bash" Method="install">
 <INLINE>
-# 1. 基础路径准备
-mkdir -p /boot/config/plugins/&name;/install
+# 1. 变量准备
+PLUGIN_NAME="filebrowser_quantum"
+INSTALL_DIR="/boot/config/plugins/$PLUGIN_NAME/install"
+BIN_TARGET="/usr/sbin/$PLUGIN_NAME-orig"
 
-# 2. 部署二进制文件（解决你遇到的 No such file 错误）
-if [ -f /boot/config/plugins/&name;/install/&name; ]; then 
-  cp /boot/config/plugins/&name;/install/&name; /usr/sbin/&name;-orig
-  chown root:root /usr/sbin/&name;-orig
-  chmod 755 /usr/sbin/&name;-orig
-fi;
+# 2. 目录确保
+mkdir -p "$INSTALL_DIR"
 
-# 3. 确保配置文件存在
-if [ ! -f /boot/config/plugins/&name;/config.yaml ]; then
-  touch /boot/config/plugins/&name;/config.yaml;
-fi;
+# 3. 部署二进制 (这是修复报错的关键)
+# 首先检查是否有下载好的二进制文件
+if [ ! -f "$INSTALL_DIR/$PLUGIN_NAME" ]; then
+    echo "Downloading binary as it was not found in install directory..."
+    curl --connect-timeout 15 --retry 3 -L -o "$INSTALL_DIR/$PLUGIN_NAME" "https://github.com/gtsteffaniak/filebrowser/releases/latest/download/linux-amd64-filebrowser"
+fi
 
-# 4. 初始化版本信息（供前端读取）
-/usr/local/emhttp/plugins/&name;/webuiScript.sh "VERSION"
+# 强制复制并提权
+if [ -f "$INSTALL_DIR/$PLUGIN_NAME" ]; then
+    cp "$INSTALL_DIR/$PLUGIN_NAME" "$BIN_TARGET"
+    chown root:root "$BIN_TARGET"
+    chmod 755 "$BIN_TARGET"
+    echo "Binary deployed to $BIN_TARGET"
+else
+    echo "ERROR: Binary file not found even after download attempt!"
+    exit 1
+fi
 
-# 5. 启动服务
-/usr/local/emhttp/plugins/&name;/webuiScript.sh "true"
+# 4. 确保配置文件存在
+if [ ! -f "/boot/config/plugins/$PLUGIN_NAME/config.yaml" ]; then
+    touch "/boot/config/plugins/$PLUGIN_NAME/config.yaml"
+fi
+
+# 5. 初始化版本信息并启动
+/usr/local/emhttp/plugins/$PLUGIN_NAME/webuiScript.sh "VERSION"
+/usr/local/emhttp/plugins/$PLUGIN_NAME/webuiScript.sh "true"
 
 echo "-----------------------------------------------------------"
 echo " &name; has been installed. "
@@ -57,11 +71,16 @@ echo "-----------------------------------------------------------"
 #!/bin/bash
 DAEMON="/usr/sbin/&name;-orig"
 CONFIG="/boot/config/plugins/&name;/config.yaml"
-# 智能判断：如果是 version 或 help 命令，不带 -c 参数执行
+
+if [ ! -f "$DAEMON" ]; then
+    echo "Error: $DAEMON not found. Please reinstall the plugin."
+    exit 1
+fi
+
 if [[ $# -eq 0 ]] || [[ "$1" != "version" &amp;&amp; "$1" != "help" ]]; then
-    $DAEMON -c "$CONFIG" "$@"
+    exec "$DAEMON" -c "$CONFIG" "$@"
 else
-    $DAEMON "$@"
+    exec "$DAEMON" "$@"
 fi
 </INLINE>
 </FILE>
