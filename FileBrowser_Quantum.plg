@@ -13,7 +13,7 @@
   <!ENTITY description  "FileBrowser Quantum 的 Unraid 插件移植版本。提供强大的 Web 侧管理功能。">
 ]>
 
-<PLUGIN  name="&name;" author="&author;" version="&version;" launch="&launch;" support="&support;" gitURL="&gitURL;" pluginURL="&pluginURL;" bundleURL="&bundleURL;" bundleversion="&bundleversion;" description="&description;" min="6.9.2" support="https://forums.unraid.net/topic/109314-plugin-corefreq/">
+<PLUGIN  name="&name;" author="&author;" version="&version;" launch="&launch;" support="&support;" gitURL="&gitURL;" pluginURL="&pluginURL;" bundleURL="&bundleURL;" bundleversion="&bundleversion;" description="&description;" min="6.9.2">
 
 <CHANGES>
 ###2026.01.11
