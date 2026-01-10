@@ -1,37 +1,32 @@
 #!/bin/bash
-# v3.0 - 移除 settings.cfg 依赖版本
-# 路径定义
-YAML="/boot/config/plugins/filebrowser_quantum/config.yaml"
+NAME="filebrowser_quantum"
+YAML="/boot/config/plugins/$NAME/config.yaml"
+DAEMON="/usr/sbin/$NAME-orig"
 
-if [ "${1}" == "true" ]; then
-  echo "Enabling filebrowser_quantum, please wait..."
-  
-  # 【移除】：不再尝试 sed 修改 settings.cfg
-  
-  # 检查是否已在运行 (根据配置文件路径匹配)
-  if pgrep -f "filebrowser_quantum-orig.*-c $YAML" > /dev/null 2>&1 ; then
-    echo "filebrowser_quantum already started!"
-    exit 0
-  fi
-  
-  # 启动命令：完全依赖 config.yaml
-  /usr/sbin/filebrowser_quantum-orig -c ${YAML} > /dev/null 2>&1 &
-  echo "filebrowser_quantum started"
-
-elif [ "${1}" == "false" ]; then
-  echo "Disabling filebrowser_quantum..."
-  
-  # 【移除】：不再尝试 sed 修改 settings.cfg
-  
-  # 找到并优雅停止进程
-  KILL_PID="$(pgrep -f "filebrowser_quantum-orig.*-c $YAML")"
-  if [ ! -z "$KILL_PID" ]; then
-    kill -SIGINT $KILL_PID
-  fi
-  echo "filebrowser_quantum disabled"
-  exit 0
-
-elif [ "${1}" == "VERSION" ]; then
-  # 既然不需要额外下载 WebUI，此分支直接退出
-  exit 0
-fi
+case "$1" in
+    'true')
+        # 启动逻辑：确保不重复启动
+        if ! pgrep -f "$NAME-orig.*-c $YAML" > /dev/null; then
+            echo "Starting $NAME..."
+            $DAEMON -c $YAML > /dev/null 2>&1 &
+        fi
+    ;;
+    'false')
+        # 停止逻辑：精准杀掉对应配置的进程
+        echo "Stopping $NAME..."
+        KILL_PID="$(pgrep -f "$NAME-orig.*-c $YAML")"
+        [ ! -z "$KILL_PID" ] && kill -SIGINT $KILL_PID
+    ;;
+    'VERSION')
+        # 1. 输出本地版本供 PHP 直接调用显示
+        if [ -f "$DAEMON" ]; then
+            $DAEMON version | head -n 1 | awk '{print $NF}'
+        fi
+        
+        # 2. 异步获取 GitHub 远程最新 Tag 并存入 /tmp
+        (
+            REMOTE_TAG=$(curl -s https://api.github.com/repos/gtsteffaniak/filebrowser/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+            echo "$REMOTE_TAG" > /tmp/${NAME}_newest_version
+        ) &
+    ;;
+esac
