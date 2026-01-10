@@ -1,9 +1,5 @@
 #!/bin/bash
-NAME="filebrowser_quantum"
-# 权限修复
-chmod 755 /usr/local/emhttp/plugins/$NAME/*.sh
-if [ -f "/usr/sbin/$NAME-orig" ]; then
-    chmod 755 "/usr/sbin/$NAME-orig"
-fi
-# 启动
-/usr/local/emhttp/plugins/$NAME/webuiScript.sh "true"
+export HOME=$(grep $(whoami) /etc/passwd | cut -d: -f 6)
+source ${HOME}/.bashrc
+echo "<font color='red'> ##### Note that closing this window will abort the execution of this script ##### </font>"
+"$1" "$2"
