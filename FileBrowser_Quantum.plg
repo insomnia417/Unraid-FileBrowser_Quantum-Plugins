@@ -51,10 +51,7 @@ if [ -f /boot/config/plugins/filebrowser_quantum/install/beta ]; then
 else
     # 提取最新的 stable 版本号 (例如 v1.1.0-stable)
     current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
-	echo "-----------------------------------------------------------"
-    echo "Stable mode detected. Target version: $current_version"
     echo "在线检测 , 最新稳定版号为 : $current_version"
-	echo "-----------------------------------------------------------"
 fi;	
 
 INSTALLED_BINARY="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-$current_version"
@@ -85,10 +82,7 @@ if [ $? -eq 0 ]; then
     echo "Local filebrowser_quantum binary ($current_version) up-to-date"  
     echo "本地已存在 ($current_version) "  
   else
-	echo "-----------------------------------------------------------"
-    echo "New version found: $current_version.Downloading and installing filebrowser_quantum binary"
     echo "发现新版本 : $current_version 下载安装中..."
-	echo "-----------------------------------------------------------"
     curl --connect-timeout 15 --retry 3 --retry-delay 2 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
     cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig
     chown root:root /usr/sbin/filebrowser_quantumorig
@@ -127,15 +121,14 @@ chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum
 
 if [ "$(cat /boot/config/plugins/filebrowser_quantum/settings.cfg | grep -n "^filebrowser_ENABLED=" | cut -d '=' -f2 | sed 's/\"//g')" == "true" ]; then
   /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "true"
-echo "-----------------------------------------------------------"
 echo "开始运行filebrowser守护进程"
-echo "-----------------------------------------------------------"
+echo "◆"
+echo "◆"
+echo "◆"
 fi
 
 echo ""
-echo "-----------------------------------------------------------"
-echo " filebrowser_quantum has been installed. "
-echo " filebrowser_quantum 安装成功. "
+echo " filebrowser_quantum 安装成功 "
 echo "-----------------------------------------------------------"
 echo ""
 
