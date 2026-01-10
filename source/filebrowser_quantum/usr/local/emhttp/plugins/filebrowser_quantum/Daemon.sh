@@ -5,6 +5,7 @@ TAG="FileBrowser-Plugin"
 PLUGIN_NAME="filebrowser_quantum"
 CONF_DIR="/boot/config/plugins/$PLUGIN_NAME"
 SETTINGS="$CONF_DIR/settings.cfg"
+GITHUB_REPO="gtsteffaniak/filebrowser"
 # 真正执行的二进制文件路径
 BINARY="/usr/sbin/filebrowser_quantumorig"
 
@@ -64,7 +65,6 @@ elif [ "${1}" == "VERSION" ]; then
     [ ! -d "$CONF_DIR/install" ] && mkdir -p "$CONF_DIR/install"
 
     # 2. 获取 GitHub 所有的标签列表 (假设你之前定义了 TAG_LIST，如果没有，用下面这行获取)
-    GITHUB_REPO="gtsteffaniak/filebrowser"
     TAG_LIST=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
 
     # 3. 套用你 PLG 里的逻辑来决定获取哪个版本
