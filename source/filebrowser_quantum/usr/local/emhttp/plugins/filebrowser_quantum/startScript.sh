@@ -1,9 +1,11 @@
 #!/bin/bash
 NAME="filebrowser_quantum"
 
-# 确保脚本权限
+# 修复可能的权限丢失
 chmod 755 /usr/local/emhttp/plugins/$NAME/*.sh
-chmod 755 /usr/sbin/$NAME-orig
+if [ -f "/usr/sbin/$NAME-orig" ]; then
+    chmod 755 "/usr/sbin/$NAME-orig"
+fi
 
-# 执行启动
+# 启动
 /usr/local/emhttp/plugins/$NAME/webuiScript.sh "true"
