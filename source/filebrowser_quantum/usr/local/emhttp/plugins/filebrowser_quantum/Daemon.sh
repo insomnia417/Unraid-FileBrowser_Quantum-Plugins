@@ -101,4 +101,4 @@ done
 
 # 如果 5 秒后还没起来，才报失败
 echo ""
-echo " FileBrowser 启动失败 , 请检查设置和日志 . " | tee >(logger -t "$TAG")
+echo -e "\e[41m FileBrowser 启动失败 , 请检查设置和日志 . \e[0m" | tee >(logger -t "$TAG")
