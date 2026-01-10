@@ -10,7 +10,7 @@
   <!ENTITY pluginURL          "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
   <!ENTITY bundleURL          "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/&name;-&bundleversion;-x86_64.txz">
 ]>
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" description="&description">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;">
 
 <CHANGES>
 ### 2026.01.11
