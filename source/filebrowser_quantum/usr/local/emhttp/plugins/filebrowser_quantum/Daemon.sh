@@ -23,9 +23,9 @@ if [ "${1}" == "true" ]; then
 
 elif [ "${1}" == "false" ]; then
   # 停止进程
-  KILL_PID="$(pgrep -f "filebrowser_quantumorig")"
+  KILL_PID=$(pgrep "filebrowser_quantumorig")
   echo "停止 FileBrowser , 请稍后..." | tee >(logger -t "$TAG")
-  [ ! -z "$KILL_PID" ] && kill -SIGINT $KILL_PID
+  [ ! -z "$KILL_PID" ] && kill $KILL_PID
   # 修改配置文件中的使能开关 (filebrowser_ENABLED=false)
   sed -i "/filebrowser_ENABLED=/c\filebrowser_ENABLED=${1}" "$SETTINGS"
   echo "FileBrowser 已停止" | tee >(logger -t "$TAG")
@@ -48,10 +48,12 @@ elif [ "${1}" == "GET_PORT" ]; then
   exit 0
 
 elif [ "${1}" == "GET_LOCAL_VER" ]; then
-    # 直接调用二进制文件获取版本，不通过 wrapper，最安全
-    # 如果文件不存在，返回 "not installed"
     if [ -f "/usr/sbin/filebrowser_quantumorig" ]; then
-        /usr/sbin/filebrowser_quantumorig version | head -n 1
+        # 逻辑：
+        # 1. 找到包含 "Version" 的行
+        # 2. 用冒号 ":" 分割，取后半部分
+        # 3. 去掉空格和字符 'v'
+        /usr/sbin/filebrowser_quantumorig version | grep "Version" | cut -d':' -f2 | tr -d ' v'
     else
         echo "not installed"
     fi
@@ -80,20 +82,15 @@ else
   exit 1
 fi
 
-
-# --- 3. 核心启动逻辑 ---
-# 从配置文件读取启动参数
-START_PARAMS="$(cat "$SETTINGS" | grep -n "^START_PARAMS=" | cut -d '=' -f2- | sed 's/\"//g')"
-
 echo "正在启动FileBrowser" | tee >(logger -t "$TAG")
 # 【关键修改】：移除了 rclone 特有的参数，改为 filebrowser 启动格式
 # -c 指定配置文件。at now 确保在后台持续运行。
-echo "$BINARY -c $CONF_DIR/config.yaml ${START_PARAMS}" | at now -M > /dev/null 2>&1
+echo "$BINARY -c $CONF_DIR/config.yaml" | at now -M > /dev/null 2>&1
 
 sleep 2
 
 # 最终检查
-if pgrep -f "filebrowser_quantumorig" > /dev/null 2>&1 ; then
+if pgrep "filebrowser_quantumorig" > /dev/null 2>&1 ; then
   echo
   echo "FileBrowser 启动成功!" | tee >(logger -t "$TAG")
 else
