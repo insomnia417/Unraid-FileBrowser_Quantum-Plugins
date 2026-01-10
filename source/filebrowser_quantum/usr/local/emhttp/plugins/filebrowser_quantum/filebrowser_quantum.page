@@ -81,24 +81,34 @@ if (empty($latestversion)) $latestversion = "Unknown";
 // 进程状态检测 (pgrep -f 匹配更精准)
 $webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
 
-//Section D
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['text'])) {
-    if ($settings['filebrowser_ENABLED'] == 'true') {
-        // 使用绝对路径，并且使用 bash 明确执行
-        // 增加 logger 记录，方便你在 Unraid 的 syslog 中查看是否触发
-        exec("logger -t 'FileBrowser-Plugin' 'Detect config change, restarting service...'");
+// --- Section D: 接管配置保存与重启逻辑 ---
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
+    // 1. 获取前端传来的新配置内容
+    $new_content = $_POST['config_text'];
+    
+    // 2. 核心操作：手动将新内容写入 config.yaml 文件
+    // 因为我们去掉了 action="/update.php"，所以必须由我们自己来写文件
+    if (file_put_contents($file, $new_content) !== false) {
         
-        // 1. 强制停止 (使用脚本中的逻辑)
-        exec("bash /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh 'false' > /dev/null 2>&1");
-        
-        // 2. 稍微多等一会儿，确保旧端口彻底释放
-        sleep(2);
-        
-        // 3. 启动新进程
-        exec("bash /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh 'true' > /dev/null 2>&1");
-        
-        // 4. 强制刷新页面数据
-        header("Refresh:0");
+        // 3. 写入成功后，判断是否需要重启服务
+        if ($settings['filebrowser_ENABLED'] == 'true') {
+            exec("logger -t 'FileBrowser-Plugin' 'Manual config save. Restarting service...'");
+            
+            // 执行停止 (调用你的 Daemon.sh)
+            exec("bash /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh 'false' > /dev/null 2>&1");
+            
+            // 缓冲 2 秒确保旧进程退出、端口释放
+            sleep(2);
+            
+            // 执行启动
+            exec("bash /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh 'true' > /dev/null 2>&1");
+            
+            // 弹出提示并刷新页面（确保页面看到的是最新 PID 和端口）
+            echo "<script>alert('配置已成功保存，服务已重启！'); window.location.href=window.location.href;</script>";
+        } else {
+            // 如果服务本身是 Disabled，只保存文件，不启动
+            echo "<script>alert('配置已保存！(当前服务未开启，无需重启)'); window.location.href=window.location.href;</script>";
+        }
         exit;
     }
 }
@@ -170,16 +180,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['text'])) {
   </form>
 
   </div>
+
   <div class="column right">
     <h2>Edit config</h2>
-	<form markdown="1" method="POST" action="/update.php" target="progressFrame">
-	<input type="hidden" name="#include" value="/webGui/include/update.file.php">
-	<input type="hidden" name="#file" value="<?=$file;?>">
-	<textarea spellcheck="false" cols="80" rows="22" name="text" style="font-family:bitstream;width:100%"><?=$text;?></textarea>
-	<br>
-	<input type="submit" value="Apply"/><input type="button" value="Original" onclick="setDefault(this.form)">
-	</form> 
-  </div>
+  <form method="POST">
+    <textarea spellcheck="false" cols="80" rows="22" name="config_text" style="font-family:bitstream;width:100%"><?=$text;?></textarea>
+    <br>
+    <input type="submit" name="save_config_btn" value="Apply"/>
+    <input type="button" value="Original" onclick="setDefault(this.form)">
+  </form> 
+</div>
+
 </div>
 
 </body>
