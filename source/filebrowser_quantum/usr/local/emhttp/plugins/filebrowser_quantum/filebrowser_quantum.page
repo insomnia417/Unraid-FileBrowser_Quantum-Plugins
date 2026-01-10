@@ -135,7 +135,7 @@ if ($branch == "1") {
 
 
 	<br>
-	<input type="button" value="Update启动?" onclick="webui(this.form)">
+	<input type="button" value="启动Filebrowser_quantum" onclick="webui(this.form)">
   <?
   if (!empty($webui_pid)) {
     echo '<input type="button" class="localURL" value="Open WebUI" onclick="window.open(\'http://' . $_SERVER['SERVER_ADDR'] . ':' . $dynamic_port . '\', \'_blank\')" />';
