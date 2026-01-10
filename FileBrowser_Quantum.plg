@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name				"filebrowser_quantum">
 <!ENTITY author				"insomnia417">
-<!ENTITY version			"2026.01.08.2">
+<!ENTITY version			"2026.01.08.3">
 <!ENTITY bundleversion			"2026.01.08">
 <!ENTITY launch				"Settings/filebrowser_quantum">
 <!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
@@ -54,21 +54,21 @@ else
     echo "Stable mode detected. Target version: $current_version"
 fi;	
 
-filebrowser_quantumurl="https://github.com/$GITHUB_REPO/releases/download/$current_version/linux-amd64-filebrowser"
 INSTALLED_BINARY="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-$current_version"
+filebrowser_quantumurl="https://github.com/$GITHUB_REPO/releases/download/$current_version/linux-amd64-filebrowser"
 
-# 建议删除这段?
-if [ -f /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum ]; then 
-  cp /boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum /usr/sbin/filebrowser_quantumorig.new
+if [ -f "$INSTALLED_BINARY" ]; then 
+  cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig.new
   mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
   chown root:root /usr/sbin/filebrowser_quantumorig
   chmod 755 /usr/sbin/filebrowser_quantumorig
-  version=`filebrowser_quantumorig version | head -n 1`
+  version=`/usr/sbin/filebrowser_quantumorig version | head -n 1`
+  echo "$INSTALLED_BINARY 已存在 ($version) "
 fi;
 
 # settings.cfg
 if [ ! -f /boot/config/plugins/filebrowser_quantum/settings.cfg ]; then
-    echo "filebrowser_ENABLED=false" > /boot/config/plugins/filebrowser_quantum/settings.cfg
+    echo "filebrowser_ENABLED=true" > /boot/config/plugins/filebrowser_quantum/settings.cfg
 fi
 
 /usr/local/emhttp/plugins/filebrowser_quantum/webuiScript.sh "VERSION"
@@ -80,8 +80,10 @@ ping -q -c6 github.com >/dev/null
 if [ $? -eq 0 ]; then
     if [ -f "$INSTALLED_BINARY" ] &amp;&amp; [[ "$version" == *"$current_version"* ]]; then
     echo "Local filebrowser_quantum binary ($current_version) up-to-date"  
+    echo "本地已存在 ($current_version) "  
   else
     echo "New version found: $current_version.Downloading and installing filebrowser_quantum binary"
+    echo "发现新版本 : $current_version.下载安装中..."
     curl --connect-timeout 15 --retry 3 --retry-delay 2 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
     cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig
     chown root:root /usr/sbin/filebrowser_quantumorig
@@ -89,6 +91,7 @@ if [ $? -eq 0 ]; then
   fi;
 else
   echo "Connection error - Could not reach filebrowser_quantum servers - Will try fallback to existing binary"
+  echo "连接错误 - 无法访问 filebrowser_quantum 下载地址 - 将尝试回退到现有的二进制文件"
   if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
     echo "Install failed - No binary found"
     removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
@@ -100,6 +103,7 @@ fi;
 
 if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
   echo "Install failed - No binary found"
+  echo "安装失败 - 二进制文件丢失"
   removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
   rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
   rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
@@ -108,6 +112,7 @@ fi;
 	
 if [ ! -f /boot/config/plugins/filebrowser_quantum/config.yaml ]; then
   echo "Config not found, downloading from GitHub..."
+  echo "未找到配置文件(confg.yaml)，正在下载默认配置..."
   curl --connect-timeout 15 --retry 3 -L -o /boot/config/plugins/filebrowser_quantum/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/config.yaml"
 fi;
 
@@ -118,6 +123,7 @@ fi
 echo ""
 echo "-----------------------------------------------------------"
 echo " filebrowser_quantum has been installed. "
+echo " filebrowser_quantum 安装成功. "
 echo "-----------------------------------------------------------"
 echo ""
 
