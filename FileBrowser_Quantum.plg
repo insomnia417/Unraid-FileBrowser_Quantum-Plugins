@@ -31,9 +31,8 @@ Thanks to stignz for his original guide: https://lime-technology.com/forum/index
 <!--
 Get bundle.
 -->
-<FILE Name="/boot/config/plugins/rclone/install/rclone-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
+<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
 <URL>&bundleURL;</URL>
-<MD5>&md5bundle;</MD5>
 </FILE>
 
 <!--
