@@ -2,19 +2,19 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name               "filebrowser_quantum">
   <!ENTITY author             "insomnia417">
-  <!ENTITY version            "2026.01.10">
-  <!ENTITY bundleversion      "2026.01.10">
+  <!ENTITY version            "2026.01.11">
+  <!ENTITY bundleversion      "2026.01.11">
   <!ENTITY launch             "Settings/filebrowser_quantum">
   <!ENTITY description        "FileBrowser Quantum 的 unRAID 插件移植版本">
   <!ENTITY support            "https://github.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins">
   <!ENTITY pluginURL          "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
-  <!ENTITY bundleURL          "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/&name;-&bundleversion;-x86_64.txz">
+  <!ENTITY bundleURL          "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
 ]>
-<PLUGIN name="filebrowser_quantum" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" description="&description;">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" description="&description;">
 
 <CHANGES>
 <![CDATA[
-### 2026.01.10
+### 2026.01.11
 - 重构脚本
 - 优化 XML 结构
 ]]>
