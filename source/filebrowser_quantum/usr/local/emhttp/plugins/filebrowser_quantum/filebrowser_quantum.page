@@ -84,24 +84,22 @@ $webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
 // --- Section D: 接管配置保存与重启逻辑 ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     $new_content = $_POST['config_text'];
-    
+    $daemon_path = "/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh";
+
     if (file_put_contents($file, $new_content) !== false) {
-        // 判定依据：配置文件里是 true，或者当前系统里已经有进程在运行
+        // 依然检测进程，确保用户改完配置后能即时生效
         $is_running = !empty(exec('pgrep -f "filebrowser_quantumorig"'));
         $is_enabled = ($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1');
 
         if ($is_enabled || $is_running) {
-            exec("logger -t 'FileBrowser-Plugin' 'Manual config save. Restarting service...'");
-            
-            // 停止
-            exec("bash /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh 'false' > /dev/null 2>&1");
+            // 完全通过脚本处理重启逻辑，PHP 只管触发
+            exec("bash $daemon_path 'false' > /dev/null 2>&1");
             sleep(2);
-            // 启动
-            exec("bash /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh 'true' > /dev/null 2>&1");
+            exec("bash $daemon_path 'true' > /dev/null 2>&1");
             
             echo "<script>alert('配置已成功保存，服务已完成重启！'); window.location.href=window.location.href;</script>";
         } else {
-            echo "<script>alert('配置已保存！(当前服务处于关闭状态，修改将在下次开启时生效)'); window.location.href=window.location.href;</script>";
+            echo "<script>alert('配置已保存！(当前服务处于关闭状态)'); window.location.href=window.location.href;</script>";
         }
         exit;
     }
