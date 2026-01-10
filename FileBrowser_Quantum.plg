@@ -10,12 +10,14 @@
   <!ENTITY pluginURL          "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
   <!ENTITY bundleURL          "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/&name;-&bundleversion;-x86_64.txz">
 ]>
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" description="&description;">
+<PLUGIN name="filebrowser_quantum" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" description="&description;">
 
 <CHANGES>
+<![CDATA[
 ### 2026.01.10
 - 重构脚本
 - 优化 XML 结构
+]]>
 </CHANGES>
 
 <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
