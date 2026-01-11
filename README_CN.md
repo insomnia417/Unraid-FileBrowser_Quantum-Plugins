@@ -8,6 +8,11 @@
   <a href="README.md">English</a> | 中文
 </p>
 
+<p align="center">
+  <img src="img/FB.png" width="100%" alt="Logo">
+  <img src="img/settings.png" width="100%" alt="Logo">
+</p>
+
 ---
 
 ## 简介
