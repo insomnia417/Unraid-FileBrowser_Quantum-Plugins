@@ -1,4 +1,4 @@
-# **FileBrowser Quantum**
+# **  FileBrowser Quantum  **
 
 > 这是一个简易集成到 Unraid WEBUI 的轻量文件管理器。
 
