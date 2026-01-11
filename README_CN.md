@@ -1,4 +1,4 @@
-# FileBrowser Quantum for Unraid (中文版)
+# FileBrowser Quantum 插件(UNRAID)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/master/img/logo.png" width="128" height="128" alt="Logo">
