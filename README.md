@@ -7,6 +7,19 @@
 [English] | [中文]
 
 ---
+<div align="center">
+
+  <img width="150" src="img/logo.png" title="Logo">
+  <h3>Unraid-FileBrowser_Quantum-Plugins</h3>
+  <br/>
+  这是文件浏览器 FileBrowser Quantum 的 unRAID 插件移植版本
+  <br/>
+</div>
+<br/>
+
+<img src="img/image.png" alt="Unraid Version"/><br />
+<img src="img/settings.png" alt="Unraid Version"/><br />
+
 
 ## 简介 / Introduction
 
@@ -32,18 +45,6 @@ Open unRAID WebUI, go to the "Plugins" tab, click "Install Plugin", and enter th
 https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg
 ```
 ---
-<div align="center">
-
-  <img width="150" src="img/logo.png" title="Logo">
-  <h3>Unraid-FileBrowser_Quantum-Plugins</h3>
-  <br/>
-  这是文件浏览器 FileBrowser Quantum 的 unRAID 插件移植版本
-  <br/>
-</div>
-<br/>
-
-<img src="img/image.png" alt="Unraid Version"/><br />
-<img src="img/settings.png" alt="Unraid Version"/><br />
 
 
 ## 配置说明 / Configuration
