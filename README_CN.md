@@ -46,6 +46,6 @@
 ## 鸣谢
 原项目： [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser)
 
-参考项目：[ Unraid-snmp](https://github.com/ich777/rclone-unraid)
+参考项目：[rclone-unraid](https://github.com/ich777/rclone-unraid)
 
 特别感谢： InSnocent。他是我的 GitHub 启蒙老师，这也是我第一个正式项目，也许也是最后一个（笑）。
