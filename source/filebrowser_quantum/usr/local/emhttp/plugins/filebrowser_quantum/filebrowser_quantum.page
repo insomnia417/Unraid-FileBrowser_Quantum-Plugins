@@ -123,11 +123,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 }
 
 .left {
-  flex: 1; /* Represents 25% of the container */
+  flex: 1;
+  min-width: 180px; 
+  max-width: 220px; 
+}
+.right {
+  flex: 5;
 }
 
-.right {
-  flex: 3; /* Represents 75% of the container */
+/* 统一限制下拉框和按钮的宽度，避免过宽 */
+.left select, 
+.left input[type="button"] {
+  width: 180px; /* 将宽度减小到你满意的尺寸 */
+  box-sizing: border-box;
+}
+
+/* 升级按钮文字较长，建议单独处理或让它自适应 */
+.left input[onclick^="update"] {
+  width: auto;
+  min-width: 180px;
+  padding: 0 10px;
 }
 </style>
 </head>
