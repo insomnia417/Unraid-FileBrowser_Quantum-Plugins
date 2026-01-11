@@ -1,0 +1,48 @@
+
+Menu="Tasks:91"
+Type="xmenu"
+Title="FQ"
+Icon="folder-open"
+Tabs="no"
+---
+<?php
+  $addr = $_SERVER['SERVER_ADDR'];
+  $conf_file = "/mnt/user/appdata/filebrowser_quantum/config.yaml";
+  $port = "8081";
+  if (file_exists($conf_file)) {
+    $conf_content = file_get_contents($conf_file);
+    if (preg_match('/port:\s*(\d+)/', $conf_content, $matches)) { $port = $matches[1]; }
+  }
+?>
+
+<style>
+  /* 魔法代码：强行让 Unraid 的主内容区域填满屏幕 */
+  #sb-site, .main-area, #main { 
+    height: 100% !important; 
+    overflow: hidden !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+  }
+
+  /* 适配 Unraid 顶栏高度，确保 iframe 不被遮挡也不留白 */
+  .fb-full-view {
+    position: fixed;
+    top: 60px; /* Unraid 顶栏的常规高度 */
+    left: 0;
+    right: 0;
+    bottom: 26px; /* 留出底部状态栏高度 */
+    z-index: 1;
+    background: #000;
+  }
+
+  .fb-full-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+</style>
+
+<div class="fb-full-view">
+  <iframe src="http://<?=$addr?>:<?=$port?>" class="fb-full-iframe"></iframe>
+</div>
