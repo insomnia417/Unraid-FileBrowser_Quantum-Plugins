@@ -22,7 +22,7 @@ version=`filebrowser_quantumorig version | head -n 1`
   echo "-------------------------------------------------------------------"
 ping -q -c3 github.com >/dev/null
 if [ $? -eq 0 ]; then
-    if [ -f "$INSTALLED_BINARY" ] &amp;&amp; [[ "$version" == *"$current_version"* ]]; then
+    if [ -f "$INSTALLED_BINARY" ] && [[ "$version" == *"$current_version"* ]]; then
     echo "Local filebrowser_quantum binary ($current_version) up-to-date"  
     echo "本地已存在 ($current_version) "  
     else
@@ -45,7 +45,7 @@ else
 fi;
 
 # 获取安装动作执行后的实际版本号
-installed_ver_now=`/usr/sbin/filebrowser_quantumorig version | head -n 1`
+installed_ver_now=`/usr/sbin/filebrowser_quantumorig version | head -n 1 2>/dev/null`
 
 # 判断：实际安装的版本 是否包含 我们从 GitHub 抓取的目标版本号
 if [[ "$installed_ver_now" == *"$current_version"* ]]; then
