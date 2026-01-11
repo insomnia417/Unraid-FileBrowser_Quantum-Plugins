@@ -1,5 +1,7 @@
 # FileBrowser Quantum for Unraid
-[English] | [中文]
+<p align="center">
+  <a href="README.md">English</a> | 中文
+</p>
 ---
 <div align="center">
   <img width="150" src="img/logo.png" title="Logo">
