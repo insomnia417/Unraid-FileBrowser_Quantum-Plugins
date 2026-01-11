@@ -140,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   padding: 0 !important;      /* 清除内边距，防止文字撑开 */
   margin-bottom: 5px;
   box-sizing: border-box;
-  font-size: 18px;            /* 稍微调小字体，确保长文字能放下 */
+  font-size: 12px;            /* 稍微调小字体，确保长文字能放下 */
   text-align: center;
 }
 
