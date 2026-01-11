@@ -6,7 +6,6 @@
 <!ENTITY version "2026.01.10.3">
 <!ENTITY bundleversion "2026.01.10">
 <!ENTITY launch "Settings/filebrowser_quantum">
-<!ENTITY description "FileBrowser Quantum in Unraid Plugins">
 <!ENTITY support "https://github.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
 <!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
