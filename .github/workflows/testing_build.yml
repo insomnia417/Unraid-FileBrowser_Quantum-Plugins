@@ -1,4 +1,4 @@
-name: 自动打包(main)
+name: 自动打包(testing)
 
 on:
   push:
