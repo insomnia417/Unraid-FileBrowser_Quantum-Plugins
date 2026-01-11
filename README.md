@@ -48,4 +48,4 @@ After installation, go to **Settings -> Utilities -> FileBrowser Quantum** to co
 ## THANKS
 [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser)
 
-[ Unraid-snmp](https://github.com/ich777/rclone-unraid)
+[rclone-unraid](https://github.com/ich777/rclone-unraid)
