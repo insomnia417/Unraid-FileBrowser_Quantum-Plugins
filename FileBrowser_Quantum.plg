@@ -20,9 +20,11 @@
 - 前后端分离 , 重构
 - UI优化
 - config.yaml配置UI化
+- config更改端口自动适配变更顶栏及UI按钮的端口
 - 加入自选版本更新
 - 加入服务启停
-- TODO: HTTPS适配
+- UI点击即时更新
+- TODO: iframe HTTPS适配
 </CHANGES>
 
 <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
