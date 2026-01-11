@@ -30,8 +30,7 @@ function webui(form) {
    // 弹窗执行 Daemon.sh
    // 注意：这里我们加入了一个回调，当弹窗关闭时，刷新当前页面
    openBox('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh&arg1='+state,"filebrowser_quantum WebUI",450,800,true);
-   
-   // 这是一个小技巧：当窗口重新获得焦点（通常是黑窗口关闭后），自动刷新页面
+   // 当窗口重新获得焦点（通常是黑窗口关闭后），自动刷新页面
    $(window).once('focus', function() {
        window.location.reload();
    });
@@ -45,6 +44,7 @@ $defaultfile = "/boot/config/plugins/filebrowser_quantum/config.yaml";
 $settings_file = '/boot/config/plugins/filebrowser_quantum/settings.cfg';
 $latest_file = '/boot/config/plugins/filebrowser_quantum/install/latest';
 $beta_marker = '/boot/config/plugins/filebrowser_quantum/install/beta';
+$logfile = "/var/log/filebrowser_quantum.log"; 
 
 // --- B. 处理分支切换逻辑 (必须在读取版本号之前执行) ---
 // 1. 先探测磁盘上的实际状态
@@ -53,39 +53,35 @@ $branch = file_exists($beta_marker) ? "2" : "1";
 // 2. 如果用户提交了新选择，则更新状态并立即重新拉取云端版本
 if (isset($_POST['branch']) && $_POST['branch'] != $branch) {
     $branch = $_POST['branch'];
-    if ($branch == "1") {
-        @unlink($beta_marker);
-    } else {
-        @touch($beta_marker);
-    }
-    // 分支变了，立刻同步云端最新版本号
+    if ($branch == "1") { @unlink($beta_marker); } else { @touch($beta_marker); }
     exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
 }
-
 // --- C. 获取各种动态数据 ---
 $text = file_get_contents($file);
 $default_text = @file_get_contents($defaultfile);
 $settings = parse_ini_file($settings_file);
-
 // 获取端口,本地版本
 $dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
 $currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
-
 // 如果 latest 文件不存在，初始化一次
 if (!file_exists($latest_file)) {
-    exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
-}
+    exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"'); }
 $latestversion = @exec("head -n 1 $latest_file");
 if (empty($latestversion)) $latestversion = "Unknown";
-
-// 进程状态检测 (pgrep -f 匹配更精准)
 $webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
+// --- 日志处理逻辑 ---
+$log_level = isset($_POST['log_level']) ? $_POST['log_level'] : 'all';
+$grep_cmd = "";
+if ($log_level !== 'all') {
+    $grep_cmd = " | grep -i '$log_level'";
+}
+// 读取最后 50 行日志
+$log_content = shell_exec("tail -n 50 $logfile $grep_cmd 2>&1") ?: "暂无日志或日志文件不存在: $logfile";
 
-// --- Section D: 接管配置保存与重启逻辑 ---
+// --- D: 接管配置保存与重启逻辑 ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     $new_content = $_POST['config_text'];
     $daemon_path = "/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh";
-
     if (file_put_contents($file, $new_content) !== false) {
         // 依然检测进程，确保用户改完配置后能即时生效
         $is_running = !empty(exec('pgrep -f "filebrowser_quantumorig"'));
@@ -110,40 +106,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
 <html>
 <head>
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
+.row { display: flex; flex-direction: column; }
+.column { padding: 10px; width:100%; box-sizing: border-box; }
 
-.row {
-  display: flex;
+/* 2. 核心自适应：电脑端（宽度大于1024px）自动变横排 */
+@media screen and (min-width: 1024px) {
+  .row { flex-direction: row; flex-wrap: nowrap; }
+  .left { flex: 0 0 220px; } 
+  .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; } 
+  .right { flex: 1; min-width: 350px; }
 }
 
-/* Create two unequal columns */
-.column {
-  padding: 10px;
-}
-
-.left {
-  flex: 1;
-  min-width: 180px; 
-  max-width: 280px; 
-}
-.right {
-  flex: 5;
-}
-
-/* 1. 公共样式：定义所有左侧控件的宽度和高度，确保对齐 */
-.left input[type="button"], 
-.left select {
+/* 3. 左侧控件统一宽度 */
+.left input[type="button"], .left select, .right select {
   width: 200px !important;
   height: 28px;
   line-height: normal;
-  padding: 0 !important;
   margin-bottom: 5px;
   box-sizing: border-box;
   text-align: center;
 }
 
-/* 2. 专门针对下拉框：加粗、加大字体 */
+/* 下拉框：加粗、加大字体 */
 .left select {
   font-size: 15px !important;   /* 只让下拉框变大 */
   font-weight: bold !important; /* 只让下拉框加粗 */
@@ -151,42 +139,55 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   text-align-last: center;      /* 文字在下拉框内居中 */
 }
 
-/* 3. 专门针对按钮：保持原来的小字体，不加粗 */
+/* 按钮：保持原来的小字体，不加粗 */
 .left input[type="button"] {
   font-size: 12px;              /* 按钮维持 12px */
   font-weight: bold;          /* 按钮不加粗 */
+  cursor: pointer;
 }
 
-/* 4. 专门针对版本信息区域的微调 */
+/* 版本信息区域的微调 */
 .version-info {
   margin: 10px 0;             /* 上下留出一点间距 */
   font-family: 'Clear Sans', sans-serif;
+  width: 200px;
 }
 
 .version-info div {
-  width: 200px;               /* 再次确保宽度锁定在 200px */
   clear: both; 
   padding: 6px 0; 
   border-bottom: 1px solid #eee;
   font-size: 12px; 
   color: #666;
+  text-align: left; /* 确保左对齐 */
+}
+.version-info b {
+  margin-left: 8px; /* 冒号后的间距 */
+  float: none;     /* 取消之前的右浮动 */
 }
 
-/* 5. 专门针对升级按钮做处理 */
-.left input[onclick^="update"] {
-  /* 如果文字还是太长，可以使用 ellipsis 隐藏超出部分 */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* 7. 日志显示区域样式 */
+.log-area {
+  width: 100%;
+  height: 335px; /* 与配置框对齐 */
+  background: #1e1e1e;
+  color: #dcdcdc;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  padding: 10px;
+  border-radius: 3px;
+  overflow-y: scroll;
+  white-space: pre-wrap;
+  border: 1px solid #333;
 }
 </style>
+
 </head>
 <body>
 
 <div class="row">
   <div class="column left">
     <h2>Branch</h2>
-
 	<form action="" method="post"> 
 	<select name="branch" onchange="this.form.submit();"> 
 	<option value="1" <?php if($branch == 1) echo("selected")?>>Stable</option>
@@ -200,7 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 </div>
 
 	<br>
-	<input type="button" value="UPDATE" <?php if ($currentversion == $latestversion){ ?> disabled <?php   } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
+	<input type="button" value="UPDATE" <?php if ($currentversion == $latestversion){ ?> disabled <?php } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
 <h2>服务
   <span style="font-size:0.6em; color: <?= !empty($webui_pid) ? 'green' : 'red' ?>;">
@@ -224,12 +225,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
   </div>
 
-<div class="column right">
+<div class="column mid">
   <h2>Edit config</h2>
   <form id="config_form" method="POST">
-    <textarea spellcheck="false" cols="80" rows="22" name="config_text" 
+    <textarea spellcheck="false" name="config_text" 
       oninput="var btn=document.getElementById('SAVE_btn'); btn.style.background='#4caf50'; btn.style.color='#fff'; btn.style.borderColor='#4caf50';" 
-      style="font-family:bitstream;width:100%"><?=$text;?></textarea>
+      style="font-family:bitstream; width:100%; height:335px;"><?=$text;?></textarea>
     <br>
     
     <a id="SAVE_btn" href="javascript:void(0);" 
@@ -260,7 +261,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   </form> 
 </div>
 
+  <div class="column right">
+    <h2>Logging</h2>
+    <form action="" method="post">
+        <select name="log_level" onchange="this.form.submit();">
+            <option value="all" <?= $log_level=='all'?'selected':'' ?>>LEVEL: ALL</option>
+            <option value="info" <?= $log_level=='info'?'selected':'' ?>>LEVEL: INFO</option>
+            <option value="error" <?= $log_level=='error'?'selected':'' ?>>LEVEL: ERROR</option>
+        </select>
+    </form>
+    <div class="log-area"><?=htmlspecialchars($log_content)?></div>
+    <input type="button" value="REFRESH LOG" onclick="window.location.reload();" style="margin-top:14px; width:200px;">
+  </div>
 </div>
+
 
 </body>
 </html>
@@ -269,6 +283,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 function setDefault(form) {
   form.elements['config_text'].value = <?=json_encode($default_text);?>;
 }
+// 自动滚动逻辑：仅在页面加载完成后执行一次
+$(document).ready(function() {
+    var logArea = document.querySelector('.log-area');
+    if (logArea) {
+        logArea.scrollTop = logArea.scrollHeight;
+    }
+});
 </script>
 
 > Click the **Apply** button to commit the current edits.
