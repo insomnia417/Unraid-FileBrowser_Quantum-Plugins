@@ -125,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 .left {
   flex: 1;
   min-width: 180px; 
-  max-width: 220px; 
+  max-width: 280px; 
 }
 .right {
   flex: 5;
@@ -134,13 +134,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 /* 1. 统一左侧所有按钮的宽度 */
 .left input[type="button"], 
 .left select {
-  width: 160px !important;    /* 强制固定宽度，这个数值建议和下方按钮一致 */
+  width: 200px !important;    /* 强制固定宽度，这个数值建议和下方按钮一致 */
   height: 28px;               /* 统一高度 */
   line-height: normal;
   padding: 0 !important;      /* 清除内边距，防止文字撑开 */
   margin-bottom: 5px;
   box-sizing: border-box;
-  font-size: 11px;            /* 稍微调小字体，确保长文字能放下 */
+  font-size: 18px;            /* 稍微调小字体，确保长文字能放下 */
   text-align: center;
 }
 
