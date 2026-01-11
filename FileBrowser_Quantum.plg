@@ -9,7 +9,7 @@
 <!ENTITY description "FileBrowser Quantum for unRAID">
 <!ENTITY support "https://forums.unraid.net/topic/196447-filebrowser-quantum-plugin">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/main/FileBrowser_Quantum.plg">
-<!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/main/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
+<!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
 <!ENTITY icon "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/main/img/logo.png">
 ]>
 
