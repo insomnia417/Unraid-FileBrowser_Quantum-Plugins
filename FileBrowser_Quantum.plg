@@ -82,7 +82,7 @@ if [ $? -eq 0 ]; then
     echo "Local filebrowser_quantum binary ($current_version) up-to-date"
     echo "本地已存在 ($current_version) "
   else
-    echo "开始下载并安装     :  $current_version ... "
+    echo "开始下载并安装    :  $current_version ... "
     curl --connect-timeout 15 --retry 3 --retry-delay 2 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
     cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig
     chown root:root /usr/sbin/filebrowser_quantumorig
