@@ -3,8 +3,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name               "filebrowser_quantum">
 <!ENTITY author             "insomnia417">
-<!ENTITY version            "2026.01.10good">
-<!ENTITY bundleversion      "2026.01.10">
+<!ENTITY version            "2026.01.11">
+<!ENTITY bundleversion      "2026.01.11">
 <!ENTITY launch             "Settings/filebrowser_quantum">
 <!ENTITY description        "FileBrowser Quantum 的 unRAID 插件移植版本">
 <!ENTITY support            "https://github.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins">
@@ -77,7 +77,7 @@ rm -f /usr/sbin/filebrowser_quantum
 
 ping -q -c3 github.com >/dev/null
 if [ $? -eq 0 ]; then
-    if [ -f "$INSTALLED_BINARY" ] && [[ "$version" == *"$current_version"* ]]; then
+  if [ -f "$INSTALLED_BINARY" ] && [[ "$version" == *"$current_version"* ]]; then
     echo "Local filebrowser_quantum binary ($current_version) up-to-date"
     echo "本地已存在 ($current_version) "
     else
@@ -114,7 +114,7 @@ if [ ! -f /boot/config/plugins/filebrowser_quantum/config.yaml ]; then
   curl --connect-timeout 15 --retry 3 -L -o /boot/config/plugins/filebrowser_quantum/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/config.yaml"
 fi;
 
-if ["$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/filebrowser_quantum/settings.cfg)" == "true" ]; then
+if [ "$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/filebrowser_quantum/settings.cfg)" == "true" ]; then
 /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "true"
 echo "开始运行filebrowser守护进程"
 echo "◆"
@@ -130,9 +130,6 @@ echo ""
 </INLINE>
 </FILE>
 
-<!--
-Check if fusermount is present
--->
 <FILE Run="/bin/bash">
 <INLINE>
 if ! [ -f /bin/fusermount ]; then
@@ -143,9 +140,6 @@ fi;
 </INLINE>
 </FILE>
 
-<!--
-Create wrapper
--->
 <FILE Name="/usr/sbin/filebrowser_quantum" Mode="0755">
 <INLINE>
 #!/bin/bash
@@ -154,18 +148,12 @@ config=/boot/config/plugins/filebrowser_quantum/config.yaml
 </INLINE>
 </FILE>
 	
-<!--
-Create gitignore
--->
 <FILE Name="/boot/config/plugins/filebrowser_quantum/.gitignore" Mode="0600">
 <INLINE>
 config.yaml
 </INLINE>
 </FILE>
 
-<!--
-Uninstall script
--->
 <FILE Run="/bin/bash" Method="remove">
 <INLINE>
 kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
