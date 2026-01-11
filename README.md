@@ -18,7 +18,8 @@
 
   <br/>
 
-  这是文件浏览器 FileBrowser Quantum 的 unRAID 插件移植版本
+This is a ported version of the unRAID plugin for the FileBrowser Quantum file browser
+
 
   <br/>
 
