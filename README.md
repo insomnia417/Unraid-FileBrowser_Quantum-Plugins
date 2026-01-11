@@ -11,7 +11,7 @@
 <img src="img/FB.png" alt="Unraid Version"/><br />
 
 # To Do
-<1.support https with iframe
+< 1.support https with iframe
 
 # 使用 Use
 打开 unRAID WebUI，进入“插件”标签页，点击“安装插件”，在输入框中输入以下URL并安装：
