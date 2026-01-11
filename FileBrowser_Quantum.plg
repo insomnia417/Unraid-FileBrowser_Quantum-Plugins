@@ -12,7 +12,7 @@
 <!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" description="&description;">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" icon="https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/main/img/logo.png" min="6.9.0">
 
 <CHANGES>
 ##&name;
