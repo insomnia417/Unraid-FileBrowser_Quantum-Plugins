@@ -153,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     <h2>Branch</h2>
 
 	<form action="" method="post"> 
-	<select name="branch" onchange="this.form.submit();"> 
+	<select name="版本branch" onchange="this.form.submit();"> 
 	<option value="1" <?php if($branch == 1) echo("selected")?>>Stable</option>
 	<option value="2" <?php if($branch == 2) echo("selected")?>>Beta</option>
 	</select> 
@@ -164,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 	echo "Latest version:&emsp;&ensp;$latestversion";
 	?>
 	<br>
-	<input type="button" value="升级filebrowser_quantum版本" <?php if ($currentversion == $latestversion){ ?> disabled <?php   } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
+	<input type="button" value="UPDATE" <?php if ($currentversion == $latestversion){ ?> disabled <?php   } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
 <h2>服务
   <span style="font-size:0.6em; color: <?= !empty($webui_pid) ? 'green' : 'red' ?>;">
@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     </select> 
 
     <br><br>
-    <input type="button" name="apply_btn" value="Apply" disabled onclick="webui(this.form)">
+    <input type="button" name="apply_btn" value="APPLY" disabled onclick="webui(this.form)">
 
     <? if (!empty($webui_pid)): ?>
       <input type="button" class="localURL" value="Open WebUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
@@ -192,11 +192,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   <h2>Edit config</h2>
   <form id="config_form" method="POST">
     <textarea spellcheck="false" cols="80" rows="22" name="config_text" 
-      oninput="var btn=document.getElementById('fake_apply_btn'); btn.style.background='#4caf50'; btn.style.color='#fff'; btn.style.borderColor='#4caf50';" 
+      oninput="var btn=document.getElementById('SAVE_btn'); btn.style.background='#4caf50'; btn.style.color='#fff'; btn.style.borderColor='#4caf50';" 
       style="font-family:bitstream;width:100%"><?=$text;?></textarea>
     <br>
     
-    <a id="fake_apply_btn" href="javascript:void(0);" 
+    <a id="SAVE_btn" href="javascript:void(0);" 
        onclick="if(confirm('确定要保存配置并重启服务吗？')){ document.getElementById('config_form').submit(); }"
        style="display: inline-block; 
               padding: 0 25px;            /* 增加左右内边距，让它变宽 */
@@ -215,7 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
               letter-spacing: 2px; 
               box-sizing: border-box; 
               vertical-align: middle;">
-       Apply
+       SAVE
     </a>
 
     <input type="hidden" name="save_config_btn" value="1">
