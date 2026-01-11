@@ -16,8 +16,8 @@
 <CHANGES>
 ##&name;
 ###&version;
+- rebuild
 - fix CDATA syntax
-- clean invisible characters
 - fix UI bug
 </CHANGES>
 
