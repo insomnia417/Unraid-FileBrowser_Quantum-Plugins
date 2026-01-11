@@ -175,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     <h2>Branch</h2>
 
 	<form action="" method="post"> 
-	<select name="版本branch" onchange="this.form.submit();"> 
+	<select name="branch" onchange="this.form.submit();"> 
 	<option value="1" <?php if($branch == 1) echo("selected")?>>Stable</option>
 	<option value="2" <?php if($branch == 2) echo("selected")?>>Beta</option>
 	</select> 
