@@ -47,3 +47,4 @@ insomnia417跨年的时候又在折腾NAS，然后就有了这个项目（笑）
 原项目：[FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser)<br />
 参考文章：[Luu.Moe](https://luu.moe/115)<br/>
 参考项目：[Unraid-snmp](https://github.com/kubedzero/unraid-snmp)
+## 感谢 InSnocent , 他是我的github启蒙老师 ,  这也是我第一个正式项目 , 也许也是最后一个
