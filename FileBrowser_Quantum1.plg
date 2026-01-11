@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name "filebrowser_quantum">
 <!ENTITY author "insomnia417">
-<!ENTITY version "2026.01.10">
+<!ENTITY version "2026.01.10&&">
 <!ENTITY bundleversion "2026.01.10">
 <!ENTITY launch "Settings/filebrowser_quantum">
 <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
@@ -71,7 +71,7 @@ rm -f /usr/sbin/filebrowser_quantum
 
 ping -q -c3 github.com >/dev/null
 if [ $? -eq 0 ]; then
-  if [ -f "$INSTALLED_BINARY" ] &amp;&amp; [[ "$version" == *"$current_version"* ]]; then
+  if [ -f "$INSTALLED_BINARY" ] && [[ "$version" == *"$current_version"* ]]; then
     echo "Local filebrowser_quantum binary ($current_version) up-to-date"
     echo "本地已存在 ($current_version) "
     else
