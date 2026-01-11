@@ -36,40 +36,16 @@
 
 安装完成后，在“设置”标签页 -> “用户实用程序”中找到 “filebrowser_quantum” 进行配置。
 
-Open unRAID WebUI, go to the "Plugins" tab, click "Install Plugin", and enter the following URL in the input box:
-```
-https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg
-```
----
-
-
 ## 配置说明 / Configuration
 
 安装完成后，您可以在 Unraid 的 **Settings (设置) -> Utilities (实用工具)** 中找到 **FileBrowser Quantum** 进行详细配置。
-
-After installation, go to **Settings -> Utilities -> FileBrowser Quantum** to configure the plugin.
 
 ###
 + 默认账号：admin<br/>
 + 默认密码：admin<br/>
 + 更多内容请查看[FileBrowser Quantum 官方文档](https://filebrowserquantum.com/en/docs/)<br/>
 
-+ Default account: admin<br/>
-+ Default password: admin<br/>
-+ For more information, please refer to the [FileBrowser Quantum official documentation](https://filebrowserquantum.com/en/docs/)<br/>
-
-
-
-
 ***
-
-
-
-
-After installation, go to the "Settings" tab -> "User Utilities" to find "FileBrowser Q" for configuration.
-
-
-
 # 关于 About
 insomnia417跨年的时候又在折腾NAS，然后就有了这个项目（笑）
 
