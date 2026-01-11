@@ -1,7 +1,12 @@
 # FileBrowser Quantum for Unraid
 <p align="center">
-  English | <a href="README_CN.md">中文</a>
+  <img src="https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/master/img/logo.png" width="128" height="128" alt="Logo">
 </p>
+
+<p align="center">
+  <a href="README.md">中文</a> | EN
+</p>
+
 ---
 <div align="center">
   <img width="150" src="img/logo.png" title="Logo">
