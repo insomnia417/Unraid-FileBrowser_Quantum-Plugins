@@ -131,18 +131,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   flex: 5;
 }
 
-/* 统一限制下拉框和按钮的宽度，避免过宽 */
-.left select, 
-.left input[type="button"] {
-  width: 180px; /* 将宽度减小到你满意的尺寸 */
+/* 1. 统一左侧所有按钮的宽度 */
+.left input[type="button"], 
+.left select {
+  width: 160px !important;    /* 强制固定宽度，这个数值建议和下方按钮一致 */
+  height: 28px;               /* 统一高度 */
+  line-height: normal;
+  padding: 0 !important;      /* 清除内边距，防止文字撑开 */
+  margin-bottom: 5px;
   box-sizing: border-box;
+  font-size: 11px;            /* 稍微调小字体，确保长文字能放下 */
+  text-align: center;
 }
 
-/* 升级按钮文字较长，建议单独处理或让它自适应 */
+/* 2. 专门针对升级按钮做处理 */
 .left input[onclick^="update"] {
-  width: auto;
-  min-width: 180px;
-  padding: 0 10px;
+  /* 如果文字还是太长，可以使用 ellipsis 隐藏超出部分 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
 </head>
