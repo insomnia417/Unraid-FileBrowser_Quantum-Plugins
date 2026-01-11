@@ -1,6 +1,6 @@
 # FileBrowser Quantum for Unraid
 <p align="center">
-  <a href="README.md">English</a> | <a href="README_CN.md">中文</a>
+  English | <a href="README_CN.md">中文</a>
 </p>
 ---
 <div align="center">
