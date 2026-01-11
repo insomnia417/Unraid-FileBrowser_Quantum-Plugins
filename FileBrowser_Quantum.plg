@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name "filebrowser_quantum">
 <!ENTITY author "insomnia417">
-<!ENTITY version "2026.01.10.1">
+<!ENTITY version "2026.01.10.2">
 <!ENTITY bundleversion "2026.01.10">
 <!ENTITY launch "Settings/filebrowser_quantum">
 <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
@@ -17,8 +17,8 @@
 <CHANGES>
 ##&name;
 ###&version;
-- fix CDATA
-- rebulid
+- fix CDATA syntax
+- clean invisible characters
 - fix UI bug
 </CHANGES>
 
@@ -38,7 +38,7 @@ echo "Beta mode detected. Target version: $current_version"
 else
 current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
 echo "检测到最新稳定版号为 : $current_version"
-fi;	
+fi;
 
 # 如果 API 请求失败导致 version 为空，设置一个默认值防止 cp 报错
 if [ -z "$current_version" ]; then
@@ -76,23 +76,23 @@ if [ $? -eq 0 ]; then
   if [ -f "$INSTALLED_BINARY" ] && [[ "$version" == *"$current_version"* ]]; then
     echo "Local filebrowser_quantum binary ($current_version) up-to-date"
     echo "本地已存在 ($current_version) "
-    else
+  else
     echo " 开始下载并安装 ($current_version) ... "
     curl --connect-timeout 15 --retry 3 --retry-delay 2 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
     cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig
     chown root:root /usr/sbin/filebrowser_quantumorig
     chmod 755 /usr/sbin/filebrowser_quantumorig
-    fi;
+  fi;
 else
-echo "Connection error - Could not reach filebrowser_quantum servers - Will try fallback to existing binary"
-echo "连接错误 - 无法访问 filebrowser_quantum 下载地址 - 将尝试回退到现有的二进制文件"
-    if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
+  echo "Connection error - Could not reach filebrowser_quantum servers - Will try fallback to existing binary"
+  echo "连接错误 - 无法访问 filebrowser_quantum 下载地址 - 将尝试回退到现有的二进制文件"
+  if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
     echo "Install failed - No binary found"
     removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
     rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
     rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
     exit 1
-    fi;
+  fi;
 fi;
 
 if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
@@ -102,8 +102,8 @@ if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
   rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
   rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
   exit 1
-fi;	
-	
+fi;
+
 if [ ! -f /boot/config/plugins/filebrowser_quantum/config.yaml ]; then
   echo "Config not found, downloading from GitHub..."
   echo "未找到配置文件(confg.yaml)，正在下载默认配置..."
@@ -111,11 +111,11 @@ if [ ! -f /boot/config/plugins/filebrowser_quantum/config.yaml ]; then
 fi;
 
 if [ "$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/filebrowser_quantum/settings.cfg)" == "true" ]; then
-/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "true"
-echo "开始运行filebrowser守护进程"
-echo "◆"
-echo "◆"
-echo "◆"
+  /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "true"
+  echo "开始运行filebrowser守护进程"
+  echo "◆"
+  echo "◆"
+  echo "◆"
 fi
 
 echo ""
@@ -140,10 +140,10 @@ fi;
 <INLINE>
 #!/bin/bash
 config=/boot/config/plugins/filebrowser_quantum/config.yaml
-	filebrowser_quantumorig -c $config "$@";
+filebrowser_quantumorig -c $config "$@";
 </INLINE>
 </FILE>
-	
+
 <FILE Name="/boot/config/plugins/filebrowser_quantum/.gitignore" Mode="0600">
 <INLINE>
 config.yaml
@@ -165,7 +165,6 @@ echo "-----------------------------------------------------------"
 echo " filebrowser_quantum has been uninstalled."
 echo "-----------------------------------------------------------"
 echo ""
-
 </INLINE>
 </FILE>
 
