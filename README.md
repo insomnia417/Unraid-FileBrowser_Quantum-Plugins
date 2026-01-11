@@ -10,7 +10,7 @@
 
 ---
 
-## 简介 / Introduction
+## Introduction
 
 **FileBrowser Quantum** is a high-performance file manager plugin designed specifically for Unraid. Based on the FileBrowser core, it features a refactored decoupled architecture to provide a modern and smooth file management experience.
 
@@ -29,7 +29,7 @@ Open unRAID WebUI, go to the "Plugins" tab, click "Install Plugin", and enter th
 
 ---
 
-## 配置说明 / Configuration
+## Configuration
 
 After installation, go to **Settings -> Utilities -> FileBrowser Quantum** to configure the plugin.
 
