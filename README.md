@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">中文</a> | English
+  <a href="README_CN.md">中文</a> | English
 </p>
 
 <p align="center">
@@ -44,3 +44,8 @@ After installation, go to **Settings -> Utilities -> FileBrowser Quantum** to co
 + Default password: admin<br/>
 
 + For more information, please refer to the [FileBrowser Quantum official documentation](https://filebrowserquantum.com/en/docs/)<br/>
+
+## THANKS
+[FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser)
+
+[rclone-unraid](https://github.com/ich777/rclone-unraid)
