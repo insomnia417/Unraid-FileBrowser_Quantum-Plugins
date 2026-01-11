@@ -131,20 +131,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   flex: 5;
 }
 
-/* 1. 统一左侧所有按钮的宽度 */
+/* 1. 公共样式：定义所有左侧控件的宽度和高度，确保对齐 */
 .left input[type="button"], 
 .left select {
-  width: 200px !important;    /* 强制固定宽度，这个数值建议和下方按钮一致 */
-  height: 28px;               /* 统一高度 */
+  width: 200px !important;
+  height: 28px;
   line-height: normal;
-  padding: 0 !important;      /* 清除内边距，防止文字撑开 */
+  padding: 0 !important;
   margin-bottom: 5px;
   box-sizing: border-box;
-  font-size: 12px;            /* 稍微调小字体，确保长文字能放下 */
   text-align: center;
 }
 
-/* 2. 专门针对版本信息区域的微调 */
+/* 2. 专门针对下拉框：加粗、加大字体 */
+.left select {
+  font-size: 15px !important;   /* 只让下拉框变大 */
+  font-weight: bold !important; /* 只让下拉框加粗 */
+  color: #000;
+  text-align-last: center;      /* 文字在下拉框内居中 */
+}
+
+/* 3. 专门针对按钮：保持原来的小字体，不加粗 */
+.left input[type="button"] {
+  font-size: 12px;              /* 按钮维持 12px */
+  font-weight: normal;          /* 按钮不加粗 */
+}
+
+/* 4. 专门针对版本信息区域的微调 */
 .version-info {
   margin: 10px 0;             /* 上下留出一点间距 */
   font-family: 'Clear Sans', sans-serif;
@@ -159,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   color: #666;
 }
 
-/* 3. 专门针对升级按钮做处理 */
+/* 5. 专门针对升级按钮做处理 */
 .left input[onclick^="update"] {
   /* 如果文字还是太长，可以使用 ellipsis 隐藏超出部分 */
   white-space: nowrap;
