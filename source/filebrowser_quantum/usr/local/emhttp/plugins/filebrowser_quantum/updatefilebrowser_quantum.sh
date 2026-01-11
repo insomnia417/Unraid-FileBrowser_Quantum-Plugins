@@ -1,14 +1,20 @@
 #!/bin/bash
 GITHUB_REPO="gtsteffaniak/filebrowser"
 TAG_LIST=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
-INSTALLED_BINARY="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-$current_version"
-filebrowser_quantumurl="https://github.com/$GITHUB_REPO/releases/download/$current_version/linux-amd64-filebrowser"
 
 if [ "$1" = "2" ]; then
    current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
 else
    current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
 fi;
+
+# 容错处理：万一没抓到版本，给个保底值
+if [ -z "$current_version" ]; then
+    current_version="v1.1.0-stable"
+fi
+
+INSTALLED_BINARY="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-$current_version"
+filebrowser_quantumurl="https://github.com/$GITHUB_REPO/releases/download/$current_version/linux-amd64-filebrowser"
 
 version=`filebrowser_quantumorig version | head -n 1`
   echo "-------------------------------------------------------------------"
