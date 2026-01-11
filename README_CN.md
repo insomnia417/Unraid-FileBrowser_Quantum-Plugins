@@ -25,5 +25,21 @@
 
 ### 方法 2：手动安装
 在 Unraid **插件 (Plugins)** 标签页，点击 **安装插件**，在输入框中输入以下 URL：
-```text
-[https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg](https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg)
+```
+[https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg](https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg
+````
+## 配置说明
+安装完成后，您前往以下路径进行插件的详细配置： Settings (设置) -> Utilities (实用工具) -> FileBrowser Quantum
+
+###默认登录信息
+默认账号： admin
+默认密码： admin
+
+## 关于与感谢
+insomnia417 2025-2026 跨年期间折腾 NAS 的产物。
+
+## 鸣谢
+原项目： FileBrowser Quantum
+参考文章： Luu.Moe
+参考项目： Unraid-snmp
+特别感谢： InSnocent。他是我的 GitHub 启蒙老师，这也是我第一个正式项目，也许也是最后一个（笑）。
