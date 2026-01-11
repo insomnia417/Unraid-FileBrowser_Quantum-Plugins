@@ -8,7 +8,7 @@
 <!ENTITY launch "Settings/filebrowser_quantum">
 <!ENTITY description "FileBrowser Quantum for unRAID">
 <!ENTITY support "https://github.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg">
 <!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
 ]>
 
@@ -17,9 +17,12 @@
 <CHANGES>
 ##&name;
 ###&version;
-- fix CDATA syntax
-- clean invisible characters
-- fix UI bug
+- 前后端分离 , 重构
+- UI优化
+- config.yaml配置UI化
+- 加入自选版本更新
+- 加入服务启停
+- TODO: HTTPS适配
 </CHANGES>
 
 <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
