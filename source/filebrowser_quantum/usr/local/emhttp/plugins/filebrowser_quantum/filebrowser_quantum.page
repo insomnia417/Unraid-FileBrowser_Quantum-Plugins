@@ -154,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 /* 3. 专门针对按钮：保持原来的小字体，不加粗 */
 .left input[type="button"] {
   font-size: 12px;              /* 按钮维持 12px */
-  font-weight: normal;          /* 按钮不加粗 */
+  font-weight: bold;          /* 按钮不加粗 */
 }
 
 /* 4. 专门针对版本信息区域的微调 */
