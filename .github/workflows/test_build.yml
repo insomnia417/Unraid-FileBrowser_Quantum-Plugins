@@ -1,8 +1,8 @@
-name: Run Package Build (v23)
+name: 自动打包(main)
 
 on:
   push:
-    branches: [ "test" ]
+    branches: [ "main" ]
     paths:
       - 'source/**'
       - 'FileBrowser_Quantum.plg'
@@ -61,7 +61,7 @@ jobs:
           
           # 4. 关键：先拉取远程，如果有冲突，以本地修改为准
           # 使用 --rebase 保持提交历史整洁
-          git pull origin test --rebase
+          git pull origin main --rebase
           
           # 5. 推送
-          git push origin test
+          git push origin main
