@@ -3,37 +3,28 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name				"filebrowser_quantum">
 <!ENTITY author				"insomnia417">
-<!ENTITY version			"2026.01.11">
-<!ENTITY bundleversion			"2026.01.11">
+<!ENTITY version			"2026.01.10">
+<!ENTITY bundleversion			"2026.01.10">
 <!ENTITY launch				"Settings/filebrowser_quantum">
+<!ENTITY support			"https://forums.unraid.net/topic/xxxxxx-plugin-support/">
 <!ENTITY pluginURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/test/FileBrowser_Quantum.plg">
 <!ENTITY bundleURL			"https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
+<PLUGIN name="&name;" 
+        author="&author;" 
+        version="&version;" 
+        launch="&launch;" 
+        pluginURL="&pluginURL;" 
+        support="&support;">
 
 <CHANGES>
 ##&name;
+###&version;
+- rebulid
+- fix UI bug
 </CHANGES>
 
-<!--
-
-This plugin installs rclone on unRAID systems.
-This work is based upon the plugin created by aschamberger: https://lime-technology.com/forum/index.php?topic=46663.msg501372
-Thanks to stignz for his original guide: https://lime-technology.com/forum/index.php?topic=46663.0
-
--->
-
-<!--
-Get bundle.
--->
-<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
-<URL>&bundleURL;</URL>
-</FILE>
-
-<!--
-Install script.
--->
 <FILE Run="/bin/bash" Method="install">
 <INLINE>
 GITHUB_REPO="gtsteffaniak/filebrowser"
