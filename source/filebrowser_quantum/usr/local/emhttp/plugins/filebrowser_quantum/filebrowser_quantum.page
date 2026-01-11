@@ -195,8 +195,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 	</form> 
 
 <div class="version-info">
-    <div>已安装版本: <b style="float:right; color:#333;"><?=$currentversion?></b></div>
-    <div>云端最新版: <b style="float:right; color:#333;"><?=$latestversion?></b></div>
+    <div>已安装版本: <b style="margin-left: 8px; color:#333;"><?=$currentversion?></b></div>
+    <div>云端最新版: <b style="margin-left: 8px; color:#333;"><?=$latestversion?></b></div>
 </div>
 
 	<br>
