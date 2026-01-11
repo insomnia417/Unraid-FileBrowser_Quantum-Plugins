@@ -165,10 +165,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 	<option value="2" <?php if($branch == 2) echo("selected")?>>Beta</option>
 	</select> 
 	</form> 
+
 <div class="version-info">
-    <span>Installed version: <b><?=$currentversion?></b></span>
-    <span>Latest version: <b><?=$latestversion?></b></span>
+    <div style="clear:both; padding: 8px 0; border-bottom: 1px solid #eee;">
+        已安装版本: <b style="float:right;"><?=$currentversion?></b>
+    </div>
+    <div style="clear:both; padding: 8px 0; border-bottom: 1px solid #eee;">
+        云端最新版: <b style="float:right;"><?=$latestversion?></b>
+    </div>
 </div>
+
 	<br>
 	<input type="button" value="UPDATE" <?php if ($currentversion == $latestversion){ ?> disabled <?php   } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
