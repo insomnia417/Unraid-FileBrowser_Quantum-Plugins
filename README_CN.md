@@ -36,7 +36,7 @@
 ## 配置说明
 安装完成后，您前往以下路径进行插件的详细配置： Settings (设置) -> Utilities (实用工具) -> FileBrowser Quantum
 
-###默认登录信息
+### 默认登录信息
 默认账号： admin
 默认密码： admin
 
