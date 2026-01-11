@@ -9,15 +9,15 @@
 <br/>
 
 <img src="img/image.png" alt="Unraid Version"/><br />
+<img src="img/image1.png" alt="Unraid Version"/><br />
 
 # 使用 Use
 打开 unRAID WebUI，进入“插件”标签页，点击“安装插件”，在输入框中输入以下URL并安装：
 
 ```bash
 https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg
-
 ```
-安装完成后，在“设置”标签页 -> “用户实用程序”中找到 “FileBrowser Q” 进行配置。
+安装完成后，在“设置”标签页 -> “用户实用程序”中找到 “filebrowser_quantum” 进行配置。
 
 ***
 
