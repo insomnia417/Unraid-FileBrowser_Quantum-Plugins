@@ -11,14 +11,14 @@ BINARY="/usr/sbin/filebrowser_quantumorig"
 
 # --- 1. 处理传入参数 ---
 if [ "${1}" == "true" ]; then
-  echo "Enabling FileBrowser..." | tee >(logger -t "$TAG")
+  echo "FileBrowser准备启动" | tee >(logger -t "$TAG")
   # 修改配置文件中的使能开关 (filebrowser_ENABLED=true)
   sed -i "/filebrowser_ENABLED=/c\filebrowser_ENABLED=${1}" "$SETTINGS"
   
   # 检查进程是否已在运行，防止重复启动
   if pgrep -f "filebrowser_quantumorig" > /dev/null 2>&1 ; then
     echo
-    echo "FileBrowser 已经在运行!"  | tee >(logger -t "$TAG")
+    echo "FileBrowser 已经在运行！"  | tee >(logger -t "$TAG")
     exit 0
   fi
 
@@ -29,7 +29,7 @@ echo "$BINARY -c $CONF_DIR/config.yaml" | at now -M > /dev/null 2>&1
 for i in {1..5}; do
     sleep 1
     if pgrep -f "filebrowser_quantumorig" > /dev/null 2>&1 ; then
-        echo "FileBrowser启动成功" | tee >(logger -t "$TAG")
+        echo "FileBrowser启动成功！" | tee >(logger -t "$TAG")
         exit 0
     fi
 done
