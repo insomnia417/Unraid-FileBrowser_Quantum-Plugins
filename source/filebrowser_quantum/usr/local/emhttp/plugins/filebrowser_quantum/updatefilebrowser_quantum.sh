@@ -44,12 +44,20 @@ else
   exit 1
 fi;
 
-current_version=`filebrowser_quantumorig version | head -n 1`
+# 获取安装动作执行后的实际版本号
+installed_ver_now=`/usr/sbin/filebrowser_quantumorig version | head -n 1`
 
-if [[ $version = $current_version ]]; then
+# 判断：实际安装的版本 是否包含 我们从 GitHub 抓取的目标版本号
+if [[ "$installed_ver_now" == *"$current_version"* ]]; then
   echo ""
   echo "-------------------------------------------------------------------"
-  echo "<font color='red'> 升级失败 - 请重试 </font>"
+  echo "验证成功：filebrowser_quantum 已更新/保持为 $current_version"
+  echo "-------------------------------------------------------------------"
+  echo ""
+else
+  echo ""
+  echo "-------------------------------------------------------------------"
+  echo "<font color='red'> 升级失败：当前版本 ($installed_ver_now) 与目标版本 ($current_version) 不符 </font>"
   echo "-------------------------------------------------------------------"
   echo ""
   exit 1
