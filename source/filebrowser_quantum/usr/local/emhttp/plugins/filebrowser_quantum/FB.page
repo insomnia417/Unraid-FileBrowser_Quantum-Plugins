@@ -7,11 +7,9 @@ Tabs="no"
 ---
 <?php
   $addr = $_SERVER['SERVER_ADDR'];
-  $conf_file = "/mnt/user/appdata/filebrowser_quantum/config.yaml";
-  $port = "8081";
-  if (file_exists($conf_file)) {
-    $conf_content = file_get_contents($conf_file);
-    if (preg_match('/port:\s*(\d+)/', $conf_content, $matches)) { $port = $matches[1]; }
+  $port = trim(exec("/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh GET_PORT"));
+if (empty($port) || !is_numeric($port)) {
+      $port = "8081";
   }
 ?>
 
