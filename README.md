@@ -1,9 +1,5 @@
 # FileBrowser Quantum for Unraid
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/main/img/logo.png" width="128" height="128" alt="Logo">
-</p>
-
 [English] | [中文]
 
 ---
