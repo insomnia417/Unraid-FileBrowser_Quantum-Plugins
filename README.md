@@ -9,7 +9,10 @@
 </p>
 
 ---
-
+<p align="center">
+  <img src="img/settings.png" width="128" height="128" alt="Logo">
+</p>
+---
 ## Introduction
 
 **FileBrowser Quantum** is a high-performance file manager plugin designed specifically for Unraid. Based on the FileBrowser core, it features a refactored decoupled architecture to provide a modern and smooth file management experience.
