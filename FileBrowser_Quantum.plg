@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name "filebrowser_quantum">
 <!ENTITY author "insomnia417">
-<!ENTITY version "2026.01.10.0">
+<!ENTITY version "2026.01.10.1">
 <!ENTITY bundleversion "2026.01.10">
 <!ENTITY launch "Settings/filebrowser_quantum">
 <!ENTITY description "FileBrowser Quantum 的 unRAID 插件移植版本">
@@ -17,6 +17,7 @@
 <CHANGES>
 ##&name;
 ###&version;
+- fix CDATA
 - rebulid
 - fix UI bug
 </CHANGES>
@@ -27,6 +28,7 @@
 
 <FILE Run="/bin/bash" Method="install">
 <INLINE>
+<![CDATA[
 GITHUB_REPO="gtsteffaniak/filebrowser"
 TAG_LIST=$(curl -s --connect-timeout 10 "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
 
@@ -120,7 +122,7 @@ echo ""
 echo " filebrowser_quantum 安装成功 "
 echo "-----------------------------------------------------------"
 echo ""
-
+]]>
 </INLINE>
 </FILE>
 
