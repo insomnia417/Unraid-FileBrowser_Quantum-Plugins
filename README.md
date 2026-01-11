@@ -10,7 +10,7 @@
 
 ---
 <p align="center">
-  <img src="img/settings.png" width="128" height="128" alt="Logo">
+  <img src="img/settings.png">
 </p>
 ---
 ## Introduction
