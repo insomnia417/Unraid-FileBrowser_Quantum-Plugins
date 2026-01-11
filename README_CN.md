@@ -35,8 +35,8 @@
 默认账号： admin
 默认密码： admin
 
-## 关于与感谢
-insomnia417 2025-2026 跨年期间折腾 NAS 的产物。
+## 关于
+2025-2026 元旦跨年期间折腾 NAS 的产物。
 
 ## 鸣谢
 原项目： [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser)
