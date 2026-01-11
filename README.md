@@ -1,23 +1,14 @@
 # FileBrowser Quantum for Unraid
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/master/img/logo.png" width="128" height="128" alt="Logo">
 </p>
 
 <p align="center">
-  <a href="README.md">中文</a> | EN
+  <a href="README.md">中文</a> | English
 </p>
 
 ---
-<div align="center">
-  <img width="150" src="img/logo.png" title="Logo">
-  <h3>Unraid-FileBrowser_Quantum-Plugins</h3>
-  <br/>
-This is a ported version of the unRAID plugin for the FileBrowser Quantum file browser
-  <br/>
-</div>
-<br/>
-<img src="img/image.png" alt="Unraid Version"/><br />
-<img src="img/settings.png" alt="Unraid Version"/><br />
 
 ## 简介 / Introduction
 
