@@ -1,3 +1,4 @@
+
 Menu="Tasks:91"
 Type="xmenu"
 Title="FQ"
@@ -5,7 +6,7 @@ Icon="folder-open"
 Tabs="no"
 ---
 <?php
-  $addr = $_SERVER['SERVER_ADDR'];
+  $host = preg_replace('/:.*/', '', $_SERVER['HTTP_HOST']);
   $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
   $port = trim(exec("/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh GET_PORT"));
   if (empty($port) || !is_numeric($port)) {
@@ -42,5 +43,5 @@ Tabs="no"
 </style>
 
 <div class="fb-full-view">
-  <iframe src="<?=$protocol?>://<?=$addr?>:<?=$port?>?v=<?=time()?>" class="fb-full-iframe"></iframe>
+  <iframe src="<?=$protocol?>://<?=$host?>:<?=$port?>?v=<?=time()?>" class="fb-full-iframe"></iframe>
 </div>
