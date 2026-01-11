@@ -22,6 +22,21 @@ if [ "${1}" == "true" ]; then
     exit 0
   fi
 
+echo "FileBrowser正在启动中..." | tee >(logger -t "$TAG")
+echo "$BINARY -c $CONF_DIR/config.yaml" | at now -M > /dev/null 2>&1
+
+# 循环检测启动结果
+for i in {1..5}; do
+    sleep 1
+    if pgrep -f "filebrowser_quantumorig" > /dev/null 2>&1 ; then
+        echo "FileBrowser启动成功" | tee >(logger -t "$TAG")
+        exit 0
+    fi
+done
+echo ""
+echo -e "\e[41m FileBrowser 启动失败 , 请检查设置和日志 . \e[0m" | tee >(logger -t "$TAG")
+exit 1
+
 elif [ "${1}" == "false" ]; then
   echo "停止 FileBrowser , 请稍后..." | tee >(logger -t "$TAG")
   pkill -9 -f "filebrowser_quantumorig"
@@ -77,20 +92,3 @@ elif [ "${1}" == "VERSION" ]; then
         exit 1
     fi
 fi
-echo "FileBrowser正在启动中..." | tee >(logger -t "$TAG")
-# -c 指定配置文件。at now 确保在后台持续运行。
-echo "$BINARY -c $CONF_DIR/config.yaml" | at now -M > /dev/null 2>&1
-
-# 循环检测 5 次，每次等 1 秒
-for i in {1..5}; do
-    sleep 1
-    if pgrep -f "filebrowser_quantumorig" > /dev/null 2>&1 ; then
-        echo ""
-        echo "FileBrowser启动成功" | tee >(logger -t "$TAG")
-        exit 0
-    fi
-done
-
-# 如果 5 秒后还没起来，才报失败
-echo ""
-echo -e "\e[41m FileBrowser 启动失败 , 请检查设置和日志 . \e[0m" | tee >(logger -t "$TAG")
