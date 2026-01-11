@@ -144,7 +144,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   text-align: center;
 }
 
-/* 2. 专门针对升级按钮做处理 */
+/* 2. 专门针对版本信息区域的微调 */
+.version-info {
+  margin: 10px 0;             /* 上下留出一点间距 */
+  font-family: 'Clear Sans', sans-serif;
+}
+
+.version-info div {
+  width: 200px;               /* 再次确保宽度锁定在 200px */
+  clear: both; 
+  padding: 6px 0; 
+  border-bottom: 1px solid #eee;
+  font-size: 12px; 
+  color: #666;
+}
+
+/* 3. 专门针对升级按钮做处理 */
 .left input[onclick^="update"] {
   /* 如果文字还是太长，可以使用 ellipsis 隐藏超出部分 */
   white-space: nowrap;
