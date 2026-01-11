@@ -44,3 +44,8 @@ After installation, go to **Settings -> Utilities -> FileBrowser Quantum** to co
 + Default password: admin<br/>
 
 + For more information, please refer to the [FileBrowser Quantum official documentation](https://filebrowserquantum.com/en/docs/)<br/>
+
+## THANKS
+[FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser)
+
+[ Unraid-snmp](https://github.com/ich777/rclone-unraid)
