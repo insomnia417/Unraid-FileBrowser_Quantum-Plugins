@@ -9,7 +9,7 @@
 <!ENTITY description "FileBrowser Quantum for unRAID">
 <!ENTITY support "https://forums.unraid.net/topic/196447-filebrowser-quantum-plugin">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/testing/FileBrowser_Quantum.plg">
-<!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/testing/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
+<!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/testing/archive/filebrowser_quantum-&bundleversion;-bundle.txz">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" min="7.0.0">
@@ -29,7 +29,7 @@
 - TODO: iframe HTTPS适配
 </CHANGES>
 
-<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz" Run="upgradepkg --install-new">
+<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
 <URL>&bundleURL;</URL>
 </FILE>
 
@@ -80,7 +80,7 @@ fi
 # --- [2. 核心校验：如果到这步还没文件，才报错退出] ---
 if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
     echo "安装失败：无法获取二进制文件（联网失败且无本地缓存）"
-    removepkg filebrowser_quantum-&bundleversion;-x86_64 >/dev/null
+    removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
     exit 1
 fi
 
@@ -102,7 +102,7 @@ fi
 
 # 智能清理：保留当前 txz 和当前 binary
 echo "正在清理旧的安装文件..."
-find "$INSTALL_PATH" -name "filebrowser_quantum-*.txz" ! -name "filebrowser_quantum-&bundleversion;-x86_64.txz" -delete
+find "$INSTALL_PATH" -name "filebrowser_quantum-*.txz" ! -name "filebrowser_quantum-&bundleversion;-bundle.txz" -delete
 if [ -n "$INSTALLED_BINARY" ]; then
     find "$INSTALL_PATH" -name "filebrowser_quantum-v*" ! -name "$(basename "$INSTALLED_BINARY")" -delete
 fi
@@ -154,8 +154,8 @@ kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
 rm -rf /boot/config/plugins/filebrowser_quantum/install
 rm -f /usr/sbin/filebrowser_quantumorig
 rm -f /usr/sbin/filebrowser_quantum
-removepkg filebrowser_quantum-&bundleversion;-x86_64 >/dev/null
-rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-x86_64
+removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
+rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
 rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
 
 echo ""
