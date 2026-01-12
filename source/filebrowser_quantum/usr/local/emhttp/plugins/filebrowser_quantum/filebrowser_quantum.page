@@ -142,9 +142,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 /* --- 修改点 3: 优化下拉框在标题栏的外观 --- */
 .column.right select {
   width: 140px !important; /* 宽度调小一点更精致 */
-  height: 26px;
-  font-size: 11px !important;
-  font-weight: bold;
+  height: 28px;
+  font-size: 15px !important;
+  font-weight: bold !important;
+  text-align-last: center;
 }
 
 /* 下拉框：加粗、加大字体 */
@@ -189,13 +190,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   margin-top: 11px; /* 关键：抵消掉 textarea 的默认间距，确保平齐 */
   background: #1e1e1e;
   color: #dcdcdc;
-  font-family: 'Courier New', monospace;
-  font-size: 11px;
+  font-family: bitstream, 'Courier New', monospace;
+  font-size: 13px;
   padding: 10px;
   border-radius: 3px;
   overflow-y: scroll;
   white-space: pre-wrap;
   border: 1px solid #333;
+  box-sizing: border-box;
 }
 </style>
 
