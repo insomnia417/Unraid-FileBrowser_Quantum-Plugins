@@ -134,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 /* --- 修改点 2: 强制下拉框漂浮到标题右侧，不占用垂直空间 --- */
 .column.right form {
   position: absolute;
-  top: 10px;      /* 调整这个值可以让下拉框上下对齐标题 */
+  top: 22px;      /* 调整这个值可以让下拉框上下对齐标题 */
   right: 15px;    /* 调整这个值让它靠右边 */
   margin: 0;
 }
