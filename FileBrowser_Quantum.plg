@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY author "insomnia417">
-  <!ENTITY version "2026.01.12.1">
+  <!ENTITY version "2026.01.12.2">
   <!ENTITY bundleversion "2026.01.12">
   <!ENTITY launch "Settings/filebrowser_quantum">
   <!ENTITY description "FileBrowser Quantum for unRAID">
@@ -55,14 +55,19 @@
         echo "本地无缓存，正在联网查询最新版本..."
         TAG_LIST=$(curl -s --connect-timeout 5 "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
         
-        if [ -f $INSTALL_PATH/beta ]; then
-          current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
-          echo "Beta mode detected. Target version: $current_version"
-          [ -z "$current_version" ] && current_version="v1.1.6-beta"
+        if [ -z "$TAG_LIST" ]; then
+          echo "警告：无法连接 GitHub API，将使用保底版本号..."
+          current_version="v1.1.0-stable"
         else
-          current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
-          echo "检测到最新稳定版号为:  $current_version"
-          [ -z "$current_version" ] && current_version="v1.1.0-stable"
+          if [ -f $INSTALL_PATH/beta ]; then
+            current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
+            echo "Beta mode detected. Target version: $current_version"
+            [ -z "$current_version" ] && current_version="v1.1.6-beta"
+          else
+            current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
+            echo "检测到最新稳定版号为:  $current_version"
+            [ -z "$current_version" ] && current_version="v1.1.0-stable"
+          fi
         fi
 
         INSTALLED_BINARY="$INSTALL_PATH/filebrowser_quantum-$current_version"
@@ -153,7 +158,11 @@
 
   <FILE Run="/bin/bash" Method="remove">
     <INLINE>
-      kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
+      if pgrep -f "filebrowser_quantumorig" > /dev/null; then
+        echo "正在停止 FileBrowser 进程..."
+        kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
+        sleep 2
+      fi
       rm -rf /boot/config/plugins/filebrowser_quantum/install
       rm -f /usr/sbin/filebrowser_quantumorig
       rm -f /usr/sbin/filebrowser_quantum
@@ -163,7 +172,7 @@
 
       echo ""
       echo "-----------------------------------------------------------"
-      echo " filebrowser_quantum has been uninstalled."
+      echo " filebrowser_quantum 卸载成功"
       echo "-----------------------------------------------------------"
       echo ""
     </INLINE>
