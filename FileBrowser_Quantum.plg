@@ -12,7 +12,7 @@
 <!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/testing/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;>
 
 <CHANGES>
 ##&name;
@@ -32,9 +32,14 @@
 <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz" Run="upgradepkg --install-new">
 <URL>&bundleURL;</URL>
 </FILE>
-echo "filebrowser_quantum-&bundleversion;-x86_64.txz"
+
 <FILE Run="/bin/bash" Method="install">
 <INLINE>
+
+# 在 CDATA 之外定义变量，避免"&"识别不了 ---
+BUNDLE_V="&bundleversion;"
+PLUGIN_V="&version;"
+
 <![CDATA[
 GITHUB_REPO="gtsteffaniak/filebrowser"
 INSTALL_PATH="/boot/config/plugins/filebrowser_quantum/install"
@@ -101,7 +106,11 @@ if [ ! -f /boot/config/plugins/filebrowser_quantum/settings.cfg ]; then
 fi
 
 # 智能清理：保留当前 txz 和当前 binary
-
+echo "正在清理旧的安装文件..."
+find "$INSTALL_PATH" -name "filebrowser_quantum-*.txz" ! -name "filebrowser_quantum-$BUNDLE_V-x86_64.txz" -delete
+if [ -n "$INSTALLED_BINARY" ]; then
+    find "$INSTALL_PATH" -name "filebrowser_quantum-v*" ! -name "$(basename "$INSTALLED_BINARY")" -delete
+fi
 
 /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"
 if [ "$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/filebrowser_quantum/settings.cfg)" == "true" ]; then
@@ -111,12 +120,13 @@ if [ "$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/filebrowser_qu
   echo "○"
   echo "○"
 fi
-echo "filebrowser_quantum-&bundleversion;-x86_64.txz"
+
 echo ""
 echo "FileBrowser_Quantum &version; 安装成功！"
 echo "-----------------------------------------------------------"
 echo ""
 ]]>
+
 </INLINE>
 </FILE>
 
