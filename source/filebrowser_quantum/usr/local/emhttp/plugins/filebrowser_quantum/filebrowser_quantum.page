@@ -190,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   overflow-x: hidden; 
   overflow-y: scroll;
   /* 其余保持不变 */
-  height: 335px;
+  height: 500px;
   margin-top: 11px;
   background: #1e1e1e;
   color: #dcdcdc;
@@ -251,7 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   <form id="config_form" method="POST">
     <textarea spellcheck="false" name="config_text" 
       oninput="var btn=document.getElementById('SAVE_btn'); btn.style.background='#4caf50'; btn.style.color='#fff'; btn.style.borderColor='#4caf50';" 
-      style="font-family:bitstream; width:100%; height:335px;"><?=$text;?></textarea>
+      style="font-family:bitstream; width:100%; height:500px;"><?=$text;?></textarea>
     <br>
     
     <a id="SAVE_btn" href="javascript:void(0);" 
