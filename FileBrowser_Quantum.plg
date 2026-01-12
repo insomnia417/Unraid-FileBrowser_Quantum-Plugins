@@ -65,7 +65,7 @@
             [ -z "$current_version" ] && current_version="v1.1.6-beta"
           else
             current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
-            echo "检测到最新稳定版号为:  $current_version"
+            echo "检测到最新稳定版号为: $current_version"
             [ -z "$current_version" ] && current_version="v1.1.0-stable"
           fi
         fi
@@ -73,7 +73,7 @@
         INSTALLED_BINARY="$INSTALL_PATH/filebrowser_quantum-$current_version"
         filebrowser_quantumurl="https://github.com/$GITHUB_REPO/releases/download/$current_version/linux-amd64-filebrowser"
 
-        echo "开始下载并安装 : $current_version ..."
+        echo "开始下载并安装: $current_version ..."
         curl --connect-timeout 15 --retry 3 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
 
         if [ -f "$INSTALLED_BINARY" ]; then
