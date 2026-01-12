@@ -46,7 +46,7 @@ if [ -f "$LOCAL_BINARY" ]; then
     echo "检测到本地主程序缓存: $(basename $LOCAL_BINARY)，跳过联网检测。"
     cp "$LOCAL_BINARY" /usr/sbin/filebrowser_quantumorig.new
     mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
-    current_version=$(basename "$LOCAL_BINARY" | cut -d'-' -f2-3)
+    current_version=$(basename "$LOCAL_BINARY" | cut -d'-' -f3-)
     INSTALLED_BINARY="$LOCAL_BINARY"
 else
     echo "本地无缓存，正在联网查询最新版本..."
