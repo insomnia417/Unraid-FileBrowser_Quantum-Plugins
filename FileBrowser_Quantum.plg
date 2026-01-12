@@ -35,12 +35,9 @@
 
 <FILE Run="/bin/bash" Method="install">
 <INLINE>
-
-# 在 CDATA 之外定义变量，避免"&"识别不了 ---
+<![CDATA[
 BUNDLE_V="&bundleversion;"
 PLUGIN_V="&version;"
-
-<![CDATA[
 GITHUB_REPO="gtsteffaniak/filebrowser"
 INSTALL_PATH="/boot/config/plugins/filebrowser_quantum/install"
 mkdir -p "$INSTALL_PATH"
