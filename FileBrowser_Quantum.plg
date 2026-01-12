@@ -35,9 +35,9 @@
 
 <FILE Run="/bin/bash" Method="install">
 <INLINE>
-<![CDATA[
 BUNDLE_V="&bundleversion;"
 PLUGIN_V="&version;"
+<![CDATA[
 GITHUB_REPO="gtsteffaniak/filebrowser"
 INSTALL_PATH="/boot/config/plugins/filebrowser_quantum/install"
 mkdir -p "$INSTALL_PATH"
