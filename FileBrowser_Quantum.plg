@@ -102,7 +102,7 @@ fi
 
 # 智能清理：保留当前 txz 和当前 binary
 echo "正在清理旧的安装文件..."
-find "$INSTALL_PATH" -name "filebrowser_quantum-*.txz" ! -name "filebrowser_quantum-&bundleversion;-bundle.txz" -delete
+find "$INSTALL_PATH" -name "filebrowser_quantum-*.txz" ! -name "filebrowser_quantum-&bundleversion;-x86_64.txz" -delete
 if [ -n "$INSTALLED_BINARY" ]; then
     find "$INSTALL_PATH" -name "filebrowser_quantum-v*" ! -name "$(basename "$INSTALLED_BINARY")" -delete
 fi
@@ -154,8 +154,8 @@ kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
 rm -rf /boot/config/plugins/filebrowser_quantum/install
 rm -f /usr/sbin/filebrowser_quantumorig
 rm -f /usr/sbin/filebrowser_quantum
-removepkg filebrowser_quantum-&bundleversion;-bundle >/dev/null
-rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-bundle
+removepkg filebrowser_quantum-&bundleversion;-x86_64.txz >/dev/null
+rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-x86_64.txz
 rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
 
 echo ""
