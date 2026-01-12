@@ -80,7 +80,7 @@ fi
 # --- [2. 核心校验：如果到这步还没文件，才报错退出] ---
 if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
     echo "安装失败：无法获取二进制文件（联网失败且无本地缓存）"
-    removepkg filebrowser_quantum-&bundleversion;-x86_64 .txz>/dev/null
+    removepkg filebrowser_quantum-&bundleversion;-x86_64 >/dev/null
     exit 1
 fi
 
@@ -154,7 +154,7 @@ kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
 rm -rf /boot/config/plugins/filebrowser_quantum/install
 rm -f /usr/sbin/filebrowser_quantumorig
 rm -f /usr/sbin/filebrowser_quantum
-removepkg filebrowser_quantum-&bundleversion;-x86_64.txz >/dev/null
+removepkg filebrowser_quantum-&bundleversion;-x86_64 >/dev/null
 rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-x86_64.txz
 rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
 
