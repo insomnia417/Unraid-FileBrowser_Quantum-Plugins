@@ -12,7 +12,7 @@
 <!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/testing/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" min="7.0.0">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;>
 
 <CHANGES>
 ##&name;
@@ -29,18 +29,13 @@
 - TODO: iframe HTTPS适配
 </CHANGES>
 
-<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz">
+<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz" Run="upgradepkg --install-new">
 <URL>&bundleURL;</URL>
 </FILE>
 
 <FILE Run="/bin/bash" Method="install">
 <INLINE>
 <![CDATA[
-TXZ_FILE="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz"
-if [ -f "$TXZ_FILE" ]; then
-    echo "正在安装本地插件包..."
-    upgradepkg --install-new "$TXZ_FILE"
-fi
 GITHUB_REPO="gtsteffaniak/filebrowser"
 INSTALL_PATH="/boot/config/plugins/filebrowser_quantum/install"
 mkdir -p "$INSTALL_PATH"
@@ -106,11 +101,7 @@ if [ ! -f /boot/config/plugins/filebrowser_quantum/settings.cfg ]; then
 fi
 
 # 智能清理：保留当前 txz 和当前 binary
-echo "正在清理旧的安装文件..."
-find "$INSTALL_PATH" -name "filebrowser_quantum-*.txz" ! -name "filebrowser_quantum-&bundleversion;-x86_64.txz" -delete
-if [ -n "$INSTALLED_BINARY" ]; then
-    find "$INSTALL_PATH" -name "filebrowser_quantum-v*" ! -name "$(basename "$INSTALLED_BINARY")" -delete
-fi
+
 
 /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"
 if [ "$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/filebrowser_quantum/settings.cfg)" == "true" ]; then
@@ -153,4 +144,21 @@ config.yaml
 </INLINE>
 </FILE>
 
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
+rm -rf /boot/config/plugins/filebrowser_quantum/install
+rm -f /usr/sbin/filebrowser_quantumorig
+rm -f /usr/sbin/filebrowser_quantum
+removepkg filebrowser_quantum-&bundleversion;-x86_64 >/dev/null
+rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-x86_64.txz
+rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
+
+echo ""
+echo "-----------------------------------------------------------"
+echo " filebrowser_quantum has been uninstalled."
+echo "-----------------------------------------------------------"
+echo ""
+</INLINE>
+</FILE>
 </PLUGIN>
