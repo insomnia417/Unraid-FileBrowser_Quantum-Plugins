@@ -1,171 +1,172 @@
 <?xml version='1.0' standalone='yes'?>
 
 <!DOCTYPE PLUGIN [
-<!ENTITY name "filebrowser_quantum">
-<!ENTITY author "insomnia417">
-<!ENTITY version "2026.01.12.1">
-<!ENTITY bundleversion "2026.01.12">
-<!ENTITY launch "Settings/filebrowser_quantum">
-<!ENTITY description "FileBrowser Quantum for unRAID">
-<!ENTITY support "https://forums.unraid.net/topic/196447-filebrowser-quantum-plugin">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/testing/FileBrowser_Quantum.plg">
-<!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/testing/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
+  <!ENTITY name "filebrowser_quantum">
+  <!ENTITY author "insomnia417">
+  <!ENTITY version "2026.01.12.1">
+  <!ENTITY bundleversion "2026.01.12">
+  <!ENTITY launch "Settings/filebrowser_quantum">
+  <!ENTITY description "FileBrowser Quantum for unRAID">
+  <!ENTITY support "https://forums.unraid.net/topic/196447-filebrowser-quantum-plugin">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/testing/FileBrowser_Quantum.plg">
+  <!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/testing/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;">
 
-<CHANGES>
-##&name;
-###&version;
-- 保留 U 盘安装包 (.txz) 缓存以支持离线启动
-2026.01.11
-- 前后端分离 , 重构
-- UI优化
-- config.yaml配置UI化
-- config更改端口自动适配变更顶栏及UI按钮的端口
-- 加入自选版本更新
-- 加入服务启停
-- UI点击即时更新
-- TODO: iframe HTTPS适配
-</CHANGES>
+  <CHANGES>
+    ##&name;
+    ###&version;
+    - 保留 U 盘安装包 (.txz) 缓存以支持离线启动
+    2026.01.11
+    - 前后端分离 , 重构
+    - UI优化
+    - config.yaml配置UI化
+    - config更改端口自动适配变更顶栏及UI按钮的端口
+    - 加入自选版本更新
+    - 加入服务启停
+    - UI点击即时更新
+    - TODO: iframe HTTPS适配
+  </CHANGES>
 
-<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz" Run="upgradepkg --install-new">
-<URL>&bundleURL;</URL>
-</FILE>
+  <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz" Run="upgradepkg --install-new">
+    <URL>&bundleURL;</URL>
+  </FILE>
 
-<FILE Run="/bin/bash" Method="install">
-<INLINE>
-BUNDLE_V="&bundleversion;"
-PLUGIN_V="&version;"
-<![CDATA[
-GITHUB_REPO="gtsteffaniak/filebrowser"
-INSTALL_PATH="/boot/config/plugins/filebrowser_quantum/install"
-mkdir -p "$INSTALL_PATH"
-# 1. 寻找本地缓存
-LOCAL_BINARY=$(ls -t $INSTALL_PATH/filebrowser_quantum-v* 2>/dev/null | head -n 1)
+  <FILE Run="/bin/bash" Method="install">
+    <INLINE>
+      BUNDLE_V="&bundleversion;"
+      PLUGIN_V="&version;"
+      <![CDATA[
+      GITHUB_REPO="gtsteffaniak/filebrowser"
+      INSTALL_PATH="/boot/config/plugins/filebrowser_quantum/install"
+      mkdir -p "$INSTALL_PATH"
 
-if [ -f "$LOCAL_BINARY" ]; then
-    echo "检测到本地主程序缓存: $(basename $LOCAL_BINARY)，跳过联网检测。"
-    cp "$LOCAL_BINARY" /usr/sbin/filebrowser_quantumorig.new
-    mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
-    current_version=$(basename "$LOCAL_BINARY" | cut -d'-' -f3-)
-    INSTALLED_BINARY="$LOCAL_BINARY"
-else
-    echo "本地无缓存，正在联网查询最新版本..."
-    TAG_LIST=$(curl -s --connect-timeout 5 "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
-    
-    if [ -f $INSTALL_PATH/beta ]; then
-      current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
-      echo "Beta mode detected. Target version: $current_version"
-      [ -z "$current_version" ] && current_version="v1.1.6-beta"
-    else
-      current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
-      echo "检测到最新稳定版号为:  $current_version"
-      [ -z "$current_version" ] && current_version="v1.1.0-stable"
-    fi
+      # 1. 寻找本地缓存
+      LOCAL_BINARY=$(ls -t $INSTALL_PATH/filebrowser_quantum-v* 2>/dev/null | head -n 1)
 
-    INSTALLED_BINARY="$INSTALL_PATH/filebrowser_quantum-$current_version"
-    filebrowser_quantumurl="https://github.com/$GITHUB_REPO/releases/download/$current_version/linux-amd64-filebrowser"
+      if [ -f "$LOCAL_BINARY" ]; then
+        echo "检测到本地主程序缓存: $(basename $LOCAL_BINARY)，跳过联网检测。"
+        cp "$LOCAL_BINARY" /usr/sbin/filebrowser_quantumorig.new
+        mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
+        current_version=$(basename "$LOCAL_BINARY" | cut -d'-' -f3-)
+        INSTALLED_BINARY="$LOCAL_BINARY"
+      else
+        echo "本地无缓存，正在联网查询最新版本..."
+        TAG_LIST=$(curl -s --connect-timeout 5 "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
+        
+        if [ -f $INSTALL_PATH/beta ]; then
+          current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
+          echo "Beta mode detected. Target version: $current_version"
+          [ -z "$current_version" ] && current_version="v1.1.6-beta"
+        else
+          current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
+          echo "检测到最新稳定版号为:  $current_version"
+          [ -z "$current_version" ] && current_version="v1.1.0-stable"
+        fi
 
-    echo "开始下载并安装 : $current_version ..."
-    curl --connect-timeout 15 --retry 3 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
+        INSTALLED_BINARY="$INSTALL_PATH/filebrowser_quantum-$current_version"
+        filebrowser_quantumurl="https://github.com/$GITHUB_REPO/releases/download/$current_version/linux-amd64-filebrowser"
 
-    if [ -f "$INSTALLED_BINARY" ]; then
-      cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig.new
-      mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
-    else
-      echo "错误：下载失败且本地无缓存！"
-      exit 1
-    fi
-fi
+        echo "开始下载并安装 : $current_version ..."
+        curl --connect-timeout 15 --retry 3 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
 
-# --- [2. 核心校验：如果到这步还没文件，才报错退出] ---
-if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
-    echo "安装失败：无法获取二进制文件（联网失败且无本地缓存）"
-    removepkg filebrowser_quantum-&bundleversion;-x86_64 >/dev/null
-    exit 1
-fi
+        if [ -f "$INSTALLED_BINARY" ]; then
+          cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig.new
+          mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
+        else
+          echo "错误：下载失败且本地无缓存！"
+          exit 1
+        fi
+      fi
 
-# --- [3. 后勤处理：赋权、配置、清理] ---
-chown root:root /usr/sbin/filebrowser_quantumorig
-chmod 755 /usr/sbin/filebrowser_quantumorig
-chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/*.sh
+      # --- [2. 核心校验：如果到这步还没文件，才报错退出] ---
+      if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
+        echo "安装失败：无法获取二进制文件（联网失败且无本地缓存）"
+        removepkg filebrowser_quantum-$BUNDLE_V-x86_64 >/dev/null
+        exit 1
+      fi
 
-# 下载默认 config.yaml (如果缺失)
-if [ ! -f /boot/config/plugins/filebrowser_quantum/config.yaml ]; then
-    echo "正在下载默认配置..."
-    curl --connect-timeout 10 --retry 3 -L -o /boot/config/plugins/filebrowser_quantum/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/config.yaml"
-fi
+      # --- [3. 后勤处理：赋权、配置、清理] ---
+      chown root:root /usr/sbin/filebrowser_quantumorig
+      chmod 755 /usr/sbin/filebrowser_quantumorig
+      chmod +x /usr/local/emhttp/plugins/filebrowser_quantum/*.sh
 
-# settings.cfg
-if [ ! -f /boot/config/plugins/filebrowser_quantum/settings.cfg ]; then
-    echo "filebrowser_ENABLED=true" > /boot/config/plugins/filebrowser_quantum/settings.cfg
-fi
+      # 下载默认 config.yaml (如果缺失)
+      if [ ! -f /boot/config/plugins/filebrowser_quantum/config.yaml ]; then
+        echo "正在下载默认配置..."
+        curl --connect-timeout 10 --retry 3 -L -o /boot/config/plugins/filebrowser_quantum/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/config.yaml"
+      fi
 
-# 智能清理：保留当前 txz 和当前 binary
-echo "正在清理旧的安装文件..."
-find "$INSTALL_PATH" -name "filebrowser_quantum-*.txz" ! -name "filebrowser_quantum-$BUNDLE_V-x86_64.txz" -delete
-if [ -n "$INSTALLED_BINARY" ]; then
-    find "$INSTALL_PATH" -name "filebrowser_quantum-v*" ! -name "$(basename "$INSTALLED_BINARY")" -delete
-fi
+      # settings.cfg
+      if [ ! -f /boot/config/plugins/filebrowser_quantum/settings.cfg ]; then
+        echo "filebrowser_ENABLED=true" > /boot/config/plugins/filebrowser_quantum/settings.cfg
+      fi
 
-/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"
-if [ "$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/filebrowser_quantum/settings.cfg)" == "true" ]; then
-  /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "true"
-  echo "开始运行FileBrowser守护进程"
-  echo "○"
-  echo "○"
-  echo "○"
-fi
+      # 智能清理：保留当前 txz 和当前 binary
+      echo "正在清理旧的安装文件..."
+      find "$INSTALL_PATH" -name "filebrowser_quantum-*.txz" ! -name "filebrowser_quantum-$BUNDLE_V-x86_64.txz" -delete
+      if [ -n "$INSTALLED_BINARY" ]; then
+        find "$INSTALL_PATH" -name "filebrowser_quantum-v*" ! -name "$(basename "$INSTALLED_BINARY")" -delete
+      fi
 
-echo ""
-echo "FileBrowser_Quantum &version; 安装成功！"
-echo "-----------------------------------------------------------"
-echo ""
-]]>
+      /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"
+      if [ "$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/filebrowser_quantum/settings.cfg)" == "true" ]; then
+        /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "true"
+        echo "开始运行FileBrowser守护进程"
+        echo "○"
+        echo "○"
+        echo "○"
+      fi
 
-</INLINE>
-</FILE>
+      echo ""
+      echo "FileBrowser_Quantum $PLUGIN_V 安装成功！"
+      echo "-----------------------------------------------------------"
+      echo ""
+      ]]>
+    </INLINE>
+  </FILE>
 
-<FILE Run="/bin/bash">
-<INLINE>
-if ! [ -f /bin/fusermount ]; then
-  if [ -f /usr/bin/fusermount3 ]; then
-    ln -s /usr/bin/fusermount3 /bin/fusermount
-  fi;
-fi;
-</INLINE>
-</FILE>
+  <FILE Run="/bin/bash">
+    <INLINE>
+      if ! [ -f /bin/fusermount ]; then
+        if [ -f /usr/bin/fusermount3 ]; then
+          ln -s /usr/bin/fusermount3 /bin/fusermount
+        fi;
+      fi;
+    </INLINE>
+  </FILE>
 
-<FILE Name="/usr/sbin/filebrowser_quantum" Mode="0755">
-<INLINE>
-#!/bin/bash
-config=/boot/config/plugins/filebrowser_quantum/config.yaml
-filebrowser_quantumorig -c $config "$@";
-</INLINE>
-</FILE>
+  <FILE Name="/usr/sbin/filebrowser_quantum" Mode="0755">
+    <INLINE>
+      #!/bin/bash
+      config=/boot/config/plugins/filebrowser_quantum/config.yaml
+      filebrowser_quantumorig -c $config "$@";
+    </INLINE>
+  </FILE>
 
-<FILE Name="/boot/config/plugins/filebrowser_quantum/.gitignore" Mode="0600">
-<INLINE>
-config.yaml
-</INLINE>
-</FILE>
+  <FILE Name="/boot/config/plugins/filebrowser_quantum/.gitignore" Mode="0600">
+    <INLINE>
+      config.yaml
+    </INLINE>
+  </FILE>
 
-<FILE Run="/bin/bash" Method="remove">
-<INLINE>
-kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
-rm -rf /boot/config/plugins/filebrowser_quantum/install
-rm -f /usr/sbin/filebrowser_quantumorig
-rm -f /usr/sbin/filebrowser_quantum
-removepkg filebrowser_quantum-&bundleversion;-x86_64 >/dev/null
-rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-x86_64.txz
-rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
+  <FILE Run="/bin/bash" Method="remove">
+    <INLINE>
+      kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
+      rm -rf /boot/config/plugins/filebrowser_quantum/install
+      rm -f /usr/sbin/filebrowser_quantumorig
+      rm -f /usr/sbin/filebrowser_quantum
+      removepkg filebrowser_quantum-&bundleversion;-x86_64 >/dev/null
+      rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-x86_64.txz
+      rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
 
-echo ""
-echo "-----------------------------------------------------------"
-echo " filebrowser_quantum has been uninstalled."
-echo "-----------------------------------------------------------"
-echo ""
-</INLINE>
-</FILE>
+      echo ""
+      echo "-----------------------------------------------------------"
+      echo " filebrowser_quantum has been uninstalled."
+      echo "-----------------------------------------------------------"
+      echo ""
+    </INLINE>
+  </FILE>
+
 </PLUGIN>
