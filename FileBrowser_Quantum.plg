@@ -32,7 +32,7 @@
 <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz" Run="upgradepkg --install-new">
 <URL>&bundleURL;</URL>
 </FILE>
-
+echo "filebrowser_quantum-&bundleversion;-x86_64.txz"
 <FILE Run="/bin/bash" Method="install">
 <INLINE>
 <![CDATA[
@@ -111,7 +111,7 @@ if [ "$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/filebrowser_qu
   echo "○"
   echo "○"
 fi
-
+echo "filebrowser_quantum-&bundleversion;-x86_64.txz"
 echo ""
 echo "FileBrowser_Quantum &version; 安装成功！"
 echo "-----------------------------------------------------------"
