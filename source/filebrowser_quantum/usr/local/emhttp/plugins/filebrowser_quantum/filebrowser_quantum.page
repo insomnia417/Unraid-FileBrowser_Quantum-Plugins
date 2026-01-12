@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   .row { flex-direction: row; flex-wrap: nowrap; }
   .left { flex: 0 0 220px; } 
   .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; } 
-  .right { flex: 1; min-width: 350px; }
+  .right { flex: 1; min-width: 350px; position: relative; }
 }
 
 /* 3. 左侧控件统一宽度 */
@@ -129,6 +129,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   margin-bottom: 5px;
   box-sizing: border-box;
   text-align: center;
+}
+
+/* --- 修改点 2: 强制下拉框漂浮到标题右侧，不占用垂直空间 --- */
+.column.right form {
+  position: absolute;
+  top: 10px;      /* 调整这个值可以让下拉框上下对齐标题 */
+  right: 15px;    /* 调整这个值让它靠右边 */
+  margin: 0;
+}
+
+/* --- 修改点 3: 优化下拉框在标题栏的外观 --- */
+.column.right select {
+  width: 140px !important; /* 宽度调小一点更精致 */
+  height: 26px;
+  font-size: 11px !important;
+  font-weight: bold;
 }
 
 /* 下拉框：加粗、加大字体 */
@@ -166,10 +182,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   float: none;     /* 取消之前的右浮动 */
 }
 
-/* 7. 日志显示区域样式 */
+/* --- 修改点 4: 确保日志框高度与配置框严格一致 --- */
 .log-area {
   width: 100%;
-  height: 335px; /* 与配置框对齐 */
+  height: 335px; /* 与 textarea 高度完全一致 */
+  margin-top: 11px; /* 关键：抵消掉 textarea 的默认间距，确保平齐 */
   background: #1e1e1e;
   color: #dcdcdc;
   font-family: 'Courier New', monospace;
