@@ -29,7 +29,7 @@
 - TODO: iframe HTTPS适配
 </CHANGES>
 
-<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-bundle.txz" Run="upgradepkg --install-new">
+<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz" Run="upgradepkg --install-new">
 <URL>&bundleURL;</URL>
 </FILE>
 
