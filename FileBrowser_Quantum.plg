@@ -29,13 +29,18 @@
 - TODO: iframe HTTPS适配
 </CHANGES>
 
-<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz" Run="upgradepkg --install-new">
+<FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz">
 <URL>&bundleURL;</URL>
 </FILE>
 
 <FILE Run="/bin/bash" Method="install">
 <INLINE>
 <![CDATA[
+TXZ_FILE="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz"
+if [ -f "$TXZ_FILE" ]; then
+    echo "正在安装本地插件包..."
+    upgradepkg --install-new "$TXZ_FILE"
+fi
 GITHUB_REPO="gtsteffaniak/filebrowser"
 INSTALL_PATH="/boot/config/plugins/filebrowser_quantum/install"
 mkdir -p "$INSTALL_PATH"
