@@ -160,6 +160,7 @@
 
   <FILE Run="/bin/bash" Method="remove">
     <INLINE>
+      <![CDATA[
       if pgrep -f "filebrowser_quantumorig" > /dev/null; then
         echo "正在停止 FileBrowser 进程..."
         kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
