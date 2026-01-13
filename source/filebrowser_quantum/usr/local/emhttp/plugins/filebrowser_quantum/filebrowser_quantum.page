@@ -65,26 +65,23 @@ function changeBranch(selectElement) {
     const newBranch = selectElement.value;
     const latestText = $("#latest_ver_val");
     const updateBtn = $("#update_btn_id");
-    const currentVer = "<?=$currentversion?>"; // PHP 注入当前安装的版本号
+    const currentVer = "<?=$currentversion?>"; 
 
-    // 1. 视觉反馈：变淡表示正在加载
     latestText.css("opacity", "0.5").text("Checking...");
-    updateBtn.prop("disabled", true); // 加载期间先禁用按钮
+    updateBtn.prop("disabled", true); 
 
-    // 2. 发送异步请求
-    $.post(window.location.href, { change_branch_ajax: newBranch }, function(latestVerFromServer) {
-        // 去除可能存在的换行符
-        const latestVer = latestVerFromServer.trim();
+    $.post(window.location.href, { change_branch_ajax: newBranch }, function(data) {
+        // 【关键】使用 .trim() 强行去掉数据两端的空格或换行
+        const latestVer = data.trim();
 
-        // 3. 更新版本号文字
+        // 更新文字
         latestText.text(latestVer).css("opacity", "1");
 
-        // 4. 【核心控制】对比版本号，动态决定按钮状态
+        // 按钮逻辑
         if (latestVer === "Unknown" || latestVer === currentVer) {
             updateBtn.prop("disabled", true);
         } else {
             updateBtn.prop("disabled", false);
-            // 同时更新按钮的点击参数，确保下载的是正确分支
             updateBtn.attr("onclick", "updatefilebrowser_quantum('" + newBranch + "')");
         }
     });
@@ -124,13 +121,18 @@ $branch = file_exists($BETA_MARKER) ? "2" : "1";
 // 处理 AJAX 请求：只返回版本号，不渲染页面
 if (isset($_POST['change_branch_ajax'])) {
     $new_branch = $_POST['change_branch_ajax'];
-    // 切换标记
     if ($new_branch == "1") { @unlink($BETA_MARKER); } else { @touch($BETA_MARKER); }
-    // 获取最新版本号
+    
+    // 执行脚本获取该分支的最新版本号
     exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
+    
+    // 重新从文件读取
     $latest = @exec("head -n 1 $LATEST_FILE") ?: "Unknown";
-    echo $latest;
-    exit; // 必须 exit，防止输出多余的 HTML
+    
+    // 【非常重要】清空之前可能存在的任何输出缓冲区
+    ob_clean(); 
+    echo trim($latest); 
+    exit; // <--- 这里必须退出，绝对不能让它往下走去渲染 HTML！！！
 }
 
 // --- D. 动态数据获取 ---
