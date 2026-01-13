@@ -165,15 +165,13 @@
         kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
         sleep 2
       fi
-
       rm -f /usr/sbin/filebrowser_quantumorig
       rm -f /usr/sbin/filebrowser_quantum
-      rm -rf /usr/local/emhttp/plugins/&name;
-      echo "正在清理 U 盘上的插件功能包..."
-      rm -f /boot/config/plugins/&name;/install/&name;-&bundleversion;-x86_64.txz
       removepkg &name;-&bundleversion;-x86_64 >/dev/null 2>&1
       rm -f /var/lib/pkgtools/packages/&name;-*
-
+      echo "正在清理 U 盘上的插件功能包..."
+      rm -f /boot/config/plugins/&name;/install/&name;-&bundleversion;-x86_64.txz
+      rm -rf /usr/local/emhttp/plugins/&name;
       echo ""
       echo "-----------------------------------------------------------"
       echo " filebrowser_quantum 卸载成功！(filebrowser二进制主程序文件仍保留在U盘)"
