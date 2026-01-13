@@ -75,7 +75,16 @@ if (preg_match('/output:\s*["\']?([^"\']+)["\']?/', $text, $matches)) {
     $logfile = trim($matches[1]);
 }
 
-// --- B. 分支与版本逻辑 ---
+// --- B. 处理清空日志请求 (新功能) ---
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['clear_log_btn'])) {
+    if (file_exists($logfile)) {
+        file_put_contents($logfile, ""); // 清空文件内容
+    }
+    header("Location: ".$_SERVER['REQUEST_URI']);
+    exit;
+}
+
+// --- C. 分支逻辑 ---
 $branch = file_exists($beta_marker) ? "2" : "1";
 
 // 2. 如果用户提交了新选择，则更新状态并立即重新拉取云端版本
@@ -86,20 +95,21 @@ if (isset($_POST['branch']) && $_POST['branch'] != $branch) {
     header("Location: ".$_SERVER['REQUEST_URI']);
     exit;
 }
-// --- C. 获取各种动态数据 ---
-$settings = parse_ini_file($settings_file);
+
+// --- D. 动态数据获取 ---
+$settings = @parse_ini_file($settings_file);
 $dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
 $currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
 // 如果 latest 文件不存在，初始化一次
 if (!file_exists($latest_file)) { exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"'); }
 $latestversion = @exec("head -n 1 $latest_file") ?: "Unknown";
 $webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
-// --- 日志处理逻辑 ---
+// 日志初始内容
 $log_level = isset($_POST['log_level']) ? $_POST['log_level'] : 'all';
 $grep_cmd = ($log_level !== 'all') ? " | grep -i ".escapeshellarg($log_level) : "";
 $log_content = shell_exec("tail -n 50 $logfile $grep_cmd 2>&1") ?: "正在连接日志流...";
 
-// --- 接管配置保存与重启逻辑 ---
+// --- E. 保存配置逻辑 ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     $new_content = $_POST['config_text'];
     $daemon_path = "/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh";
@@ -107,16 +117,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
         // 依然检测进程，确保用户改完配置后能即时生效
         $is_running = !empty(exec('pgrep -f "filebrowser_quantumorig"'));
         $is_enabled = ($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1');
-
         if ($is_enabled || $is_running) {
-            // 完全通过脚本处理重启逻辑，PHP 只管触发
             exec("bash $daemon_path 'false' > /dev/null 2>&1");
             sleep(2);
             exec("bash $daemon_path 'true' > /dev/null 2>&1");
-            
             echo "<script>alert('配置已保存并重启服务！'); window.location.href=window.location.href;</script>";
         } else {
-            echo "<script>alert('配置已保存！(当前服务处于关闭状态)'); window.location.href=window.location.href;</script>";
+            echo "<script>alert('配置已保存！'); window.location.href=window.location.href;</script>";
         }
         exit;
     }
@@ -127,13 +134,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
 <html>
 <head>
-
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <style>
 .row { display: flex; flex-direction: column; }
 .column { padding: 10px; width:100%; box-sizing: border-box; }
-
 /* 2. 核心自适应：电脑端（宽度大于1024px）自动变横排 */
 @media screen and (min-width: 1024px) {
   .row { flex-direction: row; flex-wrap: nowrap; }
@@ -247,7 +251,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   border: 1px solid #333;
 }
 </style>
-
 </head>
 <body>
 
@@ -331,15 +334,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
   <div class="column right">
     <h2>Logging</h2>
-    <form action="" method="post">
+    <form class="level-form" action="" method="post">
         <select name="log_level" onchange="this.form.submit();">
-            <option value="all" <?= $log_level=='all'?'selected':'' ?>>LEVEL: ALL</option>
-            <option value="info" <?= $log_level=='info'?'selected':'' ?>>LEVEL: INFO</option>
-            <option value="error" <?= $log_level=='error'?'selected':'' ?>>LEVEL: ERROR</option>
+            <option value="all" <?=$log_level=='all'?'selected':''?>>LEVEL: ALL</option>
+            <option value="info" <?=$log_level=='info'?'selected':''?>>LEVEL: INFO</option>
+            <option value="error" <?=$log_level=='error'?'selected':''?>>LEVEL: ERROR</option>
         </select>
     </form>
     <div class="log-area"><?=htmlspecialchars($log_content)?></div>
-    <input type="button" value="REFRESH LOG" onclick="window.location.reload();" style="margin-top:14px; width:200px;">
+    
+    <form action="" method="post" style="margin-top:14px;" onsubmit="return confirm('确定要清空所有日志内容吗？');">
+        <input type="hidden" name="clear_log_btn" value="1">
+        <input type="submit" value="CLEAR LOG" style="width:200px; height:28px; cursor:pointer;">
+    </form>
   </div>
 </div>
 
