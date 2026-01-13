@@ -1,8 +1,12 @@
-name: 自动打包(testing)
+name: 自动打包.txz
 
+# run-name 会显示在 Action 列表里，动态展示当前运行的分支
+run-name: 正在分支 [${{ github.ref_name }}] 上执行自动打包
 on:
   push:
-    branches: [ "testing" ]
+    # 匹配所有分支的 push，实现“在哪个分支就在哪个分支生效”
+    branches:
+      - '**' 
     paths:
       - 'source/**'
       - 'FileBrowser_Quantum.plg'
@@ -44,24 +48,26 @@ jobs:
 
       - name: Commit and Push changes
         run: |
+          # 1. 配置 Git 身份
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # 1. 先把所有修改过的文件 add 进来
+          # 获取当前触发工作流的分支名称 (例如 testing)
+          CURRENT_BRANCH="${{ github.ref_name }}"
+          echo "当前分支: $CURRENT_BRANCH"
+          
+          # 2. 暂存所有变动的文件
           git add FileBrowser_Quantum.plg archive/*.txz archive/*.md5
           
-          # 2. 检查是否有变动
+          # 3. 检查是否有文件改动，没改动直接退出
           if git diff --staged --quiet; then
-            echo "No changes detected."
+            echo "No changes detected. Skipping commit."
             exit 0
           fi
 
-          # 3. 提交到本地记录
-          git commit -m "auto: v23 fix plg md5 and package"
+          # 4. 提交（带上动态日期和分支名）
+          git commit -m "auto: $(date +'%Y.%m.%d') update package and md5 on $CURRENT_BRANCH"
           
-          # 4. 关键：先拉取远程，如果有冲突，以本地修改为准
-          # 使用 --rebase 保持提交历史整洁
-          git pull origin testing --rebase
-          
-          # 5. 推送
-          git push origin testing
+          # 5. 动态拉取并推送
+          git pull origin "$CURRENT_BRANCH" --rebase
+          git push origin "$CURRENT_BRANCH"
