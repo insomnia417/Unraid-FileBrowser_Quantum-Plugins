@@ -3,8 +3,8 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY author "insomnia417">
-  <!ENTITY version "2026.01.14">
-  <!ENTITY bundleversion "2026.01.14">
+  <!ENTITY version "2026.01.13">
+  <!ENTITY bundleversion "2026.01.13">
   <!ENTITY launch "Settings/filebrowser_quantum">
   <!ENTITY description "FileBrowser Quantum for unRAID">
   <!ENTITY support "https://forums.unraid.net/topic/196447-filebrowser-quantum-plugin">
@@ -15,28 +15,21 @@
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;">
 
-  <CHANGES>
-    ##&name;
-    ###&version;
-    2026.01.13
-    - 插件包和主程序在更新插件的时候,检测校验本地文件版本,智能清理,如果已有,不再进行重复下载
-    - UNRAID系统重启,已安装的FB插件不再进行联网检测,以防没有外网卡住
-    - 修复了因为 PHP 路径定义不一致导致的日志读取潜在问题
-    2026.01.12
-    - 增加日志清空按钮
-    - 使用全世界最厉害的计算机语言php构建日志实时展示
-    - 设置界面改成三列展示(增加日志功能)
-    - 保留 U 盘安装包 (.txz) 缓存以支持离线启动
-    2026.01.11
-    - 前后端分离 , 重构
-    - UI优化
-    - config.yaml配置UI化
-    - config更改端口自动适配变更顶栏及UI按钮的端口
-    - 加入自选版本更新
-    - 加入服务启停
-    - UI点击即时更新
-    - TODO: iframe HTTPS适配
-  </CHANGES>
+<CHANGES>
+### &name;
+#### 🆕 最新版本（&version;）更新内容
+- **智能更新检测**：更新时校验本地文件，实现智能清理，避免重复下载已有文件。
+- **离线兼容性**：UNRAID 重启时，已安装插件不再强制联网检测，防止因无外网导致系统卡住。
+- **稳定性修复**：修正 PHP 路径定义不一致问题，确保日志读取准确无误。
+#### 📜 历史更新内容
+- **日志系统**：新增日志清空按钮，基于 PHP 构建日志实时展示功能。
+- **界面优化**：设置界面改为三列展示；UI 整体细节优化；支持 UI 点击即时更新。
+- **离线支持**：保留 U 盘安装包 (.txz) 缓存，确保在无网络环境下依然可以启动。
+- **重构适配**：完成前后端分离重构；`config.yaml` 全 UI 化管理。
+- **智能适配**：Config 端口更改后，自动同步适配顶栏及 UI 按钮端口。
+- **功能控制**：加入服务启停开关与自选版本更新功能。
+- **待办事项**：推进 iframe HTTPS 适配。
+</CHANGES>
 
   <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz" Run="upgradepkg --install-new">
     <URL>&bundleURL;</URL>
