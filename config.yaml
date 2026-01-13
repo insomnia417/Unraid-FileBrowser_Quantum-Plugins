@@ -3,7 +3,8 @@ server:
   baseURL: "/"
   database: "/boot/config/plugins/filebrowser_quantum/database.db"
   logging:
-    - levels: "info|warning|error"
+    - levels: "info|debug|warning|error"
+      output: "/var/log/filebrowser/debug.log"
   sources:
     - path: "/"
       name: "/根目录"
