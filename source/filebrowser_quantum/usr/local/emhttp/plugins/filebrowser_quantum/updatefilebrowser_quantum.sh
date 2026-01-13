@@ -49,10 +49,18 @@ else
     exit 1
 fi
 
-# 4. 【验证逻辑修正】
-# 不再直接拿 Daemon 的输出比对，因为 version 输出有多行
-# 我们手动执行提取，确保拿到的只是 "v1.1.6-beta" 这一串字符
-installed_ver_now=$($RUNNING_BINARY version | grep "Version" | cut -d':' -f2 | tr -d ' ')
+# --- 验证逻辑修正 ---
+# 1. 执行二进制文件获取所有版本信息
+# 2. 用 grep 锁定包含 'Version' 的行 (忽略大小写 -i)
+# 3. 用 awk 或 cut 提取冒号后的内容，并用 tr 剔除空格
+installed_ver_now=$($RUNNING_BINARY version 2>/dev/null | grep -i "Version" | awk -F': ' '{print $2}' | tr -d ' ')
+
+# 如果上面的 awk 提取不出来，可以使用你 Daemon.sh 里的备选方案：
+if [ -z "$installed_ver_now" ]; then
+    installed_ver_now=$($RUNNING_BINARY version 2>/dev/null | grep "Version" | cut -d':' -f2 | tr -d ' ')
+fi
+
+echo "调试信息：提取到的实际版本为 [$installed_ver_now]"
 
 if [ "$installed_ver_now" == "$current_version" ]; then
     echo ""
@@ -63,8 +71,8 @@ else
     echo ""
     echo "-------------------------------------------------------------------"
     echo "<font color='red'>验证失败：</font>"
-    echo "期望: $current_version"
-    echo "实际: $installed_ver_now"
+    echo "期望版本: $current_version"
+    echo "实际提取: $installed_ver_now"
     echo "-------------------------------------------------------------------"
     exit 1
 fi
