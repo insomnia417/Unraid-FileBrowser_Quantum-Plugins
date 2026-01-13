@@ -341,13 +341,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   <div class="column right">
     <h2>Logging</h2>
     <form class="level-form" action="" method="post">
-		<select name="log_level" onchange="this.form.submit();">
-		    <option value="all" <?=$log_level=='all'?'selected':''?>>LEVEL: ALL</option>
-		    <option value="info" <?=$log_level=='info'?'selected':''?>>LEVEL: INFO</option>
-		    <option value="debug" <?=$log_level=='debug'?'selected':''?>>LEVEL: DEBUG</option>
-		    <option value="warning" <?=$log_level=='warning'?'selected':''?>>LEVEL: WARNING</option>
-		    <option value="error" <?=$log_level=='error'?'selected':''?>>LEVEL: ERROR</option>
-		</select>
+        <?php $available_levels = getLogLevels($CONFIG_YAML); ?>
+        <select name="log_level" onchange="this.form.submit();">
+            <option value="all" <?=$log_level=='all'?'selected':''?>>LEVEL: ALL</option>
+            <?php foreach($available_levels as $level): ?>
+                <?php if(empty($level)) continue; ?>
+                <option value="<?=$level?>" <?=$log_level==$level?'selected':''?>>
+                    LEVEL: <?=strtoupper($level)?>
+                </option>
+            <?php endforeach; ?>
+        </select>
     </form>
     <div class="log-area"><?=htmlspecialchars($log_content)?></div>
     
