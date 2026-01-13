@@ -133,20 +133,44 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
 /* --- 修改点 2: 强制下拉框漂浮到标题右侧，不占用垂直空间 --- */
 .column.right form {
-  position: absolute;
-  top: 26px;      /* 调整这个值可以让下拉框上下对齐标题 */
-  right: 15px;    /* 调整这个值让它靠右边 */
-  margin: 0;
+  position: relative; 
+  top: 0;
+  right: 0;
+  margin: 10px 0;    /* 标题和日志框之间留出间距 */
+  text-align: left;  /* 在手机端左对齐 */
 }
 
 /* --- 修改点 3: 优化下拉框在标题栏的外观 --- */
 .column.right select {
-  width: 140px !important; /* 宽度调小一点更精致 */
+  width: 200px !important; 
   height: 28px;
   font-size: 15px !important;
   font-weight: bold !important;
   text-align-last: center;
 }
+
+/* ======================================================== */
+/* 2. 紧接着写电脑端样式 (只有屏幕够宽时才会“覆盖”上面的样式)     */
+/* ======================================================== */
+@media screen and (min-width: 1024px) {
+  .row { flex-direction: row; flex-wrap: nowrap; }
+  .left { flex: 0 0 220px; } 
+  .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; } 
+  .right { flex: 1; min-width: 350px; position: relative; }
+
+  /* 电脑端执行：开启绝对定位，让下拉框“飞”到 Logging 标题右侧 */
+  .column.right form {
+    position: absolute;
+    top: 26px;      /* 你的黄金坐标 */
+    right: 15px;    
+    margin: 0;
+  }
+
+  /* 电脑端执行：下拉框宽度变窄，更精致 */
+  .column.right select {
+    width: 140px !important; 
+  }
+} /* <--- 确认这里有一个结束的大括号 */
 
 /* 下拉框：加粗、加大字体 */
 .left select {
@@ -295,7 +319,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     <input type="button" value="REFRESH LOG" onclick="window.location.reload();" style="margin-top:14px; width:200px;">
   </div>
 </div>
-
 
 </body>
 </html>
