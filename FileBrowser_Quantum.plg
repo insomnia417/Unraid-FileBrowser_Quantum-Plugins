@@ -3,8 +3,8 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY author "insomnia417">
-  <!ENTITY version "2026.01.12">
-  <!ENTITY bundleversion "2026.01.12">
+  <!ENTITY version "2026.01.13">
+  <!ENTITY bundleversion "2026.01.13">
   <!ENTITY launch "Settings/filebrowser_quantum">
   <!ENTITY description "FileBrowser Quantum for unRAID">
   <!ENTITY support "https://forums.unraid.net/topic/196447-filebrowser-quantum-plugin">
@@ -20,7 +20,7 @@
     2026.01.13
     - 插件包和主程序在更新插件的时候,检测校验本地文件版本,智能清理,如果已有,不再进行重复下载
     - UNRAID系统重启,已安装的FB插件不再进行联网检测,以防没有外网卡住
-    - 
+    - 修复了因为 PHP 路径定义不一致导致的日志读取潜在问题
     2026.01.12
     - 增加日志清空按钮
     - 使用全世界最厉害的计算机语言php构建日志实时展示
