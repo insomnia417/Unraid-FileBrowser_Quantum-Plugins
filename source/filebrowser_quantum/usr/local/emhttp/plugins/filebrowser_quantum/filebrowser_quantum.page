@@ -66,7 +66,9 @@ function startLogTail() {
 }
 
 // 页面加载后立即启动
-$(document).ready(function() { startLogTail(); });
+$(document).ready(function() {
+    startLogTail();
+});
 
 </script>
 
@@ -82,17 +84,20 @@ $text = file_get_contents($file);
 $default_text = $text; // 用于 Original 按钮恢复
 
 // 2. 动态解析日志路径 (从 YAML 中提取)
-$logfile = "/var/log/filebrowser_quantum.log";
+$logfile = "/var/log/filebrowser_quantum.log"; // 默认路径
 if (preg_match('/output:\s*["\']?([^"\']+)["\']?/', $text, $matches)) {
-    $logfile = trim($matches[1]);}
+    $logfile = trim($matches[1]);
+}
 
 // --- B. 处理清空日志请求 (新功能) ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['clear_log_btn'])) {
-    if (file_exists($logfile)) { exec("> " . escapeshellarg($logfile)); }
-    // 强制跳转回当前页面，不带任何 POST 参数
-    echo "<script>window.location.href=window.location.pathname;</script>";
+    if (file_exists($logfile)) {
+        file_put_contents($logfile, ""); // 清空文件内容
+    }
+    header("Location: ".$_SERVER['REQUEST_URI']);
     exit;
 }
+
 // --- C. 分支逻辑 ---
 $branch = file_exists($beta_marker) ? "2" : "1";
 
@@ -341,7 +346,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     <input type="button" value="Original" onclick="setDefault(this.form)" style="margin-left: 10px; vertical-align: middle;">
   </form> 
 </div>
-<div class="column right">
+
+  <div class="column right">
     <h2>Logging</h2>
     <form class="level-form" action="" method="post">
         <select name="log_level" onchange="this.form.submit();">
@@ -353,10 +359,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     <div class="log-area"><?=htmlspecialchars($log_content)?></div>
     
     <div style="margin-top:24px;">
-        <input type="button" value="CLEAR LOG" onclick="clearLog();" style="vertical-align: middle; width: 120px;">
+        <input type="button" value="CLEAR LOG" onclick="clearLog();">
     </div>
+  </div>
 </div>
-</div>
+
 </body>
 </html>
 
