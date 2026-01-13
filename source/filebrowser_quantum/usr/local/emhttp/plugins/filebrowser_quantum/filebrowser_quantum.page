@@ -70,8 +70,8 @@ function changeBranch(selectElement) {
     latestText.css("opacity", "0.5").text("Checking...");
     updateBtn.prop("disabled", true); 
 
-    $.post(window.location.href, { change_branch_ajax: newBranch }, function(data) {
-        // 【关键】使用 .trim() 强行去掉数据两端的空格或换行
+    // 【关键修改点】：将请求地址改为独立文件 ajax_version.php
+    $.post("/plugins/filebrowser_quantum/ajax_version.php", { branch: newBranch }, function(data) {
         const latestVer = data.trim();
 
         // 更新文字
@@ -117,28 +117,6 @@ if (isset($_POST['clear_log_ajax'])) {
 
 // --- C. 更新版本分支逻辑 ---
 $branch = file_exists($BETA_MARKER) ? "2" : "1";
-
-// 【修正后的拦截逻辑】
-if (isset($_POST['change_branch_ajax'])) {
-    // 1. 立即清理所有已经生成的输出缓冲区（杀掉 Header）
-    while (ob_get_level() > 0) { ob_end_clean(); }
-    
-    $new_branch = $_POST['change_branch_ajax'];
-    if ($new_branch == "1") { @unlink($BETA_MARKER); } else { @touch($BETA_MARKER); }
-    
-    // 2. 更新版本信息
-    exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
-    
-    // 3. 读取版本号
-    $latest = @exec("head -n 1 $LATEST_FILE") ?: "Unknown";
-    
-    // 4. 强制声明这是一个纯文本回复
-    header('Content-Type: text/plain');
-    echo trim($latest); 
-    
-    // 5. 必须死死守住这个 exit;
-    exit; 
-}
 
 // --- D. 动态数据获取 ---
 $settings = @parse_ini_file($SETTINGS_FILE);
