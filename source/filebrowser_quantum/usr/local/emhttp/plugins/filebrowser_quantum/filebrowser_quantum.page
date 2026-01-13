@@ -35,6 +35,20 @@ function webui(form) {
    });
 }
 
+function clearLog() {
+    if (confirm('确定要清空所有日志内容吗？')) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'clear_log_btn';
+        input.value = '1';
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
 // 核心：每2秒从独立的 log.php 获取最新日志
 function startLogTail() {
     setInterval(function() {
@@ -147,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 }
 
 /* 3. 控件统一宽度 */
-.left input[type="button"], .left select, .right select, .clear-btn {
+.left input[type="button"], .left select, .right select {
   width: 200px !important;
   height: 28px;
   line-height: normal;
@@ -344,10 +358,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     </form>
     <div class="log-area"><?=htmlspecialchars($log_content)?></div>
     
-    <form action="" method="post" style="margin-top:14px;" onsubmit="return confirm('确定清空日志？');">
-        <input type="hidden" name="clear_log_btn" value="1">
-        <input type="submit" class="clear-btn" value="CLEAR LOG">
-    </form>
+    <div style="margin-top:24px;">
+        <input type="button" value="CLEAR LOG" onclick="clearLog();">
+    </div>
   </div>
 </div>
 
