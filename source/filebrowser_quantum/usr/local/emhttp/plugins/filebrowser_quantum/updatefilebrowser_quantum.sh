@@ -1,70 +1,91 @@
 #!/bin/bash
-GITHUB_REPO="gtsteffaniak/filebrowser"
-TAG_LIST=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
+# Version: v2.3
 
-if [ "$1" = "2" ]; then
-   current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
+# 1. 【变量复用】直接引入 base.php 中的变量定义
+# 我们通过 PHP 解析 base.php 获取变量，确保路径与插件全局统一
+eval $(php -r '
+    require_once "/usr/local/emhttp/plugins/filebrowser_quantum/base.php";
+    echo "BETA_MARKER=$BETA_MARKER\n";
+    echo "LATEST_FILE=$LATEST_FILE\n";
+    echo "INSTALL_DIR=/boot/config/plugins/filebrowser_quantum/install\n";
+')
+
+# 定义二进制路径 (对应你 plg 中的路径)
+RUNNING_BINARY="/usr/sbin/filebrowser_quantumorig"
+DAEMON_SCRIPT="/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh"
+
+# 2. 【逻辑复用】根据当前分支标记判断目标版本
+# 这样保证了 update 脚本看的分支和 WebUI 看到的分支永远一致
+if [ -f "$BETA_MARKER" ]; then
+    BRANCH_TYPE="beta"
+    ARG_BRANCH="2"
 else
-   current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
-fi;
-
-# 容错处理：万一没抓到版本，给个保底值
-if [ -z "$current_version" ]; then
-    current_version="v1.1.0-stable"
+    BRANCH_TYPE="stable"
+    ARG_BRANCH="1"
 fi
 
-INSTALLED_BINARY="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-$current_version"
-filebrowser_quantumurl="https://github.com/$GITHUB_REPO/releases/download/$current_version/linux-amd64-filebrowser"
+# 从 LATEST_FILE 获取版本号 (这是由 WebUI 或 Daemon 提前抓取好的)
+# 如果文件不存在，则现场抓取一次
+if [ ! -f "$LATEST_FILE" ]; then
+    $DAEMON_SCRIPT "VERSION"
+fi
+current_version=$(head -n 1 "$LATEST_FILE")
 
-version=`filebrowser_quantumorig version | head -n 1`
-  echo "-------------------------------------------------------------------"
-  echo "联网查询中..."
-  echo "-------------------------------------------------------------------"
-ping -q -c3 github.com >/dev/null
-if [ $? -eq 0 ]; then
-    if [ -f "$INSTALLED_BINARY" ] && [[ "$version" == *"$current_version"* ]]; then
-    echo "Local filebrowser_quantum binary ($current_version) up-to-date"  
-    echo "本地已存在 ($current_version) "  
-    else
-	echo "-----------------------------------------------------------"
-    echo "New version found: $current_version.Downloading and installing filebrowser_quantum binary"
-    echo "发现新版本 : $current_version 下载安装中..."
-	echo "-----------------------------------------------------------"
-    curl --connect-timeout 15 --retry 3 --retry-delay 2 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
-    cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig
-    chown root:root /usr/sbin/filebrowser_quantumorig
-    chmod 755 /usr/sbin/filebrowser_quantumorig
-    fi;
-else
-  echo ""
-  echo "-------------------------------------------------------------------"
-  echo "<font color='red'> 连接错误 - 无法访问 filebrowser_quantum 下载地址 </font>"
-  echo "-------------------------------------------------------------------"
-  echo ""
-  exit 1
-fi;
+# 容错处理
+[ -z "$current_version" ] && echo "无法获取版本号" && exit 1
 
-# 获取安装动作执行后的实际版本号
-installed_ver_now=`/usr/sbin/filebrowser_quantumorig version | head -n 1 2>/dev/null`
+INSTALLED_BINARY="$INSTALL_DIR/filebrowser_quantum-$current_version"
+DOWNLOAD_URL="https://github.com/gtsteffaniak/filebrowser/releases/download/$current_version/linux-amd64-filebrowser"
 
-# 判断：实际安装的版本 是否包含 我们从 GitHub 抓取的目标版本号
-if [[ "$installed_ver_now" == *"$current_version"* ]]; then
-  echo ""
-  echo "-------------------------------------------------------------------"
-  echo "验证成功：filebrowser_quantum 已更新/保持为 $current_version"
-  echo "-------------------------------------------------------------------"
-  echo ""
-else
-  echo ""
-  echo "-------------------------------------------------------------------"
-  echo "<font color='red'> 升级失败：当前版本 ($installed_ver_now) 与目标版本 ($current_version) 不符 </font>"
-  echo "-------------------------------------------------------------------"
-  echo ""
-  exit 1
-fi;
-
-echo ""
 echo "-------------------------------------------------------------------"
-echo "filebrowser_quantum 已成功更新"
+echo "目标版本: $current_version (分支: $BRANCH_TYPE)"
 echo "-------------------------------------------------------------------"
-echo ""
+
+# 3. 【核心执行】解决文件占用问题
+if ping -q -c1 github.com >/dev/null; then
+    # 下载
+    if [ ! -f "$INSTALLED_BINARY" ]; then
+        echo "正在下载新版本..."
+        curl --connect-timeout 15 --retry 3 --retry-delay 2 -L -o "$INSTALLED_BINARY" --create-dirs "$DOWNLOAD_URL"
+    fi
+
+    # 【关键修改】必须先彻底停止服务！
+    echo "正在停止服务以解除文件锁定..."
+    $DAEMON_SCRIPT "false" >/dev/null 2>&1
+    # 强制杀死残留进程
+    PID=$(pgrep -f "filebrowser_quantumorig")
+    [ ! -z "$PID" ] && kill -9 $PID && sleep 1
+
+    # 替换文件
+    echo "正在覆盖二进制文件..."
+    cp -f "$INSTALLED_BINARY" "$RUNNING_BINARY"
+    chown root:root "$RUNNING_BINARY"
+    chmod 755 "$RUNNING_BINARY"
+
+    # 重新启动服务
+    echo "正在重启服务..."
+    $DAEMON_SCRIPT "true" >/dev/null 2>&1
+else
+    echo "<font color='red'>错误：无法连接 GitHub</font>"
+    exit 1
+fi
+
+# 4. 【严谨验证】精确匹配完整版本号字符串
+# 注意：你的 version 输出有多行，我们需要提取出包含 vX.X.X 的那一部分
+installed_ver_now=$($RUNNING_BINARY version | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+(-beta|-stable)?' | head -n 1)
+
+if [ "$installed_ver_now" == "$current_version" ]; then
+    echo ""
+    echo "-------------------------------------------------------------------"
+    echo "验证成功：filebrowser_quantum 已更新为 $installed_ver_now"
+    echo "-------------------------------------------------------------------"
+    echo ""
+else
+    echo ""
+    echo "-------------------------------------------------------------------"
+    echo "<font color='red'>验证失败：</font>"
+    echo "期待版本: $current_version"
+    echo "实际运行: $installed_ver_now"
+    echo "-------------------------------------------------------------------"
+    exit 1
+fi
