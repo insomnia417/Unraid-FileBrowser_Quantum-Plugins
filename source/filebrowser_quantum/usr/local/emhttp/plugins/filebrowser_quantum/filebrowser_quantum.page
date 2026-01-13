@@ -78,9 +78,6 @@ $default_config_text = $config_text; // 用于 修改conifg.yaml的时候的重�
 
 // 2. 动态解析日志路径 (从 YAML 中提取)
 $logfile = getLogPath($CONFIG_YAML);
-if (preg_match('/output:\s*["\']?([^"\']+)["\']?/', $config_text, $matches)) {
-    $logfile = trim($matches[1]);
-}
 
 // --- B. 处理清空日志请求 (AJAX 专属逻辑) ---
 if (isset($_POST['clear_log_ajax'])) {
