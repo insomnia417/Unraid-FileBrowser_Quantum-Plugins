@@ -146,14 +146,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   .right { flex: 1; min-width: 350px; position: relative; }
 }
 
-/* 3. 左侧控件统一宽度 */
-.left input[type="button"], .left select, .right select {
+/* 3. 控件统一宽度 */
+.left input[type="button"], .left select, .right select, .clear-btn {
   width: 200px !important;
   height: 28px;
   line-height: normal;
   margin-bottom: 5px;
   box-sizing: border-box;
   text-align: center;
+  cursor: pointer;
 }
 
 /* --- 修改点 2: 强制下拉框漂浮到标题右侧，不占用垂直空间 --- */
