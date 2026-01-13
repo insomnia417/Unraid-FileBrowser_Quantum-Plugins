@@ -61,6 +61,35 @@ function startLogTail() {
     }, 2000);
 }
 
+function changeBranch(selectElement) {
+    const newBranch = selectElement.value;
+    const latestText = $("#latest_ver_val");
+    const updateBtn = $("#update_btn_id");
+    const currentVer = "<?=$currentversion?>"; // PHP 注入当前安装的版本号
+
+    // 1. 视觉反馈：变淡表示正在加载
+    latestText.css("opacity", "0.5").text("Checking...");
+    updateBtn.prop("disabled", true); // 加载期间先禁用按钮
+
+    // 2. 发送异步请求
+    $.post(window.location.href, { change_branch_ajax: newBranch }, function(latestVerFromServer) {
+        // 去除可能存在的换行符
+        const latestVer = latestVerFromServer.trim();
+
+        // 3. 更新版本号文字
+        latestText.text(latestVer).css("opacity", "1");
+
+        // 4. 【核心控制】对比版本号，动态决定按钮状态
+        if (latestVer === "Unknown" || latestVer === currentVer) {
+            updateBtn.prop("disabled", true);
+        } else {
+            updateBtn.prop("disabled", false);
+            // 同时更新按钮的点击参数，确保下载的是正确分支
+            updateBtn.attr("onclick", "updatefilebrowser_quantum('" + newBranch + "')");
+        }
+    });
+}
+
 // 页面加载后立即启动
 $(document).ready(function() {
     startLogTail();
@@ -89,16 +118,19 @@ if (isset($_POST['clear_log_ajax'])) {
     exit;
 }
 
-// --- C. 分支逻辑 ---
+// --- C. 更新版本分支逻辑 ---
 $branch = file_exists($BETA_MARKER) ? "2" : "1";
 
-// 2. 如果用户提交了新选择，则更新状态并立即重新拉取云端版本
-if (isset($_POST['branch']) && $_POST['branch'] != $branch) {
-    $branch = $_POST['branch'];
-    if ($branch == "1") { @unlink($BETA_MARKER); } else { @touch($BETA_MARKER); }
+// 处理 AJAX 请求：只返回版本号，不渲染页面
+if (isset($_POST['change_branch_ajax'])) {
+    $new_branch = $_POST['change_branch_ajax'];
+    // 切换标记
+    if ($new_branch == "1") { @unlink($BETA_MARKER); } else { @touch($BETA_MARKER); }
+    // 获取最新版本号
     exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
-    header("Location: ".$_SERVER['REQUEST_URI']);
-    exit;
+    $latest = @exec("head -n 1 $LATEST_FILE") ?: "Unknown";
+    echo $latest;
+    exit; // 必须 exit，防止输出多余的 HTML
 }
 
 // --- D. 动态数据获取 ---
@@ -264,19 +296,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   <div class="column left">
     <h2>Branch</h2>
 	<form action="" method="post"> 
-	<select name="branch" onchange="this.form.submit();"> 
-	<option value="1" <?php if($branch == 1) echo("selected")?>>Stable</option>
-	<option value="2" <?php if($branch == 2) echo("selected")?>>Beta</option>
-	</select> 
+  <select name="branch" onchange="changeBranch(this);"> 
+      <option value="1" <?php if($branch == 1) echo("selected")?>>Stable</option>
+      <option value="2" <?php if($branch == 2) echo("selected")?>>Beta</option>
+  </select>
 	</form> 
 
 <div class="version-info">
     <div>已安装版本: <b style="margin-left: 8px; color:#1a17d6;"><?=$currentversion?></b></div>
-    <div>在线最新版: <b style="margin-left: 8px; color:#eb2b2b;"><?=$latestversion?></b></div>
+    <div>在线最新版: <b id="latest_ver_val" style="margin-left: 8px; color:#eb2b2b;"><?=$latestversion?></b></div>
 </div>
 
 	<br>
-	<input type="button" value="UPDATE" <?php if ($currentversion == $latestversion){ ?> disabled <?php } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
+	<input type="button" id="update_btn_id" value="UPDATE" <?php if ($currentversion == $latestversion){ ?> disabled <?php } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
 <h2>服务
   <span style="font-size:0.6em; color: <?= !empty($webui_pid) ? 'green' : 'red' ?>;">
