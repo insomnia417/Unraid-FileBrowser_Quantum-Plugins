@@ -177,6 +177,7 @@
       echo " filebrowser_quantum 卸载成功！(filebrowser二进制主程序文件仍保留在U盘)"
       echo "-----------------------------------------------------------"
       echo ""
+      ]]>
     </INLINE>
   </FILE>
 
