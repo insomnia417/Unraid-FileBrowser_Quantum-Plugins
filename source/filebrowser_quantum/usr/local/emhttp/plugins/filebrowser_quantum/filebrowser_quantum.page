@@ -20,19 +20,19 @@ Icon="filebrowser_quantum.png"
 
 <script>
 function updatefilebrowser_quantum(branch) {
-    var path = "/usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh"
-    openBox('/usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh&arg1='+path+'&arg2='+branch,"Update filebrowser_quantum",450,800,true);
+   var path = "/usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh"
+   openBox('/usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh&arg1='+path+'&arg2='+branch,"Update filebrowser_quantum",450,800,true);
 }
 
 function webui(form) {
-    var state = form.webui_status.value;
-    // 弹窗执行 Daemon.sh
-    // 注意：这里我们加入了一个回调，当弹窗关闭时，刷新当前页面
-    openBox('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh&arg1='+state,"filebrowser_quantum WebUI",450,800,true);
-    // 当窗口重新获得焦点（通常是黑窗口关闭后），自动刷新页面
-    $(window).once('focus', function() {
-        window.location.reload();
-    });
+   var state = form.webui_status.value;
+   // 弹窗执行 Daemon.sh
+   // 注意：这里我们加入了一个回调，当弹窗关闭时，刷新当前页面
+   openBox('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh&arg1='+state,"filebrowser_quantum WebUI",450,800,true);
+   // 当窗口重新获得焦点（通常是黑窗口关闭后），自动刷新页面
+   $(window).once('focus', function() {
+       window.location.reload();
+   });
 }
 
 function clearLog() {
@@ -84,14 +84,11 @@ $default_text = $text; // 用于 Original 按钮恢复
 // 2. 动态解析日志路径 (从 YAML 中提取)
 $logfile = "/var/log/filebrowser_quantum.log";
 if (preg_match('/output:\s*["\']?([^"\']+)["\']?/', $text, $matches)) {
-    $logfile = trim($matches[1]);
-}
+    $logfile = trim($matches[1]);}
 
 // --- B. 处理清空日志请求 (新功能) ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['clear_log_btn'])) {
-    if (file_exists($logfile)) {
-        exec("> " . escapeshellarg($logfile));
-    }
+    if (file_exists($logfile)) { exec("> " . escapeshellarg($logfile)); }
     // 强制跳转回当前页面，不带任何 POST 参数
     echo "<script>window.location.href=window.location.pathname;</script>";
     exit;
@@ -146,228 +143,226 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        .row { display: flex; flex-direction: column; }
-        .column { padding: 10px; width:100%; box-sizing: border-box; }
-        /* 2. 核心自适应：电脑端（宽度大于1024px）自动变横排 */
-        @media screen and (min-width: 1024px) {
-            .row { flex-direction: row; flex-wrap: nowrap; }
-            .left { flex: 0 0 220px; } 
-            .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; } 
-            .right { flex: 1; min-width: 350px; position: relative; }
-        }
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+.row { display: flex; flex-direction: column; }
+.column { padding: 10px; width:100%; box-sizing: border-box; }
+/* 2. 核心自适应：电脑端（宽度大于1024px）自动变横排 */
+@media screen and (min-width: 1024px) {
+  .row { flex-direction: row; flex-wrap: nowrap; }
+  .left { flex: 0 0 220px; } 
+  .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; } 
+  .right { flex: 1; min-width: 350px; position: relative; }
+}
 
-        /* 3. 控件统一宽度 */
-        .left input[type="button"], .left select, .right select {
-            width: 200px !important;
-            height: 28px;
-            line-height: normal;
-            margin-bottom: 5px;
-            box-sizing: border-box;
-            text-align: center;
-            cursor: pointer;
-        }
+/* 3. 控件统一宽度 */
+.left input[type="button"], .left select, .right select {
+  width: 200px !important;
+  height: 28px;
+  line-height: normal;
+  margin-bottom: 5px;
+  box-sizing: border-box;
+  text-align: center;
+  cursor: pointer;
+}
 
-        /* --- 修改点 2: 强制下拉框漂浮到标题右侧，不占用垂直空间 --- */
-        .column.right form {
-            position: relative; 
-            top: 0;
-            right: 0;
-            margin: 10px 0;    /* 标题和日志框之间留出间距 */
-            text-align: left;  /* 在手机端左对齐 */
-        }
+/* --- 修改点 2: 强制下拉框漂浮到标题右侧，不占用垂直空间 --- */
+.column.right form {
+  position: relative; 
+  top: 0;
+  right: 0;
+  margin: 10px 0;    /* 标题和日志框之间留出间距 */
+  text-align: left;  /* 在手机端左对齐 */
+}
 
-        /* --- 修改点 3: 优化下拉框在标题栏的外观 --- */
-        .column.right select {
-            width: 200px !important; 
-            height: 28px;
-            font-size: 15px !important;
-            font-weight: bold !important;
-            text-align-last: center;
-        }
+/* --- 修改点 3: 优化下拉框在标题栏的外观 --- */
+.column.right select {
+  width: 200px !important; 
+  height: 28px;
+  font-size: 15px !important;
+  font-weight: bold !important;
+  text-align-last: center;
+}
 
-        /* ======================================================== */
-        /* 2. 紧接着写电脑端样式 (只有屏幕够宽时才会“覆盖”上面的样式)     */
-        /* ======================================================== */
-        @media screen and (min-width: 1024px) {
-            .row { flex-direction: row; flex-wrap: nowrap; }
-            .left { flex: 0 0 220px; } 
-            .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; } 
-            .right { flex: 1; min-width: 350px; position: relative; }
+/* ======================================================== */
+/* 2. 紧接着写电脑端样式 (只有屏幕够宽时才会“覆盖”上面的样式)     */
+/* ======================================================== */
+@media screen and (min-width: 1024px) {
+  .row { flex-direction: row; flex-wrap: nowrap; }
+  .left { flex: 0 0 220px; } 
+  .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; } 
+  .right { flex: 1; min-width: 350px; position: relative; }
 
-            /* 电脑端执行：开启绝对定位，让下拉框“飞”到 Logging 标题右侧 */
-            .column.right form {
-                position: absolute;
-                top: 26px;      /* 你的黄金坐标 */
-                right: 15px;    
-                margin: 0;
-            }
+  /* 电脑端执行：开启绝对定位，让下拉框“飞”到 Logging 标题右侧 */
+  .column.right form {
+    position: absolute;
+    top: 26px;      /* 你的黄金坐标 */
+    right: 15px;    
+    margin: 0;
+  }
 
-            /* 电脑端执行：下拉框宽度变窄，更精致 */
-            .column.right select {
-                width: 140px !important; 
-            }
-        } /* <--- 确认这里有一个结束的大括号 */
+  /* 电脑端执行：下拉框宽度变窄，更精致 */
+  .column.right select {
+    width: 140px !important; 
+  }
+} /* <--- 确认这里有一个结束的大括号 */
 
-        /* 下拉框：加粗、加大字体 */
-        .left select {
-            font-size: 15px !important;   /* 只让下拉框变大 */
-            font-weight: bold !important; /* 只让下拉框加粗 */
-            color: #000;
-            text-align-last: center;      /* 文字在下拉框内居中 */
-        }
+/* 下拉框：加粗、加大字体 */
+.left select {
+  font-size: 15px !important;   /* 只让下拉框变大 */
+  font-weight: bold !important; /* 只让下拉框加粗 */
+  color: #000;
+  text-align-last: center;      /* 文字在下拉框内居中 */
+}
 
-        /* 按钮：保持原来的小字体，不加粗 */
-        .left input[type="button"] {
-            font-size: 12px;              /* 按钮维持 12px */
-            font-weight: bold;          /* 按钮不加粗 */
-            cursor: pointer;
-        }
+/* 按钮：保持原来的小字体，不加粗 */
+.left input[type="button"] {
+  font-size: 12px;              /* 按钮维持 12px */
+  font-weight: bold;          /* 按钮不加粗 */
+  cursor: pointer;
+}
 
-        /* 版本信息区域的微调 */
-        .version-info {
-            margin: 10px 0;             /* 上下留出一点间距 */
-            font-family: 'Clear Sans', sans-serif;
-            width: 200px;
-        }
+/* 版本信息区域的微调 */
+.version-info {
+  margin: 10px 0;             /* 上下留出一点间距 */
+  font-family: 'Clear Sans', sans-serif;
+  width: 200px;
+}
 
-        .version-info div {
-            clear: both; 
-            padding: 6px 0; 
-            border-bottom: 1px solid #eee;
-            font-size: 12px; 
-            color: #666;
-            text-align: left; /* 确保左对齐 */
-        }
-        .version-info b {
-            margin-left: 8px; /* 冒号后的间距 */
-            float: none;     /* 取消之前的右浮动 */
-        }
+.version-info div {
+  clear: both; 
+  padding: 6px 0; 
+  border-bottom: 1px solid #eee;
+  font-size: 12px; 
+  color: #666;
+  text-align: left; /* 确保左对齐 */
+}
+.version-info b {
+  margin-left: 8px; /* 冒号后的间距 */
+  float: none;     /* 取消之前的右浮动 */
+}
 
-        /* --- 修改点 4: 确保日志框高度与配置框严格一致 --- */
-        .log-area {
-            width: calc(100% - 2px); 
-            box-sizing: border-box !important;
-            overflow-x: hidden; 
-            overflow-y: scroll;
-            /* 其余保持不变 */
-            height: 500px;
-            margin-top: 11px;
-            background: #1e1e1e;
-            color: #dcdcdc;
-            font-family: bitstream, 'Courier New', monospace;
-            font-size: 13px;
-            padding: 10px;
-            border-radius: 3px;
-            white-space: pre-wrap;
-            border: 1px solid #333;
-        }
-    </style>
+/* --- 修改点 4: 确保日志框高度与配置框严格一致 --- */
+.log-area {
+  width: calc(100% - 2px); 
+  box-sizing: border-box !important;
+  overflow-x: hidden; 
+  overflow-y: scroll;
+  /* 其余保持不变 */
+  height: 500px;
+  margin-top: 11px;
+  background: #1e1e1e;
+  color: #dcdcdc;
+  font-family: bitstream, 'Courier New', monospace;
+  font-size: 13px;
+  padding: 10px;
+  border-radius: 3px;
+  white-space: pre-wrap;
+  border: 1px solid #333;
+}
+</style>
 </head>
 <body>
 
-    <div class="row">
-        <div class="column left">
-            <h2>Branch</h2>
-            <form action="" method="post"> 
-                <select name="branch" onchange="this.form.submit();"> 
-                    <option value="1" <?php if($branch == 1) echo("selected")?>>Stable</option>
-                    <option value="2" <?php if($branch == 2) echo("selected")?>>Beta</option>
-                </select> 
-            </form> 
+<div class="row">
+  <div class="column left">
+    <h2>Branch</h2>
+	<form action="" method="post"> 
+	<select name="branch" onchange="this.form.submit();"> 
+	<option value="1" <?php if($branch == 1) echo("selected")?>>Stable</option>
+	<option value="2" <?php if($branch == 2) echo("selected")?>>Beta</option>
+	</select> 
+	</form> 
 
-            <div class="version-info">
-                <div>已安装版本: <b style="margin-left: 8px; color:#1a17d6;"><?=$currentversion?></b></div>
-                <div>在线最新版: <b style="margin-left: 8px; color:#eb2b2b;"><?=$latestversion?></b></div>
-            </div>
+<div class="version-info">
+    <div>已安装版本: <b style="margin-left: 8px; color:#1a17d6;"><?=$currentversion?></b></div>
+    <div>在线最新版: <b style="margin-left: 8px; color:#eb2b2b;"><?=$latestversion?></b></div>
+</div>
 
-            <br>
-            <input type="button" value="UPDATE" <?php if ($currentversion == $latestversion){ ?> disabled <?php } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
+	<br>
+	<input type="button" value="UPDATE" <?php if ($currentversion == $latestversion){ ?> disabled <?php } ?> onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
-            <h2>服务
-                <span style="font-size:0.6em; color: <?= !empty($webui_pid) ? 'green' : 'red' ?>;">
-                    &nbsp;&nbsp;&nbsp;<?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?>
-                </span>
-            </h2>
+<h2>服务
+  <span style="font-size:0.6em; color: <?= !empty($webui_pid) ? 'green' : 'red' ?>;">
+    &nbsp;&nbsp;&nbsp;<?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?>
+  </span>
+  </h2>
 
-            <form action="" method="post"> 
-                <select name="webui_status" onchange="this.form.apply_btn.disabled=false; this.form.apply_btn.className='submit';"> 
-                    <option value="false" <?php if($settings['filebrowser_ENABLED'] == 'false' || empty($settings['filebrowser_ENABLED'])) echo("selected")?>>Disabled</option>
-                    <option value="true" <?php if($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') echo("selected")?>>Enabled</option>
-                </select> 
+  <form action="" method="post"> 
+    <select name="webui_status" onchange="this.form.apply_btn.disabled=false; this.form.apply_btn.className='submit';"> 
+      <option value="false" <?php if($settings['filebrowser_ENABLED'] == 'false' || empty($settings['filebrowser_ENABLED'])) echo("selected")?>>Disabled</option>
+      <option value="true" <?php if($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') echo("selected")?>>Enabled</option>
+    </select> 
 
-                <br><br>
-                <input type="button" name="apply_btn" value="APPLY" disabled onclick="webui(this.form)">
+    <br><br>
+    <input type="button" name="apply_btn" value="APPLY" disabled onclick="webui(this.form)">
 
-                <? if (!empty($webui_pid)): ?>
-                    <input type="button" class="localURL" value="Open WebUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
-                <? endif; ?>
-            </form>
+    <? if (!empty($webui_pid)): ?>
+      <input type="button" class="localURL" value="Open WebUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
+    <? endif; ?>
+  </form>
 
-        </div>
+  </div>
 
-        <div class="column mid">
-            <h2>Edit config</h2>
-            <form id="config_form" method="POST">
-                <textarea 
-                    spellcheck="false" 
-                    name="config_text" 
-                    oninput="var btn=document.getElementById('SAVE_btn'); btn.style.background='#4caf50'; btn.style.color='#fff'; btn.style.borderColor='#4caf50';" 
-                    style="font-family:bitstream, monospace; width:100%; height:500px; padding:10px; box-sizing:border-box;"
-                ><?=htmlspecialchars($text);?></textarea>
+<div class="column mid">
+  <h2>Edit config</h2>
+  <form id="config_form" method="POST">
+    <textarea 
+      spellcheck="false" 
+      name="config_text" 
+      oninput="var btn=document.getElementById('SAVE_btn'); btn.style.background='#4caf50'; btn.style.color='#fff'; btn.style.borderColor='#4caf50';" 
+      style="font-family:bitstream, monospace; width:100%; height:500px; padding:10px; box-sizing:border-box;"
+    ><?=htmlspecialchars($text);?></textarea>
 
-                <br><br> 
-                <a id="SAVE_btn" href="javascript:void(0);" 
-                    onclick="if(confirm('确定要保存配置并重启服务吗？')){ document.getElementById('config_form').submit(); }"
-                    style="display: inline-block; 
-                           padding: 0 25px;            /* 增加左右内边距，让它变宽 */
-                           height: 32px;               /* 增加高度 */
-                           line-height: 30px;          /* 让文字垂直居中，比高度小2px即可 */
-                           background: #f2f2f2; 
-                           color: #333; 
-                           border: 1px solid #ccc; 
-                           cursor: pointer; 
-                           text-decoration: none; 
-                           border-radius: 2px; 
-                           font-family: 'Clear Sans', sans-serif; 
-                           font-size: 12px;            /* 字体保持你满意的状态 */
-                           font-weight: bold; 
-                           text-transform: uppercase; 
-                           letter-spacing: 2px; 
-                           box-sizing: border-box; 
-                           vertical-align: middle;">
-                    SAVE
-                </a>
+    <br><br> <a id="SAVE_btn" href="javascript:void(0);" 
+       onclick="if(confirm('确定要保存配置并重启服务吗？')){ document.getElementById('config_form').submit(); }"
+       style="display: inline-block; 
+              padding: 0 25px;            /* 增加左右内边距，让它变宽 */
+              height: 32px;               /* 增加高度 */
+              line-height: 30px;          /* 让文字垂直居中，比高度小2px即可 */
+              background: #f2f2f2; 
+              color: #333; 
+              border: 1px solid #ccc; 
+              cursor: pointer; 
+              text-decoration: none; 
+              border-radius: 2px; 
+              font-family: 'Clear Sans', sans-serif; 
+              font-size: 12px;            /* 字体保持你满意的状态 */
+              font-weight: bold; 
+              text-transform: uppercase; 
+              letter-spacing: 2px; 
+              box-sizing: border-box; 
+              vertical-align: middle;">
+       SAVE
+    </a>
 
-                <input type="hidden" name="save_config_btn" value="1">
-                
-                <input type="button" value="Original" onclick="setDefault(this.form)" style="margin-left: 10px; vertical-align: middle;">
-            </form> 
-        </div>
-
-        <div class="column right">
-            <h2>Logging</h2>
-            <form class="level-form" action="" method="post">
-                <select name="log_level" onchange="this.form.submit();">
-                    <option value="all" <?=$log_level=='all'?'selected':''?>>LEVEL: ALL</option>
-                    <option value="info" <?=$log_level=='info'?'selected':''?>>LEVEL: INFO</option>
-                    <option value="error" <?=$log_level=='error'?'selected':''?>>LEVEL: ERROR</option>
-                </select>
-            </form>
-            <div class="log-area"><?=htmlspecialchars($log_content)?></div>
-            
-            <div style="margin-top:24px;">
-                <input type="button" value="CLEAR LOG" onclick="clearLog();" style="vertical-align: middle; width: 120px;">
-            </div>
-        </div>
+    <input type="hidden" name="save_config_btn" value="1">
+    
+    <input type="button" value="Original" onclick="setDefault(this.form)" style="margin-left: 10px; vertical-align: middle;">
+  </form> 
+</div>
+<div class="column right">
+    <h2>Logging</h2>
+    <form class="level-form" action="" method="post">
+        <select name="log_level" onchange="this.form.submit();">
+            <option value="all" <?=$log_level=='all'?'selected':''?>>LEVEL: ALL</option>
+            <option value="info" <?=$log_level=='info'?'selected':''?>>LEVEL: INFO</option>
+            <option value="error" <?=$log_level=='error'?'selected':''?>>LEVEL: ERROR</option>
+        </select>
+    </form>
+    <div class="log-area"><?=htmlspecialchars($log_content)?></div>
+    
+    <div style="margin-top:24px;">
+        <input type="button" value="CLEAR LOG" onclick="clearLog();" style="vertical-align: middle; width: 120px;">
     </div>
+</div>
+</div>
 </body>
 </html>
 
 <script>
 function setDefault(form) {
-    form.elements['config_text'].value = <?=json_encode($default_text);?>;
+  form.elements['config_text'].value = <?=json_encode($default_text);?>;
 }
 // 自动滚动逻辑：仅在页面加载完成后执行一次
 $(document).ready(function() {
