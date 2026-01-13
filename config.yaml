@@ -7,7 +7,7 @@ server:
       output: "/var/log/filebrowser_quantum.log"
   sources:
     - path: "/"
-      name: "/根目录"
+      name: "Root Dir"
       config:
         denyByDefault: false
         defaultEnabled: true
