@@ -18,6 +18,18 @@ Icon="filebrowser_quantum.png"
 >
 > To setup filebrowser_quantum for the first time execute the command `filebrowser_quantum config` in command line.
 
+<?php
+// --- 1. 实时日志接口 (必须在最顶部且在 PHP 环境下) ---
+$logfile = "/var/log/filebrowser_quantum.log"; 
+
+if (isset($_GET['action']) && $_GET['action'] == 'get_realtime_log') {
+    $log_level = $_GET['log_level'] ?: 'all';
+    $grep_cmd = ($log_level !== 'all') ? " | grep -i '$log_level'" : "";
+    // 仅读取最后 100 行，读取完立刻结束进程，绝不残留
+    echo htmlspecialchars(shell_exec("tail -n 100 $logfile $grep_cmd 2>&1")) ?: "暂无日志...";
+    exit; // 处理完直接退出，不渲染后面的 HTML
+}
+?>
 
 <script>
 function updatefilebrowser_quantum(branch) {
@@ -35,6 +47,36 @@ function webui(form) {
        window.location.reload();
    });
 }
+// 自动更新日志区域
+let logInterval;
+
+function startLogTail() {
+    // 如果已经有定时器在跑，先清除，防止重叠
+    if (logInterval) clearInterval(logInterval);
+
+    logInterval = setInterval(function() {
+        const logLevel = $("select[name='log_level']").val();
+        // 这里的 URL 指向你自己
+        $.get(window.location.href, { action: 'get_realtime_log', log_level: logLevel }, function(data) {
+            const logArea = document.querySelector('.log-area');
+            const isAtBottom = logArea.scrollHeight - logArea.scrollTop <= logArea.clientHeight + 50;
+
+            // 更新内容
+            logArea.innerHTML = data;
+
+            // 如果更新前用户就在底部，则继续自动滚动
+            if (isAtBottom) {
+                logArea.scrollTop = logArea.scrollHeight;
+            }
+        });
+    }, 2000); // 每 2 秒刷新一次
+}
+
+// 页面加载后立即启动
+$(document).ready(function() {
+    startLogTail();
+});
+
 </script>
 
 <?
@@ -44,7 +86,7 @@ $defaultfile = "/boot/config/plugins/filebrowser_quantum/config.yaml";
 $settings_file = '/boot/config/plugins/filebrowser_quantum/settings.cfg';
 $latest_file = '/boot/config/plugins/filebrowser_quantum/install/latest';
 $beta_marker = '/boot/config/plugins/filebrowser_quantum/install/beta';
-$logfile = "/var/log/filebrowser_quantum.log"; 
+
 
 // --- B. 处理分支切换逻辑 (必须在读取版本号之前执行) ---
 // 1. 先探测磁盘上的实际状态
@@ -64,8 +106,7 @@ $settings = parse_ini_file($settings_file);
 $dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
 $currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
 // 如果 latest 文件不存在，初始化一次
-if (!file_exists($latest_file)) {
-    exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"'); }
+if (!file_exists($latest_file)) { exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"'); }
 $latestversion = @exec("head -n 1 $latest_file");
 if (empty($latestversion)) $latestversion = "Unknown";
 $webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
@@ -78,7 +119,7 @@ if ($log_level !== 'all') {
 // 读取最后 50 行日志
 $log_content = shell_exec("tail -n 50 $logfile $grep_cmd 2>&1") ?: "暂无日志或日志文件不存在: $logfile";
 
-// --- D: 接管配置保存与重启逻辑 ---
+// --- 接管配置保存与重启逻辑 ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     $new_content = $_POST['config_text'];
     $daemon_path = "/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh";
@@ -93,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
             sleep(2);
             exec("bash $daemon_path 'true' > /dev/null 2>&1");
             
-            echo "<script>alert('配置已成功保存，服务已完成重启！'); window.location.href=window.location.href;</script>";
+            echo "<script>alert('配置已保存并重启服务！'); window.location.href=window.location.href;</script>";
         } else {
             echo "<script>alert('配置已保存！(当前服务处于关闭状态)'); window.location.href=window.location.href;</script>";
         }
