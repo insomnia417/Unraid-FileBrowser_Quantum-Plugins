@@ -4,7 +4,7 @@ server:
   database: "/boot/config/plugins/filebrowser_quantum/database.db"
   logging:
     - levels: "info|debug|warning|error"
-      output: "/var/log/filebrowser/debug.log"
+      output: "/var/log/filebrowser_quantum.log"
   sources:
     - path: "/"
       name: "/根目录"
