@@ -127,9 +127,9 @@
       if [ "$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/filebrowser_quantum/settings.cfg)" == "true" ]; then
         /usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "true"
         echo "开始运行FileBrowser守护进程"
-        echo "○"
-        echo "○"
-        echo "○"
+        echo "●"
+        echo "●"
+        echo "●"
       fi
 
       echo ""
