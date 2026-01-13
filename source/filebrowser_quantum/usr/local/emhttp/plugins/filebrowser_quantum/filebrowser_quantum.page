@@ -70,13 +70,13 @@ $(document).ready(function() {
 
 <?PHP
 // --- A. 路径与基础数据 ---
-$file = "/boot/config/plugins/filebrowser_quantum/config.yaml";
+$config_file = "/boot/config/plugins/filebrowser_quantum/config.yaml";
 $settings_file = '/boot/config/plugins/filebrowser_quantum/settings.cfg';
 $latest_file = '/boot/config/plugins/filebrowser_quantum/install/latest';
 $beta_marker = '/boot/config/plugins/filebrowser_quantum/install/beta';
 
 // 1. 读取配置文件内容
-$text = file_get_contents($file);
+$text = file_get_contents($config_file);
 $default_text = $text; // 用于 Original 按钮恢复
 
 // 2. 动态解析日志路径 (从 YAML 中提取)
@@ -124,7 +124,7 @@ $log_content = shell_exec("tail -n 50 $logfile $grep_cmd 2>&1") ?: "正在连接
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     $new_content = $_POST['config_text'];
     $daemon_path = "/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh";
-    if (file_put_contents($file, $new_content) !== false) {
+    if (file_put_contents($config_file, $new_content) !== false) {
         // 依然检测进程，确保用户改完配置后能即时生效
         $is_running = !empty(exec('pgrep -f "filebrowser_quantumorig"'));
         $is_enabled = ($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1');
