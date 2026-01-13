@@ -70,18 +70,15 @@ $(document).ready(function() {
 
 <?PHP
 // --- A. 路径与基础数据 ---
-$config_file = "/boot/config/plugins/filebrowser_quantum/config.yaml";
-$settings_file = '/boot/config/plugins/filebrowser_quantum/settings.cfg';
-$latest_file = '/boot/config/plugins/filebrowser_quantum/install/latest';
-$beta_marker = '/boot/config/plugins/filebrowser_quantum/install/beta';
+// 引入基础定义后，$CONFIG_YAML, $SETTINGS_FILE, $INSTALL_PATH 等变量直接可用
+require_once "/usr/local/emhttp/plugins/filebrowser_quantum/base.php";
 
-// 1. 读取配置文件内容
-$text = file_get_contents($config_file);
-$default_text = $text; // 用于 Original 按钮恢复
+$config_text = file_get_contents($CONFIG_YAML); // config.yaml文本
+$default_config_text = $config_text; // 用于 修改conifg.yaml的时候的重置按钮
 
 // 2. 动态解析日志路径 (从 YAML 中提取)
-$logfile = "/var/log/filebrowser_quantum.log"; // 默认路径
-if (preg_match('/output:\s*["\']?([^"\']+)["\']?/', $text, $matches)) {
+$logfile = getLogPath($CONFIG_YAML);
+if (preg_match('/output:\s*["\']?([^"\']+)["\']?/', $config_text, $matches)) {
     $logfile = trim($matches[1]);
 }
 
@@ -96,24 +93,24 @@ if (isset($_POST['clear_log_ajax'])) {
 }
 
 // --- C. 分支逻辑 ---
-$branch = file_exists($beta_marker) ? "2" : "1";
+$branch = file_exists($BETA_MARKER) ? "2" : "1";
 
 // 2. 如果用户提交了新选择，则更新状态并立即重新拉取云端版本
 if (isset($_POST['branch']) && $_POST['branch'] != $branch) {
     $branch = $_POST['branch'];
-    if ($branch == "1") { @unlink($beta_marker); } else { @touch($beta_marker); }
+    if ($branch == "1") { @unlink($BETA_MARKER); } else { @touch($BETA_MARKER); }
     exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
     header("Location: ".$_SERVER['REQUEST_URI']);
     exit;
 }
 
 // --- D. 动态数据获取 ---
-$settings = @parse_ini_file($settings_file);
+$settings = @parse_ini_file($SETTINGS_FILE);
 $dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
 $currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
 // 如果 latest 文件不存在，初始化一次
-if (!file_exists($latest_file)) { exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"'); }
-$latestversion = @exec("head -n 1 $latest_file") ?: "Unknown";
+if (!file_exists($LATEST_FILE)) { exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"'); }
+$latestversion = @exec("head -n 1 $LATEST_FILE") ?: "Unknown";
 $webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
 // 日志初始内容
 $log_level = isset($_POST['log_level']) ? $_POST['log_level'] : 'all';
@@ -124,7 +121,7 @@ $log_content = shell_exec("tail -n 50 $logfile $grep_cmd 2>&1") ?: "正在连接
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     $new_content = $_POST['config_text'];
     $daemon_path = "/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh";
-    if (file_put_contents($config_file, $new_content) !== false) {
+    if (file_put_contents($CONFIG_YAML, $new_content) !== false) {
         // 依然检测进程，确保用户改完配置后能即时生效
         $is_running = !empty(exec('pgrep -f "filebrowser_quantumorig"'));
         $is_enabled = ($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1');
@@ -314,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
       name="config_text" 
       oninput="var btn=document.getElementById('SAVE_btn'); btn.style.background='#4caf50'; btn.style.color='#fff'; btn.style.borderColor='#4caf50';" 
       style="font-family:bitstream, monospace; width:100%; height:500px; padding:10px; box-sizing:border-box;"
-    ><?=htmlspecialchars($text);?></textarea>
+    ><?=htmlspecialchars($config_text);?></textarea>
 
     <br><br> <a id="SAVE_btn" href="javascript:void(0);" 
        onclick="if(confirm('确定要保存配置并重启服务吗？')){ document.getElementById('config_form').submit(); }"
@@ -366,7 +363,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
 <script>
 function setDefault(form) {
-  form.elements['config_text'].value = <?=json_encode($default_text);?>;
+  form.elements['config_text'].value = <?=json_encode($default_config_text);?>;
 }
 // 自动滚动逻辑：仅在页面加载完成后执行一次
 $(document).ready(function() {
