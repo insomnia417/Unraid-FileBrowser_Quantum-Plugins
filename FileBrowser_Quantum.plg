@@ -3,8 +3,8 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY author "insomnia417">
-  <!ENTITY version "2026.01.13">
-  <!ENTITY bundleversion "2026.01.13">
+  <!ENTITY version "2026.01.14">
+  <!ENTITY bundleversion "2026.01.14">
   <!ENTITY launch "Settings/filebrowser_quantum">
   <!ENTITY description "FileBrowser Quantum for unRAID">
   <!ENTITY support "https://forums.unraid.net/topic/196447-filebrowser-quantum-plugin">
