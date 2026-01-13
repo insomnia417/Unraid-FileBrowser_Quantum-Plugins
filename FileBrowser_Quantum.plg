@@ -160,25 +160,23 @@
 
   <FILE Run="/bin/bash" Method="remove">
     <INLINE>
-      <![CDATA[
       if pgrep -f "filebrowser_quantumorig" > /dev/null; then
         echo "正在停止 FileBrowser 进程..."
         kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
         sleep 2
       fi
+      <!-- rm -rf /boot/config/plugins/filebrowser_quantum/install -->
       rm -f /usr/sbin/filebrowser_quantumorig
       rm -f /usr/sbin/filebrowser_quantum
-      removepkg &name;-&bundleversion;-x86_64 >/dev/null 2>&1
-      rm -f /var/lib/pkgtools/packages/&name;-*
-      echo "正在清理 U 盘上的插件功能包..."
-      rm -f /boot/config/plugins/&name;/install/&name;-&bundleversion;-x86_64.txz
-      rm -rf /usr/local/emhttp/plugins/&name;
+      removepkg filebrowser_quantum-&bundleversion;-x86_64 >/dev/null
+      rm -f /var/lib/pkgtools/packages/filebrowser_quantum-*-x86_64.txz
+      rm -rf /usr/local/emhttp/plugins/filebrowser_quantum
+
       echo ""
       echo "-----------------------------------------------------------"
-      echo " filebrowser_quantum 卸载成功！(filebrowser二进制主程序文件仍保留在U盘)"
+      echo " filebrowser_quantum 卸载成功！(已保留 U 盘安装包缓存)"
       echo "-----------------------------------------------------------"
       echo ""
-      ]]>
     </INLINE>
   </FILE>
 
