@@ -17,6 +17,10 @@
   <CHANGES>
     ##&name;
     ###&version;
+    2026.01.13
+    - 插件包和主程序在更新插件的时候,检测校验本地文件版本,智能清理,如果已有,不再进行重复下载
+    - UNRAID系统重启,已安装的FB插件不再进行联网检测,以防没有外网卡住
+    - 
     2026.01.12
     - 增加日志清空按钮
     - 使用全世界最厉害的计算机语言php构建日志实时展示
@@ -167,7 +171,7 @@
         kill -SIGINT $(pgrep -f "filebrowser_quantumorig")
         sleep 2
       fi
-      rm -rf /boot/config/plugins/filebrowser_quantum/install
+      <!-- rm -rf /boot/config/plugins/filebrowser_quantum/install -->
       rm -f /usr/sbin/filebrowser_quantumorig
       rm -f /usr/sbin/filebrowser_quantum
       removepkg filebrowser_quantum-&bundleversion;-x86_64 >/dev/null
@@ -176,7 +180,7 @@
 
       echo ""
       echo "-----------------------------------------------------------"
-      echo " filebrowser_quantum 卸载成功！"
+      echo " filebrowser_quantum 卸载成功！(已保留 U 盘安装包缓存)"
       echo "-----------------------------------------------------------"
       echo ""
     </INLINE>
