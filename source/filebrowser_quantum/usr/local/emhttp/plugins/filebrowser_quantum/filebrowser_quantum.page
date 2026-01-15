@@ -125,7 +125,7 @@ $currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh 
 // 如果 latest 文件不存在，初始化一次
 if (!file_exists($LATEST_MARKER)) { exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"'); }
 $latestversion = @exec("head -n 1 $LATEST_MARKER") ?: "Unknown";
-$webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
+$webui_pid = exec('pgrep -f "' . basename($BINARY) . '"');
 // 日志初始内容
 $log_level = isset($_POST['log_level']) ? $_POST['log_level'] : 'all';
 $grep_cmd = ($log_level !== 'all') ? " | grep -i ".escapeshellarg($log_level) : "";
@@ -137,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     $daemon_path = "/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh";
     if (file_put_contents($CONFIG_YAML, $new_content) !== false) {
         // 依然检测进程，确保用户改完配置后能即时生效
-        $is_running = !empty(exec('pgrep -f "filebrowser_quantumorig"'));
+        $is_running = !empty(exec('pgrep -f "' . basename($BINARY) . '"'));
         $is_enabled = ($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1');
         if ($is_enabled || $is_running) {
             exec("bash $daemon_path 'false' > /dev/null 2>&1");
