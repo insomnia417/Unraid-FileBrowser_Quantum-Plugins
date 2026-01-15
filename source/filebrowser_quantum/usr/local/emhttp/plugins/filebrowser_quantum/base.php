@@ -4,6 +4,7 @@ $conf = "/usr/local/emhttp/plugins/filebrowser_quantum/paths.conf";
 $paths = file_exists($conf) ? parse_ini_file($conf) : [];
 
 // 2. 变量同步（将 Bash 变量名转为 PHP 变量名，兼容旧代码）
+$BINARY        = $paths['BINARY']        ?? "/usr/sbin/filebrowser_quantumorig";
 $PLG_PATH      = $paths['PLG_PATH']      ?? "/boot/config/plugins/filebrowser_quantum";
 $CONFIG_YAML   = $paths['CONFIG_YAML']   ?? "$PLG_PATH/config.yaml";
 $SETTINGS_FILE = $paths['SETTINGS_FILE'] ?? "$PLG_PATH/settings.cfg";
