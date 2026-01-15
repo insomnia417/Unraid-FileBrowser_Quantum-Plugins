@@ -1,29 +1,30 @@
 #!/bin/bash
-# Version: v3.0 (Stable & Confirmed)
+# Version: v4.0 (Enhanced Stability)
 
-# 1. 【变量复用】直接引入 base.php 中的定义，确保全插件路径统一
-eval $(php -r '
-    require_once "/usr/local/emhttp/plugins/filebrowser_quantum/base.php";
-    echo "BETA_MARKER=$BETA_MARKER\n";
-    echo "LATEST_FILE=$LATEST_FILE\n";
-')
+# --- 1. 防呆检查 (第3点详细描述) ---
+CONF_PATH="/usr/local/emhttp/plugins/filebrowser_quantum/paths.conf"
 
-# 路径定义（严格匹配你的 .plg 和 Daemon.sh）
-RUNNING_BINARY="/usr/sbin/filebrowser_quantumorig"
-DAEMON_SCRIPT="/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh"
-INSTALL_DIR="/boot/config/plugins/filebrowser_quantum/install"
-
-# 2. 【逻辑复用】从最新的版本记录文件中获取目标版本号
-# 该文件由 WebUI 触发更新分支时自动生成
-current_version=$(head -n 1 "$LATEST_FILE" 2>/dev/null)
-
-# 容错：如果获取不到版本号则退出
-if [ -z "$current_version" ]; then
-    echo "<font color='red'>错误：无法读取目标版本号，请检查 $LATEST_FILE</font>"
+# 检查仓库文件是否存在
+if [ ! -f "$CONF_PATH" ]; then
+    echo "<font color='red'>错误：找不到关键配置文件 $CONF_PATH</font>"
+    echo "请重新安装插件或检查文件系统。"
     exit 1
 fi
 
-INSTALLED_BINARY="$INSTALL_DIR/filebrowser_quantum-$current_version"
+# 引入paths.conf变量
+source "$CONF_PATH"
+# --------------------------------
+
+# 【逻辑复用】从最新的版本记录文件中获取目标版本号,该文件由 WebUI 触发更新分支时自动生成
+current_version=$(head -n 1 "$LATEST_MARKER" 2>/dev/null)
+
+# 获取目标版本号. 容错：如果获取不到版本号则退出
+if [ -z "$current_version" ]; then
+    echo "<font color='red'>错误：无法读取目标版本号，请检查 $LATEST_MARKER</font>"
+    exit 1
+fi
+
+INSTALLED_BINARY="$INSTALL_PATH/filebrowser_quantum-$current_version"
 DOWNLOAD_URL="https://github.com/gtsteffaniak/filebrowser/releases/download/$current_version/linux-amd64-filebrowser"
 
 echo "-------------------------------------------------------------------"
@@ -40,15 +41,30 @@ if ping -q -c1 github.com >/dev/null; then
 
     # 【关键】先停止服务，解决“Text file busy”文件锁定问题
     echo "正在停止服务并替换文件..."
-    bash "$DAEMON_SCRIPT" "false" >/dev/null 2>&1
+    # 极致优化：精确等待进程退出，最多等5秒
+    MAX_WAIT=5
+    while [ $MAX_WAIT -gt 0 ] && pgrep -f "$(basename "$BINARY")" >/dev/null; do
+        sleep 1
+        ((MAX_WAIT--))
+    done
     # 暴力清理残留进程（保险措施）
-    pkill -9 -f "filebrowser_quantumorig" >/dev/null 2>&1
-    sleep 2
+    pkill -9 -f "$(basename "$BINARY")" >/dev/null 2>&1
 
+    # 获取旧二进制文件的权限和归属（如果存在的话）
+    if [ -f "$BINARY" ]; then
+        OLD_PERM=$(stat -c "%a" "$BINARY")
+        OLD_OWNER=$(stat -c "%U:%G" "$BINARY")
+    else
+        OLD_PERM="755"
+        OLD_OWNER="root:root"
+    fi
+    
     # 执行替换
-    cp -f "$INSTALLED_BINARY" "$RUNNING_BINARY"
-    chown root:root "$RUNNING_BINARY"
-    chmod 755 "$RUNNING_BINARY"
+    cp -f "$INSTALLED_BINARY" "$BINARY"
+    
+    # 还原（或设置）权限和归属
+    chown $OLD_OWNER "$BINARY"
+    chmod $OLD_PERM "$BINARY"
 
     # 重新启动服务
     echo "更新完成，正在重启服务..."
