@@ -6,7 +6,7 @@ $PLG_PATH      = $paths['PLG_PATH'];
 $CONFIG_YAML   = $paths['CONFIG_YAML'];
 $SETTINGS_FILE = $paths['SETTINGS_FILE'];
 $INSTALL_PATH  = $paths['INSTALL_PATH'];
-$LATEST_FILE   = $paths['LATEST_FILE'];
+$LATEST_MARKER   = $paths['LATEST_MARKER'];
 $BETA_MARKER   = $paths['BETA_MARKER'];
 
 // 提取日志文件路径
