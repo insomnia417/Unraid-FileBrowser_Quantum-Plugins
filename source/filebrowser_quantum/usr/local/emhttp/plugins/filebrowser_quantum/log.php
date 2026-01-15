@@ -4,7 +4,7 @@
 require_once "base.php";
 
 // 2. 直接调用函数获取日志路径，不再需要在这里写正则匹配
-$logfile = getLogPath($CONFIG_FILE);
+$logfile = getLogPath($CONFIG_YAML);
 
 // 3. 获取过滤参数
 $log_level = isset($_GET['log_level']) ? $_GET['log_level'] : 'all';
