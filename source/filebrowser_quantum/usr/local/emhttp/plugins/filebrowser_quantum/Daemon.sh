@@ -1,14 +1,6 @@
 #!/bin/bash
-# 引入路径
+# 引入全局变量路径
 source /usr/local/emhttp/plugins/filebrowser_quantum/paths.conf
-# --- 变量定义：请根据你的插件目录名确认 ---
-TAG="FileBrowser-Plugin"
-PLUGIN_NAME="filebrowser_quantum"
-CONF_DIR="/boot/config/plugins/$PLUGIN_NAME"
-SETTINGS="$CONF_DIR/settings.cfg"
-GITHUB_REPO="gtsteffaniak/filebrowser"
-# 真正执行的二进制文件路径
-BINARY="/usr/sbin/filebrowser_quantumorig"
 
 # --- 1. 处理传入参数 ---
 if [ "${1}" == "true" ]; then
