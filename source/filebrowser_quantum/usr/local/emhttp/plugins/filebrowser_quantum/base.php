@@ -9,7 +9,7 @@ $CONFIG_YAML   = $paths['CONFIG_YAML']   ?? "$PLG_PATH/config.yaml";
 $SETTINGS_FILE = $paths['SETTINGS_FILE'] ?? "$PLG_PATH/settings.cfg";
 $INSTALL_PATH  = $paths['INSTALL_PATH']  ?? "$PLG_PATH/install";
 $BETA_MARKER   = $paths['BETA_MARKER']   ?? "$INSTALL_PATH/beta";
-$LATEST_MARKER   = $paths['LATEST_MARKER'] ?? "$INSTALL_PATH/latest";
+$LATEST_MARKER = $paths['LATEST_MARKER'] ?? "$INSTALL_PATH/latest";
 
 // 提取日志文件路径
 function getLogPath($configFile) {
