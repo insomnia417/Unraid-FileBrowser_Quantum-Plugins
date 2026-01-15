@@ -1,9 +1,9 @@
 <?xml version='1.0' standalone='yes'?>
 
 <!DOCTYPE PLUGIN [
-  <!ENTITY branch "main">
-  <!ENTITY version "2026.01.14">
-  <!ENTITY bundleversion "2026.01.14">
+  <!ENTITY branch "test">
+  <!ENTITY version "2026.01.15">
+  <!ENTITY bundleversion "2026.01.15">
   <!ENTITY author "insomnia417">
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY launch "Settings/filebrowser_quantum">
@@ -18,10 +18,12 @@
 <CHANGES>
 ### &name;
 #### 🆕 最新版本（&version;）更新内容
+- **架构自适应**：为以后适配其他平台版本提前做准备
+- **更新校验**：SHA256校验增加严谨性
+#### 📜 历史更新内容
 - **智能更新检测**：更新时校验本地文件，实现智能清理，避免重复下载已有文件。
 - **离线兼容性**：UNRAID 重启时，已安装插件不再强制联网检测，防止因无外网导致系统卡住。
 - **稳定性修复**：修正 PHP 路径定义不一致问题，确保日志读取准确无误。
-#### 📜 历史更新内容
 - **日志系统**：新增日志清空按钮，基于 PHP 构建日志实时展示功能。
 - **界面优化**：设置界面改为三列展示；UI 整体细节优化；支持 UI 点击即时更新。
 - **离线支持**：保留 U 盘安装包 (.txz) 缓存，确保在无网络环境下依然可以启动。
