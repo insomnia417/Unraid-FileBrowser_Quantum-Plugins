@@ -123,8 +123,8 @@ $settings = @parse_ini_file($SETTINGS_FILE);
 $dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
 $currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
 // 如果 latest 文件不存在，初始化一次
-if (!file_exists($LATEST_FILE)) { exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"'); }
-$latestversion = @exec("head -n 1 $LATEST_FILE") ?: "Unknown";
+if (!file_exists($LATEST_MARKER)) { exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"'); }
+$latestversion = @exec("head -n 1 $LATEST_MARKER") ?: "Unknown";
 $webui_pid = exec('pgrep -f "filebrowser_quantumorig"');
 // 日志初始内容
 $log_level = isset($_POST['log_level']) ? $_POST['log_level'] : 'all';
