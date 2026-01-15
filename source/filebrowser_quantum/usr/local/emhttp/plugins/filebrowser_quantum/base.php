@@ -1,13 +1,15 @@
 <?PHP
-// 插件路径
-$paths = parse_ini_file("paths.conf");
+// 1. 找到唯一的来源
+$conf = "/usr/local/emhttp/plugins/filebrowser_quantum/paths.conf";
+$paths = file_exists($conf) ? parse_ini_file($conf) : [];
 
-$PLG_PATH      = $paths['PLG_PATH'];
-$CONFIG_YAML   = $paths['CONFIG_YAML'];
-$SETTINGS_FILE = $paths['SETTINGS_FILE'];
-$INSTALL_PATH  = $paths['INSTALL_PATH'];
-$LATEST_MARKER   = $paths['LATEST_MARKER'];
-$BETA_MARKER   = $paths['BETA_MARKER'];
+// 2. 变量同步（将 Bash 变量名转为 PHP 变量名，兼容旧代码）
+$PLG_PATH      = $paths['PLG_PATH']      ?? "/boot/config/plugins/filebrowser_quantum";
+$CONFIG_YAML   = $paths['CONFIG_YAML']   ?? "$PLG_PATH/config.yaml";
+$SETTINGS_FILE = $paths['SETTINGS_FILE'] ?? "$PLG_PATH/settings.cfg";
+$INSTALL_PATH  = $paths['INSTALL_PATH']  ?? "$PLG_PATH/install";
+$BETA_MARKER   = $paths['BETA_MARKER']   ?? "$INSTALL_PATH/beta";
+$LATEST_MARKER   = $paths['LATEST_MARKER'] ?? "$INSTALL_PATH/latest";
 
 // 提取日志文件路径
 function getLogPath($configFile) {
@@ -21,9 +23,7 @@ function getLogPath($configFile) {
     return $default;
 }
 
-/**
- * 动态提取日志等级列表
- */
+// 动态提取日志等级列表
 function getLogLevels($configFile) {
     if (file_exists($configFile)) {
         $content = file_get_contents($configFile);
