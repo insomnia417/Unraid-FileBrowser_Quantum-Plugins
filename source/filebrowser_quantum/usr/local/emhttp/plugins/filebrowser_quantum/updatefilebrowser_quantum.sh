@@ -1,5 +1,4 @@
 #!/bin/bash
-# Version: v4.0 (Enhanced Stability)
 
 # --- 1. 防呆检查 (第3点详细描述) ---
 CONF_PATH="/usr/local/emhttp/plugins/filebrowser_quantum/paths.conf"
@@ -42,7 +41,7 @@ if ping -q -c1 github.com >/dev/null; then
         echo "正在验证 SHA256..."
         API_URL="https://api.github.com/repos/$GITHUB_REPO/releases/tags/$current_version"
         RELEASE_DATA=$(curl -sL -H "Accept: application/vnd.github.v3+json" -A "$TAG" "$API_URL")
-        EXPECTED_HASH=$(echo "$RELEASE_DATA" | grep -oP "[a-fA-F0-9]{64}(?=\s+.*$ARCH_TYPE)" | head -n 1)
+        EXPECTED_HASH=$(echo "$RELEASE_DATA" | tr -d '\n' | grep -oP "{\"url\":.*?\"name\":\"$ARCH_TYPE\".*?\"digest\":\"sha256:\K[a-fA-F0-9]{64}")
 
         if [ -n "$EXPECTED_HASH" ]; then
             echo "官方期待哈希: $EXPECTED_HASH"
