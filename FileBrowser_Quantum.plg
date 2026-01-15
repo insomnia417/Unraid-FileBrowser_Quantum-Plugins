@@ -1,7 +1,7 @@
 <?xml version='1.0' standalone='yes'?>
 
 <!DOCTYPE PLUGIN [
-  <!ENTITY branch "test">
+  <!ENTITY branch "main">
   <!ENTITY version "2026.01.15">
   <!ENTITY bundleversion "2026.01.15">
   <!ENTITY author "insomnia417">
