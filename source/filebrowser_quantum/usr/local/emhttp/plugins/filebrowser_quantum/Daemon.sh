@@ -1,5 +1,6 @@
 #!/bin/bash
-
+# 引入路径
+source /usr/local/emhttp/plugins/filebrowser_quantum/paths.conf
 # --- 变量定义：请根据你的插件目录名确认 ---
 TAG="FileBrowser-Plugin"
 PLUGIN_NAME="filebrowser_quantum"
