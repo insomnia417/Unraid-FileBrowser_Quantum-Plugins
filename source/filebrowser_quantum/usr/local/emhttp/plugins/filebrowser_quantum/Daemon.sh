@@ -60,20 +60,17 @@ elif [ "${1}" == "GET_LOCAL_VER" ]; then
 elif [ "${1}" == "VERSION" ]; then
     # 1. 确保目录存在
     [ ! -d "$INSTALL_PATH" ] && mkdir -p "$INSTALL_PATH"
-
     # 2. 获取 GitHub 所有的标签列表 (假设你之前定义了 TAG_LIST，如果没有，用下面这行获取)
     TAG_LIST=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
-
-    # 3. 套用你 PLG 里的逻辑来决定获取哪个版本
+    # 3. 获取哪个版本
     if [ -f "$BETA_MARKER" ]; then
-        # 提取带 v 的最新 beta 版本号
+        # beta
         LAT_V=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
     else
-        # 提取带 v 的最新 stable 版本号
+        # stable
         LAT_V=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
     fi
-
-    # 4. 写入文件供 .page 读取
+    # 4. 写入到latest文件
     if [ -n "$LAT_V" ]; then
         echo "$LAT_V" > "$LATEST_MARKER"
         exit 0
