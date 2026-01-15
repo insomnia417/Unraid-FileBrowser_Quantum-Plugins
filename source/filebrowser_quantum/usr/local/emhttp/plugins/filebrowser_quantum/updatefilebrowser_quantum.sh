@@ -36,9 +36,34 @@ if ping -q -c1 github.com >/dev/null; then
     # 如果本地没有该版本的备份，则下载
     if [ ! -f "$INSTALLED_BINARY" ]; then
         echo "正在从 GitHub 下载新版本..."
-        curl --connect-timeout 15 --retry 3 --retry-delay 2 -L -o "$INSTALLED_BINARY" --create-dirs "$DOWNLOAD_URL"
-    fi
+        curl --connect-timeout 15 --retry 3 --retry-delay 2 -f -L -o "$INSTALLED_BINARY" --create-dirs "$DOWNLOAD_URL"
+        
+        # --- SHA256 校验移动到这里 ---
+        echo "正在通过 GitHub API 获取官方校验码..."
+        API_URL="https://api.github.com/repos/gtsteffaniak/filebrowser/releases/tags/$current_version"
+        RELEASE_DATA=$(curl -sL -H "Accept: application/vnd.github.v3+json" -A "Unraid-Plugin" "$API_URL")
 
+        EXPECTED_HASH=$(echo "$RELEASE_DATA" | grep -oP "[a-fA-F0-9]{64}(?=\s+.*linux-amd64-filebrowser)" | head -n 1)
+
+        if [ -n "$EXPECTED_HASH" ]; then
+            echo "官方期待哈希: $EXPECTED_HASH"
+            ACTUAL_HASH=$(sha256sum "$INSTALLED_BINARY" | awk '{print $1}')
+            if [ "$EXPECTED_HASH" != "$ACTUAL_HASH" ]; then
+                echo "<font color='red'>错误：SHA256 校验不匹配！</font>"
+                rm -f "$INSTALLED_BINARY"
+                exit 1
+            fi
+            echo "SHA256 校验通过。"
+        else
+            echo "<font color='orange'>警告：无法抓取校验码，执行体积检查。</font>"
+            if [ $(stat -c%s "$INSTALLED_BINARY") -lt 15000000 ]; then
+                echo "<font color='red'>错误：文件体积异常。</font>"
+                rm -f "$INSTALLED_BINARY"
+                exit 1
+            fi
+        fi
+    fi # <--- 这里是下载+校验逻辑的终点
+    
     # 【关键】先停止服务，解决“Text file busy”文件锁定问题
     echo "正在停止服务并替换文件..."
     # 极致优化：精确等待进程退出，最多等5秒
