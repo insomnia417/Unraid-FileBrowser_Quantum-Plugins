@@ -2,8 +2,8 @@
 
 <!DOCTYPE PLUGIN [
   <!ENTITY branch "main">
-  <!ENTITY version "2026.01.15">
-  <!ENTITY bundleversion "2026.01.15">
+  <!ENTITY version "2026.01.16">
+  <!ENTITY bundleversion "2026.01.16">
   <!ENTITY author "insomnia417">
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY launch "Settings/filebrowser_quantum">
