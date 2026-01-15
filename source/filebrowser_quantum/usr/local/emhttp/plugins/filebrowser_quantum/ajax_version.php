@@ -18,7 +18,7 @@ if (isset($_POST['branch'])) {
     exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"');
     
     // 读取结果
-    $latest = @exec("head -n 1 $LATEST_FILE") ?: "Unknown";
+    $latest = @exec("head -n 1 $LATEST_MARKER") ?: "Unknown";
     
     // 只输出结果并退出
     header('Content-Type: text/plain');
