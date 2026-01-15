@@ -1,15 +1,13 @@
 <?PHP
 // 插件路径
-$PLG_PATH = "/boot/config/plugins/filebrowser_quantum";
-// config.yaml路径
-$CONFIG_YAML = "$PLG_PATH/config.yaml";
-// 插件附属配置文件
-$SETTINGS_FILE = "$PLG_PATH/settings.cfg";
-// 插件包下载路径
-$INSTALL_PATH = "$PLG_PATH/install";
-// 其他变量
-$LATEST_FILE = "$INSTALL_PATH/latest";
-$BETA_MARKER = "$INSTALL_PATH/beta";
+$paths = parse_ini_file("paths.conf");
+
+$PLG_PATH      = $paths['PLG_PATH'];
+$CONFIG_YAML   = $paths['CONFIG_YAML'];
+$SETTINGS_FILE = $paths['SETTINGS_FILE'];
+$INSTALL_PATH  = $paths['INSTALL_PATH'];
+$LATEST_FILE   = $paths['LATEST_FILE'];
+$BETA_MARKER   = $paths['BETA_MARKER'];
 
 // 提取日志文件路径
 function getLogPath($configFile) {
