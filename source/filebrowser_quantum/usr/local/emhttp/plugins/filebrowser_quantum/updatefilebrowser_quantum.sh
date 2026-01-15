@@ -24,26 +24,25 @@ if [ -z "$current_version" ]; then
     exit 1
 fi
 
-INSTALLED_BINARY="$INSTALL_PATH/filebrowser_quantum-$current_version"
-DOWNLOAD_URL="https://github.com/gtsteffaniak/filebrowser/releases/download/$current_version/linux-amd64-filebrowser"
+INSTALLED_BINARY="$INSTALL_PATH/$PLUGIN_NAME-$current_version"
+DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/$current_version/$ARCH_TYPE"
 
 echo "-------------------------------------------------------------------"
-echo "正在执行更新：$current_version"
+echo "正在执行更新：$current_version ($ARCH_TYPE)"
 echo "-------------------------------------------------------------------"
 
 # 3. 【执行安装】
 if ping -q -c1 github.com >/dev/null; then
     # 如果本地没有该版本的备份，则下载
     if [ ! -f "$INSTALLED_BINARY" ]; then
-        echo "正在从 GitHub 下载新版本..."
+        echo "正在下载新版本..."
         curl --connect-timeout 15 --retry 3 --retry-delay 2 -f -L -o "$INSTALLED_BINARY" --create-dirs "$DOWNLOAD_URL"
-        
-        # --- SHA256 校验移动到这里 ---
-        echo "正在通过 GitHub API 获取官方校验码..."
-        API_URL="https://api.github.com/repos/gtsteffaniak/filebrowser/releases/tags/$current_version"
-        RELEASE_DATA=$(curl -sL -H "Accept: application/vnd.github.v3+json" -A "Unraid-Plugin" "$API_URL")
-
-        EXPECTED_HASH=$(echo "$RELEASE_DATA" | grep -oP "[a-fA-F0-9]{64}(?=\s+.*linux-amd64-filebrowser)" | head -n 1)
+        [ $? -ne 0 ] && { echo "<font color='red'>错误：下载过程中止</font>"; exit 1; }
+        # --- SHA256 校验 ---
+        echo "正在验证 SHA256..."
+        API_URL="https://api.github.com/repos/$GITHUB_REPO/releases/tags/$current_version"
+        RELEASE_DATA=$(curl -sL -H "Accept: application/vnd.github.v3+json" -A "$TAG" "$API_URL")
+        EXPECTED_HASH=$(echo "$RELEASE_DATA" | grep -oP "[a-fA-F0-9]{64}(?=\s+.*$ARCH_TYPE)" | head -n 1)
 
         if [ -n "$EXPECTED_HASH" ]; then
             echo "官方期待哈希: $EXPECTED_HASH"
@@ -55,20 +54,21 @@ if ping -q -c1 github.com >/dev/null; then
             fi
             echo "SHA256 校验通过。"
         else
-            echo "<font color='orange'>警告：无法抓取校验码，执行体积检查。</font>"
-            if [ $(stat -c%s "$INSTALLED_BINARY") -lt 15000000 ]; then
-                echo "<font color='red'>错误：文件体积异常。</font>"
+            echo "<font color='orange'>警告：未找到官方哈希，执行体积保底检查...</font>"
+            if [ "$(stat -c%s "$INSTALLED_BINARY")" -lt "$((15 * 1024 * 1024))" ]; then
+                echo "<font color='red'>错误：文件体积异常，下载可能不完整。</font>"
                 rm -f "$INSTALLED_BINARY"
                 exit 1
             fi
         fi
-    fi # <--- 这里是下载+校验逻辑的终点
+    fi
     
     # 【关键】先停止服务，解决“Text file busy”文件锁定问题
     echo "正在停止服务并替换文件..."
+    bash "$DAEMON_SCRIPT" "false" >/dev/null 2>&1
     # 极致优化：精确等待进程退出，最多等5秒
-    MAX_WAIT=5
-    while [ $MAX_WAIT -gt 0 ] && pgrep -f "$(basename "$BINARY")" >/dev/null; do
+    MAX_WAIT=10
+    while [ $MAX_WAIT -gt 0 ] && pgrep -x "$(basename "$BINARY")" >/dev/null; do
         sleep 1
         ((MAX_WAIT--))
     done
@@ -88,8 +88,8 @@ if ping -q -c1 github.com >/dev/null; then
     cp -f "$INSTALLED_BINARY" "$BINARY"
     
     # 还原（或设置）权限和归属
-    chown $OLD_OWNER "$BINARY"
-    chmod $OLD_PERM "$BINARY"
+    chown "$OLD_OWNER" "$BINARY"
+    chmod "$OLD_PERM" "$BINARY"
 
     # 重新启动服务
     echo "更新完成，正在重启服务..."
@@ -106,7 +106,7 @@ installed_ver_now=$(bash "$DAEMON_SCRIPT" "GET_LOCAL_VER")
 if [ "$installed_ver_now" == "$current_version" ]; then
     echo ""
     echo "-------------------------------------------------------------------"
-    echo "验证成功：filebrowser_quantum 已成功更新为 $installed_ver_now"
+    echo "验证成功：$PLUGIN_NAME 已成功更新为 $installed_ver_now"
     echo "-------------------------------------------------------------------"
 else
     echo ""
