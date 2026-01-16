@@ -98,8 +98,10 @@ else
     exit 1
 fi
 
-# 4. 【验证复用】直接调用 Daemon.sh 中你写好的 GET_LOCAL_VER 逻辑
-# 这样能保证 WebUI 上的显示和升级日志里的校验完全一致
+# Daemon.sh 逻辑复用
+echo "正在同步版本信息..."
+bash "$DAEMON_SCRIPT" "VERSION" >/dev/null 2>&1
+# 获取最新的本地版本号用于日志显示（调用 Daemon 获取最准）
 installed_ver_now=$(bash "$DAEMON_SCRIPT" "GET_LOCAL_VER")
 
 if [ "$installed_ver_now" == "$current_version" ]; then
