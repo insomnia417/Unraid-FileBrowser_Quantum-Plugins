@@ -65,7 +65,9 @@ function changeBranch(selectElement) {
     const newBranch = selectElement.value;
     const latestText = $("#latest_ver_val");
     const updateBtn = $("#update_btn_id");
-    const currentVer = "<?=$currentversion?>"; 
+    
+    // 关键修复 1：确保拿到的是纯净的字符串，去掉可能存在的空格
+    const currentVer = "<?=$currentversion?>".trim(); 
 
     latestText.css("opacity", "0.5").text("Checking...");
     updateBtn.prop("disabled", true); 
@@ -77,13 +79,16 @@ function changeBranch(selectElement) {
         // 强制 UI 更新
         latestText.text(latestVer).css("opacity", "1");
 
-        // 按钮逻辑：如果最新版和当前版不一样，且不是 Unknown，则允许更新
-        if (latestVer !== "Unknown" && latestVer !== currentVer) {
+        // 关键修复 3：增强逻辑判断
+        // 只有当最新版不是 Unknown，且 确实不等于 当前版时，才激活
+        if (latestVer !== "Unknown" && latestVer !== "" && latestVer !== currentVer) {
             updateBtn.prop("disabled", false);
             // 修正：确保 onclick 里的参数是当前选中的分支
             updateBtn.attr("onclick", "updatefilebrowser_quantum('" + newBranch + "')");
         } else {
             updateBtn.prop("disabled", true);
+            // 清除 onclick 防止误触
+            updateBtn.removeAttr("onclick"); 
         }
     });
 }
