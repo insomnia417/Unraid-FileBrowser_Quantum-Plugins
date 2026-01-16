@@ -60,21 +60,27 @@ elif [ "${1}" == "GET_LOCAL_VER" ]; then
 elif [ "${1}" == "VERSION" ]; then
     # 1. 确保目录存在
     [ ! -d "$INSTALL_PATH" ] && mkdir -p "$INSTALL_PATH"
-    # 2. 获取 GitHub 所有的标签列表 (假设你之前定义了 TAG_LIST，如果没有，用下面这行获取)
+    # 2. 获取 GitHub 所有的标签列表 
     TAG_LIST=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
-    # 3. 获取哪个版本
+    # 3. 获取具体版本号 beta/stable
     if [ -f "$BETA_MARKER" ]; then
-        # beta
         LAT_V=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
     else
-        # stable
         LAT_V=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
     fi
     # 4. 写入到latest文件
     if [ -n "$LAT_V" ]; then
         echo "$LAT_V" > "$LATEST_MARKER"
+        
+        # 同时同步到 settings.cfg 缓存 (这是为了配合 page 页面的初次加载优化)
+        sed -i "/filebrowser_LATEST=/c\filebrowser_LATEST=\"${LAT_V}\"" "$SETTINGS_FILE"
+        
+        # 这一行最重要！输出给 PHP 的 shell_exec
+        echo "$LAT_V"
         exit 0
     else
+        # 如果失败了，也输出一个标识
+        echo "Unknown"
         exit 1
     fi
 fi
