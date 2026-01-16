@@ -66,28 +66,28 @@ function changeBranch(selectElement) {
     const latestText = $("#latest_ver_val");
     const updateBtn = $("#update_btn_id");
     
-    // 关键修复 1：确保拿到的是纯净的字符串，去掉可能存在的空格
-    const currentVer = "<?=$currentversion?>".trim(); 
+    // 【修复点 1】：不要依赖 PHP 变量，直接从页面上已经显示的“已安装版本”那一行取值
+    // 假设你的“已安装版本”那个 <b> 标签没有 id，我们给它加一个，或者用下面的选择器
+    const currentVer = $(".version-info div:first b").text().trim(); 
 
     latestText.css("opacity", "0.5").text("Checking...");
     updateBtn.prop("disabled", true); 
 
-    // 【关键修改点】：将请求地址改为独立文件 ajax_version.php
     $.post("/plugins/filebrowser_quantum/ajax_version.php", { branch: newBranch }, function(data) {
         const latestVer = data.trim();
 
-        // 强制 UI 更新
+        // 更新 UI 上的在线版本号
         latestText.text(latestVer).css("opacity", "1");
 
-        // 关键修复 3：增强逻辑判断
-        // 只有当最新版不是 Unknown，且 确实不等于 当前版时，才激活
+        // 【调试大法】：如果你发现还是不行，请按 F12 检查控制台
+        console.log("Current:", currentVer, "Latest:", latestVer);
+
+        // 【修复点 2】：增加严格的逻辑判断
         if (latestVer !== "Unknown" && latestVer !== "" && latestVer !== currentVer) {
             updateBtn.prop("disabled", false);
-            // 修正：确保 onclick 里的参数是当前选中的分支
             updateBtn.attr("onclick", "updatefilebrowser_quantum('" + newBranch + "')");
         } else {
             updateBtn.prop("disabled", true);
-            // 清除 onclick 防止误触
             updateBtn.removeAttr("onclick"); 
         }
     });
@@ -298,8 +298,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 	</form> 
 
 <div class="version-info">
-    <div>已安装版本: <b style="margin-left: 8px; color:#1a17d6;"><?=$currentversion?></b></div>
-    <div>在线最新版: <b id="latest_ver_val" style="margin-left: 8px; color:#eb2b2b;"><?=$latestversion?></b></div>
+    <div>已安装版本: <b style="margin-left: 8px; color:#1a17d6;"><?=trim($currentversion)?></b></div>
+    <div>在线最新版: <b id="latest_ver_val" style="margin-left: 8px; color:#eb2b2b;"><?=trim($latestversion)?></b></div>
 </div>
 
 	<br>
