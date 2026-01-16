@@ -74,15 +74,16 @@ function changeBranch(selectElement) {
     $.post("/plugins/filebrowser_quantum/ajax_version.php", { branch: newBranch }, function(data) {
         const latestVer = data.trim();
 
-        // 更新文字
+        // 强制 UI 更新
         latestText.text(latestVer).css("opacity", "1");
 
-        // 按钮逻辑
-        if (latestVer === "Unknown" || latestVer === currentVer) {
-            updateBtn.prop("disabled", true);
-        } else {
+        // 按钮逻辑：如果最新版和当前版不一样，且不是 Unknown，则允许更新
+        if (latestVer !== "Unknown" && latestVer !== currentVer) {
             updateBtn.prop("disabled", false);
+            // 修正：确保 onclick 里的参数是当前选中的分支
             updateBtn.attr("onclick", "updatefilebrowser_quantum('" + newBranch + "')");
+        } else {
+            updateBtn.prop("disabled", true);
         }
     });
 }
@@ -122,9 +123,13 @@ $branch = file_exists($BETA_MARKER) ? "2" : "1";
 $settings = @parse_ini_file($SETTINGS_FILE);
 $dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
 $currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
-// 如果 latest 文件不存在，初始化一次
-if (!file_exists($LATEST_MARKER)) { exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "VERSION"'); }
-$latestversion = @exec("head -n 1 $LATEST_MARKER") ?: "Unknown";
+// 直接从 settings.cfg 读缓存.只有当第一次安装，缓存完全不存在时才跑一次
+$latestversion = $settings['filebrowser_LATEST'] ?? "Unknown";
+
+if ($latestversion == "Unknown") {
+    $latestversion = exec($DAEMON_SCRIPT . ' "VERSION"');
+}
+// 获取 WebUI 进程 PID
 $webui_pid = exec('pgrep -f "' . basename($BINARY) . '"');
 // 日志初始内容
 $log_level = isset($_POST['log_level']) ? $_POST['log_level'] : 'all';
