@@ -26,6 +26,18 @@ function updatefilebrowser_quantum(branch) {
 
 function webui(form) {
    var state = form.webui_status.value;
+   // --- 新增：UI 状态即时反馈逻辑 ---
+   const statusLabel = $("#service_status_label");
+   
+   if (state === "true") {
+       // 如果点击了 Enabled，虽然还没生效，但我们可以预设它变绿
+       statusLabel.css("color", "green");
+   } else {
+       // 如果点击了 Disabled，预设变红并隐藏端口
+       statusLabel.css("color", "red");
+       // 注意：这里不需要再手动修改文字，因为 HTML 里已经固定显示 $dynamic_port 了
+   }
+   // --- 结束 ---
    // 弹窗执行 Daemon.sh
    // 注意：这里我们加入了一个回调，当弹窗关闭时，刷新当前页面
    openBox('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh&arg1='+state,"filebrowser_quantum WebUI",450,800,true);
@@ -308,10 +320,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
 <h2>服务
-  <span style="font-size:0.6em; color: <?= !empty($webui_pid) ? 'green' : 'red' ?>;">
+  <span id="service_status_label" style="font-size:0.6em; color: <?= !empty($webui_pid) ? 'green' : 'red' ?>;">
     &nbsp;&nbsp;&nbsp;<?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?>
+    <span id="port_val" style="margin-left: 10px;">
+        (PORT: <?= $dynamic_port ?>)
+    </span>
   </span>
-  </h2>
+</h2>
 
   <form action="" method="post"> 
     <select name="webui_status" onchange="this.form.apply_btn.disabled=false; this.form.apply_btn.className='submit';"> 
