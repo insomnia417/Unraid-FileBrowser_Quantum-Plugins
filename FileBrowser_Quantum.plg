@@ -1,9 +1,9 @@
 <?xml version='1.0' standalone='yes'?>
 
 <!DOCTYPE PLUGIN [
-  <!ENTITY branch "test">
-  <!ENTITY version "2026.01.03">
-  <!ENTITY bundleversion "2026.01.03">
+  <!ENTITY branch "main">
+  <!ENTITY version "2026.01.17">
+  <!ENTITY bundleversion "2026.01.17">
   <!ENTITY author "insomnia417">
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY launch "Settings/filebrowser_quantum">
@@ -17,20 +17,21 @@
 
 <CHANGES>
 ### &name;
-#### 🆕 最新版本（&version;）更新内容
-- **架构自适应**：为以后适配其他平台版本提前做准备
-- **更新校验**：SHA256校验增加严谨性
-#### 📜 历史更新内容
-- **智能更新检测**：更新时校验本地文件，实现智能清理，避免重复下载已有文件。
-- **离线兼容性**：UNRAID 重启时，已安装插件不再强制联网检测，防止因无外网导致系统卡住。
-- **稳定性修复**：修正 PHP 路径定义不一致问题，确保日志读取准确无误。
-- **日志系统**：新增日志清空按钮，基于 PHP 构建日志实时展示功能。
-- **界面优化**：设置界面改为三列展示；UI 整体细节优化；支持 UI 点击即时更新。
-- **离线支持**：保留 U 盘安装包 (.txz) 缓存，确保在无网络环境下依然可以启动。
-- **重构适配**：完成前后端分离重构；`config.yaml` 全 UI 化管理。
-- **智能适配**：Config 端口更改后，自动同步适配顶栏及 UI 按钮端口。
-- **功能控制**：加入服务启停开关与自选版本更新功能。
-- **待办事项**：推进 iframe HTTPS 适配。
+
+#### 🆕 最新更新 (v&version;)
+- **内核升级**：引入架构自适应逻辑，为跨平台运行奠定基础。
+- **安全加固**：新增二进制文件 SHA256 完整性校验，确保下载安全。
+- **逻辑优化**：完善 AJAX 分支切换逻辑，实现版本号与 UI 按钮的实时联动。
+
+#### 📜 历史改进
+- **智能安装**：支持本地缓存校验与自动清理，大幅提升离线安装/重启速度。
+- **交互重构**：设置界面改为三列布局，实现 `config.yaml` 全可视化 UI 管理。
+- **动态适配**：端口更改自动同步，新增服务启停开关与 Beta/Stable 分支切换。
+- **运维增强**：新增基于 PHP 的实时日志流监控及一键清空日志功能。
+
+#### 🚀 计划中 (TO DO)
+- **安全连接**：推进 iframe 框架下的 HTTPS 协议适配。
+- **多端优化**：持续改进移动端 UI 的操作顺滑度。
 </CHANGES>
 
   <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz" Run="upgradepkg --install-new">
