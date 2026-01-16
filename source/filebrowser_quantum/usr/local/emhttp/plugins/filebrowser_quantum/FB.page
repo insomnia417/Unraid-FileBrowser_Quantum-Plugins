@@ -1,37 +1,68 @@
-
-Menu="Tasks:91"
+Menu="Tasks:0000"
 Type="xmenu"
 Title="FQ"
 Icon="folder-open"
 Tabs="no"
 ---
 <?php
+  /* pluginURL: https://raw.githubusercontent.com/your-repo/filebrowser_quantum/main/FB.page */
+
+  // 1. 引入基础配置文件，获取所有预设变量，包括 $DAEMON_SCRIPT
+  include "/usr/local/emhttp/plugins/filebrowser_quantum/base.php";
+
+  // 2. 逻辑处理
   $host = preg_replace('/:.*/', '', $_SERVER['HTTP_HOST']);
   $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
-  $port = trim(exec("/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh GET_PORT"));
-  if (empty($port) || !is_numeric($port)) {
-      $port = "8081";
-  }
+  
+  // 直接复用你定义的变量 $DAEMON_SCRIPT
+  $port = trim(exec("$DAEMON_SCRIPT GET_PORT"));
+  if (empty($port) || !is_numeric($port)) { $port = "8081"; }
 ?>
 
 <style>
-  /* 魔法代码：强行让 Unraid 的主内容区域填满屏幕 */
-  #sb-site, .main-area, #main { 
-    height: 100% !important; 
-    overflow: hidden !important; 
+  /* 1. 【核心修复】不仅隐藏标题，还要彻底粉碎底部状态栏 */
+  #main > .title, 
+  .main-area .title, 
+  .form_header, 
+  #breadcrumb,
+  #footer,        /* 阵列状态栏 ID */
+  .footer,        /* 阵列状态栏类名 */
+  .copyright      /* 版权信息 */ { 
+    display: none !important; 
+    height: 0 !important; 
     margin: 0 !important; 
     padding: 0 !important; 
+    overflow: hidden !important;
+    visibility: hidden !important;
   }
 
-  /* 适配 Unraid 顶栏高度，确保 iframe 不被遮挡也不留白 */
+  /* 2. 强化锁定，确保外部没有任何滚动余地 */
+  html, body, #sb-site, .main-area, #main { 
+    height: 100% !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    overflow: hidden !important;
+    background: #000 !important;
+  }
+
+  /* 3. 核心视图容器,PC端/桌面模式：维持 130px 完美高度 */
   .fb-full-view {
     position: fixed;
-    top: 60px; /* Unraid 顶栏的常规高度 */
     left: 0;
     right: 0;
-    bottom: 26px; /* 留出底部状态栏高度 */
-    z-index: 1;
+    z-index: 100;
     background: #000;
+    top: 130px;
+    bottom: 0 !important; 
+  }
+
+  /* 4. 手机端原生适配,维持170px高度 */
+  @media screen and (max-width: 1024px) {
+    .fb-full-view {
+      top: 170px !important;
+      bottom: 0 !important;
+    }
+    #header { z-index: 9999 !important; }
   }
 
   .fb-full-iframe {
