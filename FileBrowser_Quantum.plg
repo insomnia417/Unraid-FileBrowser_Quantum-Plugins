@@ -1,5 +1,4 @@
 <?xml version='1.0' standalone='yes'?>
-
 <!DOCTYPE PLUGIN [
   <!ENTITY branch "main">
   <!ENTITY version "2026.01.17">
@@ -12,12 +11,10 @@
   <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/&branch;/FileBrowser_Quantum.plg">
   <!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/&branch;/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
 ]>
-
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;">
 
 <CHANGES>
 ### &name;
-
 #### 🆕 最新更新 (v&version;)
 - **内核升级**：引入架构自适应逻辑，为跨平台运行奠定基础。
 - **安全加固**：新增二进制文件 SHA256 完整性校验，确保下载安全。
