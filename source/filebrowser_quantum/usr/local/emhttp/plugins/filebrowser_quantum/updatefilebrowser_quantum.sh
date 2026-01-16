@@ -20,7 +20,7 @@ current_version=$(bash "$DAEMON_SCRIPT" "VERSION" | tail -n 1)
 
 # 获取目标版本号. 容错：如果获取不到版本号则退出
 if [ -z "$current_version" ] || [ "$current_version" == "Unknown" ]; then
-    echo "<font color='red'>错误：无法通过 Daemon 获取有效版本号。请检查 GitHub 联网状态。</font>"
+    echo "<font color='red'>错误：无法获取有效版本号。请检查 GitHub 联网状态。</font>"
     exit 1
 fi
 
@@ -39,22 +39,22 @@ if ping -q -c1 github.com >/dev/null; then
         curl --connect-timeout 15 --retry 3 --retry-delay 2 -f -L -o "$INSTALLED_BINARY" --create-dirs "$DOWNLOAD_URL"
         [ $? -ne 0 ] && { echo "<font color='red'>错误：下载过程中止</font>"; exit 1; }
         # --- SHA256 校验 ---
-        echo "正在验证 SHA256..."
+        echo "正在校验 SHA256..."
         API_URL="https://api.github.com/repos/$GITHUB_REPO/releases/tags/$current_version"
         RELEASE_DATA=$(curl -sL -H "Accept: application/vnd.github.v3+json" -A "$TAG" "$API_URL")
         EXPECTED_HASH=$(echo "$RELEASE_DATA" | tr -d '\n' | grep -oP "{\"url\":.*?\"name\":\"$ARCH_TYPE\".*?\"digest\":\"sha256:\K[a-fA-F0-9]{64}")
 
         if [ -n "$EXPECTED_HASH" ]; then
-            echo "官方期待哈希: $EXPECTED_HASH"
+            echo "SHA256: $EXPECTED_HASH"
             ACTUAL_HASH=$(sha256sum "$INSTALLED_BINARY" | awk '{print $1}')
             if [ "$EXPECTED_HASH" != "$ACTUAL_HASH" ]; then
-                echo "<font color='red'>错误：SHA256 校验不匹配！</font>"
+                echo "<font color='red'>错误：SHA256 校验不通过！</font>"
                 rm -f "$INSTALLED_BINARY"
                 exit 1
             fi
             echo "SHA256 校验通过。"
         else
-            echo "<font color='orange'>警告：未找到官方哈希，执行体积保底检查...</font>"
+            echo "<font color='orange'>警告：未找到版本哈希值，执行文件体积保底检查...</font>"
             if [ "$(stat -c%s "$INSTALLED_BINARY")" -lt "$((15 * 1024 * 1024))" ]; then
                 echo "<font color='red'>错误：文件体积异常，下载可能不完整。</font>"
                 rm -f "$INSTALLED_BINARY"
@@ -66,7 +66,7 @@ if ping -q -c1 github.com >/dev/null; then
     # 【关键】先停止服务，解决“Text file busy”文件锁定问题
     echo "正在停止服务并替换文件..."
     bash "$DAEMON_SCRIPT" "false" >/dev/null 2>&1
-    # 极致优化：精确等待进程退出，最多等5秒
+    # 极致优化：精确等待进程退出，最多等10秒
     MAX_WAIT=10
     while [ $MAX_WAIT -gt 0 ] && pgrep -x "$(basename "$BINARY")" >/dev/null; do
         sleep 1
@@ -114,8 +114,8 @@ else
     echo ""
     echo "-------------------------------------------------------------------"
     echo "<font color='red'>验证失败：</font>"
-    echo "期待版本: $current_version"
-    echo "实际运行: $installed_ver_now"
+    echo "云端版本: $current_version"
+    echo "已安装: $installed_ver_now"
     echo "-------------------------------------------------------------------"
     exit 1
 fi
