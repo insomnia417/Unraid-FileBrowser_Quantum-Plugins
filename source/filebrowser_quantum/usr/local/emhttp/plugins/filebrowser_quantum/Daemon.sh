@@ -73,13 +73,18 @@ elif [ "${1}" == "VERSION" ]; then
         echo "$LAT_V" > "$LATEST_MARKER"
         
         # 同时同步到 settings.cfg 缓存 (这是为了配合 page 页面的初次加载优化)
-        sed -i "/filebrowser_LATEST=/c\filebrowser_LATEST=\"${LAT_V}\"" "$SETTINGS_FILE"
-        
-        # 这一行最重要！输出给 PHP 的 shell_exec
+        # 修正：如果 settings.cfg 里还没这一行，sed 会失败。这里先检查。
+        if grep -q "filebrowser_LATEST=" "$SETTINGS_FILE"; then
+            sed -i "/filebrowser_LATEST=/c\filebrowser_LATEST=\"${LAT_V}\"" "$SETTINGS_FILE"
+        else
+            echo "filebrowser_LATEST=\"${LAT_V}\"" >> "$SETTINGS_FILE"
+        fi
+                
+        # --- 核心：这是给 ajax_version.php 看的 ---
         echo "$LAT_V"
         exit 0
     else
-        # 如果失败了，也输出一个标识
+        # 必须输出 Unknown，否则 PHP 的 trim(shell_exec()) 会拿到空，从而触发兜底逻辑
         echo "Unknown"
         exit 1
     fi
