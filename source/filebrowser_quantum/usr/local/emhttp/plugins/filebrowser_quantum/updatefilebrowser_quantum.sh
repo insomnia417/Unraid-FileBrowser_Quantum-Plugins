@@ -14,12 +14,13 @@ fi
 source "$CONF_PATH"
 # --------------------------------
 
-# 【逻辑复用】从最新的版本记录文件中获取目标版本号,该文件由 WebUI 触发更新分支时自动生成
-current_version=$(head -n 1 "$LATEST_MARKER" 2>/dev/null)
+# 获取目标版本号
+echo "正在获取目标版本信息..."
+current_version=$(bash "$DAEMON_SCRIPT" "VERSION" | tail -n 1)
 
 # 获取目标版本号. 容错：如果获取不到版本号则退出
-if [ -z "$current_version" ]; then
-    echo "<font color='red'>错误：无法读取目标版本号，请检查 $LATEST_MARKER</font>"
+if [ -z "$current_version" ] || [ "$current_version" == "Unknown" ]; then
+    echo "<font color='red'>错误：无法通过 Daemon 获取有效版本号。请检查 GitHub 联网状态。</font>"
     exit 1
 fi
 
