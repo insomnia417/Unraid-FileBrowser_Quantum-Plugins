@@ -74,12 +74,13 @@ elif [ "${1}" == "VERSION" ]; then
         
         # 同时同步到 settings.cfg 缓存 (这是为了配合 page 页面的初次加载优化)
         # 修正：如果 settings.cfg 里还没这一行，sed 会失败。这里先检查。
+        [ ! -f "$SETTINGS_FILE" ] && touch "$SETTINGS_FILE"
         if grep -q "filebrowser_LATEST=" "$SETTINGS_FILE"; then
             sed -i "/filebrowser_LATEST=/c\filebrowser_LATEST=\"${LAT_V}\"" "$SETTINGS_FILE"
         else
             echo "filebrowser_LATEST=\"${LAT_V}\"" >> "$SETTINGS_FILE"
         fi
-                
+
         # --- 核心：这是给 ajax_version.php 看的 ---
         echo "$LAT_V"
         exit 0
