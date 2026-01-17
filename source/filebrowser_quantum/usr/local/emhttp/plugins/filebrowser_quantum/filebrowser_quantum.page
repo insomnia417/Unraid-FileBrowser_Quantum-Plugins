@@ -355,14 +355,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     <?php if (trim($currentversion) == trim($latestversion) || $latestversion == "Unknown"){ ?> disabled <?php } ?> 
     onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
-<h2>Service
-  <span id="service_status_label" style="font-size:0.6em; color: <?= !empty($webui_pid) ? 'green' : 'red' ?>;">
-    &nbsp;&nbsp;&nbsp;<?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?>
-    <span id="port_val" style="margin-left: 10px;">
-        (PORT: <?= $dynamic_port ?>)
-    </span>
-  </span>
-</h2>
+<div style="margin-top: 20px; width: 200px;">
+    <h2 style="margin-bottom: 8px;">Service</h2>
+    
+    <div id="service_status_container" style="padding: 8px 12px; background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>; border-radius: 3px; line-height: 1.4;">
+        <div id="service_status_label" style="font-size: 13px; font-weight: bold; color: <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>;">
+            <span style="font-size: 16px; margin-right: 4px;"><?= !empty($webui_pid) ? '●' : '○' ?></span>
+            <?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?>
+        </div>
+        
+        <div id="port_display" style="font-size: 11px; color: #666; font-family: 'Clear Sans', sans-serif; margin-left: 20px;">
+            <?php if (!empty($webui_pid)): ?>
+                <span style="color: #999;">PORT:</span> <strong><?= $dynamic_port ?></strong>
+            <?php else: ?>
+                <span style="color: #bbb;">OFFLINE</span>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
 
   <form action="" method="post"> 
     <select name="webui_status" onchange="this.form.apply_btn.disabled=false; this.form.apply_btn.className='submit';"> 
