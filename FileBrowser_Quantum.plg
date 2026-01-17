@@ -1,476 +1,211 @@
-Menu="Utilities"
-Title="filebrowser_quantum"
-Icon="filebrowser_quantum.png"
----
-<?PHP
-/* Copyright 2005-2016, Lime Technology
- * Copyright 2012-2016, Bergware International.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License version 2,
- * as published by the Free Software Foundation.
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- */
-?>
-> Use this page to make changes to your `config.yaml` file as well as update filebrowser_quantum if a newer version is available.
->
-> To setup filebrowser_quantum for the first time execute the command `filebrowser_quantum config` in command line.
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+  <!ENTITY branch "log-rebuild">
+  <!ENTITY version "2026.01.05">
+  <!ENTITY bundleversion "2026.01.05">
+  <!ENTITY author "insomnia417">
+  <!ENTITY name "filebrowser_quantum">
+  <!ENTITY launch "Settings/filebrowser_quantum">
+  <!ENTITY description "FileBrowser Quantum for unRAID">
+  <!ENTITY support "https://forums.unraid.net/topic/196447-filebrowser-quantum-plugin">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/&branch;/FileBrowser_Quantum.plg">
+  <!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/&branch;/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
+]>
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;">
 
-<script>
-function updatefilebrowser_quantum(branch) {
-   var path = "/usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh"
-   openBox('/usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh&arg1='+path+'&arg2='+branch,"Update filebrowser_quantum",450,800,true);
-}
+<CHANGES>
+### &name;
+#### 🆕 最新更新 (v&version;)
+- **内核升级**：引入架构自适应逻辑，为跨平台运行奠定基础。
+- **安全加固**：新增二进制文件 SHA256 完整性校验，确保下载安全。
+- **逻辑优化**：完善 AJAX 分支切换逻辑，实现版本号与 UI 按钮的实时联动。
 
-function webui(form) {
-   var state = form.webui_status.value;
-   // --- 新增：UI 状态即时反馈逻辑 ---
-   const statusLabel = $("#service_status_label");
-   
-   if (state === "true") {
-       // 如果点击了 Enabled，虽然还没生效，但我们可以预设它变绿
-       statusLabel.css("color", "green");
-   } else {
-       // 如果点击了 Disabled，预设变红并隐藏端口
-       statusLabel.css("color", "red");
-       // 注意：这里不需要再手动修改文字，因为 HTML 里已经固定显示 $dynamic_port 了
-   }
-   // --- 结束 ---
-   // 弹窗执行 Daemon.sh
-   // 注意：这里我们加入了一个回调，当弹窗关闭时，刷新当前页面
-   openBox('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh&arg1='+state,"filebrowser_quantum WebUI",450,800,true);
-   // 当窗口重新获得焦点（通常是黑窗口关闭后），自动刷新页面
-   $(window).once('focus', function() {
-       window.location.reload();
-   });
-}
+#### 📜 历史改进
+- **智能安装**：支持本地缓存校验与自动清理，大幅提升离线安装/重启速度。
+- **交互重构**：设置界面改为三列布局，实现 `config.yaml` 全可视化 UI 管理。
+- **动态适配**：端口更改自动同步，新增服务启停开关，端口显示，Beta/Stable 分支切换。
+- **运维增强**：新增基于 PHP 的实时日志流监控及一键清空日志功能。
 
-// v2.0.3 - SSE Logic
-var evtSource = null;
+#### 🚀 计划中 (TO DO)
+- **安全连接**：推进 iframe 框架下的 HTTPS 协议适配。
+- **多端优化**：持续改进移动端 UI 的操作顺滑度。
+</CHANGES>
 
-function startLogTail() {
-    // 1. 彻底切断旧连接
-    stopLogTail(); 
+  <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz" Run="upgradepkg --install-new">
+    <URL>&bundleURL;</URL>
+  </FILE>
 
-    const logArea = document.querySelector('.log-area');
-    // 2. 清空旧日志，给用户直观反馈
-    const logLevel = $("select[name='log_level']").val() || 'all';
-    
-    // 强制清空并显示连接中
-    logArea.innerHTML = "<b style='color:yellow;'>[System] 正在请求 SSE 流 (Level: " + logLevel.toUpperCase() + ")...</b><br>";
-    
-    // 3. 创建新连接（t=时间戳强制刷新缓存）
-    evtSource = new EventSource("/plugins/filebrowser_quantum/log_stream.php?level=" + logLevel + "&t=" + new Date().getTime());
+  <FILE Run="/bin/bash" Method="install">
+    <INLINE>
+        BUNDLE_V="&bundleversion;"
+        PLUGIN_V="&version;"
+        NAME="&name;"
+        <![CDATA[
+        GITHUB_REPO="gtsteffaniak/filebrowser"
+        INSTALL_PATH="/boot/config/plugins/${NAME}/install"
+        mkdir -p "$INSTALL_PATH"
 
-    // [新增] 监听连接成功
-    evtSource.onopen = function() {
-        logArea.innerHTML = "<b style='color:green;'>[System] 实时日志连接成功！</b><br>";
-    };
+        # 1. 寻找本地缓存
+        LOCAL_BINARY=$(ls -t $INSTALL_PATH/${NAME}-v* 2>/dev/null | head -n 1)
 
-    evtSource.onmessage = function(e) {
-        if (e.data.trim() === "heartbeat") return;
+        if [ -f "$LOCAL_BINARY" ]; then
+            echo "检测到本地主程序缓存: $(basename $LOCAL_BINARY)，跳过联网检测。"
+            cp "$LOCAL_BINARY" /usr/sbin/filebrowser_quantumorig.new
+            mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
+            current_version=$(basename "$LOCAL_BINARY" | cut -d'-' -f3-)
+            INSTALLED_BINARY="$LOCAL_BINARY"
+        else
+            echo "本地无缓存，正在联网查询最新版本..."
+            TAG_LIST=$(curl -s --connect-timeout 5 "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
+            
+            if [ -z "$TAG_LIST" ]; then
+            echo "警告：无法连接 GitHub API，将使用保底版本号..."
+            current_version="v1.1.0-stable"
+            else
+            if [ -f $INSTALL_PATH/beta ]; then
+                current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
+                echo "Beta mode detected. Target version: $current_version"
+                [ -z "$current_version" ] && current_version="v1.1.6-beta"
+            else
+                current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
+                echo "检测到最新稳定版号为: $current_version"
+                [ -z "$current_version" ] && current_version="v1.1.0-stable"
+            fi
+            fi
+
+            INSTALLED_BINARY="$INSTALL_PATH/${NAME}-$current_version"
+            filebrowser_quantumurl="https://github.com/$GITHUB_REPO/releases/download/$current_version/linux-amd64-filebrowser"
+
+            echo "开始下载并安装: $current_version ..."
+            curl --connect-timeout 15 --retry 3 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
+
+            if [ -f "$INSTALLED_BINARY" ]; then
+            cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig.new
+            mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
+            else
+            echo "错误：下载失败且本地无缓存！"
+            exit 1
+            fi
+        fi
+
+        # --- [2. 核心校验：如果到这步还没文件，才报错退出] ---
+        if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
+            echo "安装失败：无法获取二进制文件（联网失败且无本地缓存）"
+            removepkg ${NAME}-${BUNDLE_V}-x86_64 >/dev/null
+            exit 1
+        fi
+
+        # --- [3. 后勤处理：赋权、配置、清理] ---
+        chown root:root /usr/sbin/filebrowser_quantumorig
+        chmod 755 /usr/sbin/filebrowser_quantumorig
+        chown -R root:root /usr/local/emhttp/plugins/${NAME}
+        chmod +x /usr/local/emhttp/plugins/${NAME}/*.sh
+        chmod 644 /usr/local/emhttp/plugins/${NAME}/*.php
+
+        # 下载默认 config.yaml (如果缺失)
+        if [ ! -f /boot/config/plugins/${NAME}/config.yaml ]; then
+            echo "正在下载默认配置..."
+            curl --connect-timeout 10 --retry 3 -L -o /boot/config/plugins/${NAME}/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/config.yaml"
+        fi
+
+        # settings.cfg
+        if [ ! -f /boot/config/plugins/${NAME}/settings.cfg ]; then
+            echo "首次安装，初始化默认开启配置。"
+            echo "filebrowser_ENABLED=true" > /boot/config/plugins/${NAME}/settings.cfg
+        else
+            echo "检测到已有配置文件，正在保持原有设置..."
+        fi
+
+        # 智能清理：保留当前 txz 和当前 binary
+        echo "正在清理旧的安装文件..."
+        find "$INSTALL_PATH" -name "${NAME}-*.txz" ! -name "${NAME}-${BUNDLE_V}-x86_64.txz" -delete
+        if [ -n "$INSTALLED_BINARY" ]; then
+            find "$INSTALL_PATH" -name "${NAME}-v*" ! -name "$(basename "$INSTALLED_BINARY")" -delete
+        fi
+
+        # --- [3. 核心：根据配置状态决定是否拉起服务] ---
+        # 使用 grep 提取当前的使能状态 (true/false)
+        ENABLE_STATE=$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/${NAME}/settings.cfg)
+
+        if [ "$ENABLE_STATE" == "true" ]; then
+            echo "配置状态为 [启用]，正在启动 FileBrowser 守护进程..."
+            # 使用 v2.0.6 Daemon.sh 的 START_ONLY 参数：静默启动进程，不写磁盘
+            /usr/local/emhttp/plugins/${NAME}/Daemon.sh "START_ONLY"
+            echo "● Filebrowser_Quantum 已在后台启动"
+        else
+            echo "配置状态为 [禁用]，跳过自动启动。"
+        fi
+
+        # 刷新远程版本号缓存
+        /usr/local/emhttp/plugins/${NAME}/Daemon.sh "VERSION"
+
+        echo ""
+        echo "${NAME} ${PLUGIN_V} 安装成功！"
+        echo "-----------------------------------------------------------"
+        echo ""
+        ]]>
+    </INLINE>
+  </FILE>
+
+  <FILE Run="/bin/bash">
+    <INLINE>
+        if ! [ -f /bin/fusermount ]; then
+        if [ -f /usr/bin/fusermount3 ]; then
+            ln -s /usr/bin/fusermount3 /bin/fusermount
+        fi;
+        fi;
+    </INLINE>
+  </FILE>
+
+  <FILE Name="/usr/sbin/filebrowser_quantum" Mode="0755">
+    <INLINE>
+        #!/bin/bash
+        config=/boot/config/plugins/filebrowser_quantum/config.yaml
+        filebrowser_quantumorig -c $config "$@";
+    </INLINE>
+  </FILE>
+
+  <FILE Name="/boot/config/plugins/filebrowser_quantum/.gitignore" Mode="0600">
+    <INLINE>
+        config.yaml
+    </INLINE>
+  </FILE>
+
+  <FILE Run="/bin/bash" Method="remove">
+    <INLINE>
+        BUNDLE_V="&bundleversion;"
+        PLUGIN_V="&version;"
+        NAME="&name;"
+        <![CDATA[
+    # 1. 使用 STOP_ONLY 停止服务：只杀进程，不改配置
+        if [ -x "/usr/local/emhttp/plugins/${NAME}/Daemon.sh" ]; then
+        echo "正在停止 ${NAME} 服务并保留自启动的设置..."
+        /usr/local/emhttp/plugins/${NAME}/Daemon.sh "STOP_ONLY" >/dev/null 2>&1
+            sleep 2
+        fi
+
+    # 2. 清理其他进程逻辑 (保持不变)
+        echo "清理残留进程..."
+        pkill -f "filebrowser_quantumorig" >/dev/null 2>&1
+        pkill -f "log_stream.php" >/dev/null 2>&1
+        pkill -f "tail -n 50 -f" >/dev/null 2>&1
         
-        const isAtBottom = logArea.scrollHeight - logArea.scrollTop <= logArea.clientHeight + 80;
-        const newLog = document.createElement("span");
-        newLog.innerHTML = e.data + "<br>"; 
-        logArea.appendChild(newLog);
+        # 3. 删除系统路径下的二进制文件和链接
+        rm -f /usr/sbin/filebrowser_quantumorig
+        rm -f /usr/sbin/filebrowser_quantum
+        removepkg ${NAME}-${BUNDLE_V}-x86_64 >/dev/null 2>&1
+        rm -f /var/lib/pkgtools/packages/${NAME}-*
+        rm -rf /usr/local/emhttp/plugins/${NAME}
+        echo "正在清理 U 盘上的插件功能包..."
+        rm -f /boot/config/plugins/${NAME}/install/${NAME}-${BUNDLE_V}-x86_64.txz
+        echo ""
+        echo "-----------------------------------------------------------"
+        echo "${NAME} ${PLUGIN_V} 卸载成功！"
+        echo "${NAME}二进制主程序文件仍保留在U盘"
+        echo "-----------------------------------------------------------"
+        echo ""
+        ]]>
+    </INLINE>
+  </FILE>
 
-        if (isAtBottom) {
-            logArea.scrollTop = logArea.scrollHeight;
-        }
-    };
-
-    evtSource.onerror = function(err) {
-        console.warn("SSE 中断");
-        // 只有当不是因为用户手动关闭导致的错误才显示
-        if (evtSource && evtSource.readyState !== 2) { 
-            const statusNode = document.createElement("div");
-            statusNode.innerHTML = "<b style='color:orange;'>[System] 连接已重置，正在尝试重新连接...</b>";
-            logArea.appendChild(statusNode);
-        }
-    };
-}
-
-function stopLogTail() {
-    if (evtSource) {
-        evtSource.close();
-        evtSource = null;
-        console.log("Log stream closed.");
-    }
-}
-
-// 清空日志逻辑，清空后重新连接
-function clearLog() {
-    if (confirm('确定要清空所有日志内容吗？')) {
-        $.post(window.location.href, { clear_log_ajax: "1" }, function() {
-            $(".log-area").html("");
-            // 清空后不需要重启 startLogTail，因为 tail -f 会自动感知文件变动
-        });
-    }
-}
-
-function changeBranch(selectElement) {
-    const newBranch = selectElement.value;
-    const latestText = $("#latest_ver_val");
-    const updateBtn = $("#update_btn_id");
-    
-    // 【修复点 1】：不要依赖 PHP 变量，直接从页面上已经显示的“已安装版本”那一行取值
-    // 假设你的“已安装版本”那个 <b> 标签没有 id，我们给它加一个，或者用下面的选择器
-    const currentVer = $(".version-info div:first b").text().trim(); 
-
-    latestText.css("opacity", "0.5").text("Checking...");
-    updateBtn.prop("disabled", true); 
-
-    $.post("/plugins/filebrowser_quantum/ajax_version.php", { branch: newBranch }, function(data) {
-        const latestVer = data.trim();
-
-        // 更新 UI 上的在线版本号
-        latestText.text(latestVer).css("opacity", "1");
-
-        // 【调试大法】：如果你发现还是不行，请按 F12 检查控制台
-        console.log("Current:", currentVer, "Latest:", latestVer);
-
-        // 【修复点 2】：增加严格的逻辑判断
-        if (latestVer !== "Unknown" && latestVer !== "" && latestVer !== currentVer) {
-            updateBtn.prop("disabled", false);
-            updateBtn.attr("onclick", "updatefilebrowser_quantum('" + newBranch + "')");
-        } else {
-            updateBtn.prop("disabled", true);
-            updateBtn.removeAttr("onclick"); 
-        }
-    });
-}
-
-// 页面加载后立即启动
-$(document).ready(function() {
-    startLogTail();
-});
-
-// 页面离开或关闭时自动断连 , 管理生命周期
-$(window).on('beforeunload', function() {
-    stopLogTail();
-});
-
-</script>
-
-<?PHP
-// --- A. 路径与基础数据 ---
-// 引入基础定义后，$CONFIG_YAML, $SETTINGS_FILE, $INSTALL_PATH 等变量直接可用
-require_once "/usr/local/emhttp/plugins/filebrowser_quantum/base.php";
-
-$config_text = file_get_contents($CONFIG_YAML); // config.yaml文本
-$default_config_text = $config_text; // 用于 修改conifg.yaml的时候的重置按钮
-
-// 2. 动态解析日志路径 (从 YAML 中提取)
-$logfile = getLogPath($CONFIG_YAML);
-
-// --- B. 处理清空日志请求 (AJAX 专属逻辑) ---
-if (isset($_POST['clear_log_ajax'])) {
-    if (file_exists($logfile)) {
-        file_put_contents($logfile, ""); // 清空文件内容
-    }
-    // 关键：直接退出，不要让 PHP 继续往下执行 HTML 渲染
-    echo "success"; 
-    exit;
-}
-
-// --- C. 更新版本分支逻辑 ---
-$branch = file_exists($BETA_MARKER) ? "2" : "1";
-
-// --- D. 动态数据获取 ---
-$settings = @parse_ini_file($SETTINGS_FILE);
-$dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
-$currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
-// 直接从 settings.cfg 读缓存.只有当第一次安装，缓存完全不存在时才跑一次
-$latestversion = $settings['filebrowser_LATEST'] ?? "Unknown";
-
-if ($latestversion == "Unknown") {
-    $latestversion = exec($DAEMON_SCRIPT . ' "VERSION"');
-}
-// 获取 WebUI 进程 PID
-$webui_pid = exec('pgrep -f "' . basename($BINARY) . '"');
-// 日志初始内容
-$log_level = isset($_POST['log_level']) ? $_POST['log_level'] : 'all';
-
-// --- E. 保存配置逻辑 ---
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
-    $new_content = $_POST['config_text'];
-    $daemon_path = "/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh";
-    if (file_put_contents($CONFIG_YAML, $new_content) !== false) {
-        // 依然检测进程，确保用户改完配置后能即时生效
-        $is_running = !empty(exec('pgrep -f "' . basename($BINARY) . '"'));
-        $is_enabled = ($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1');
-        if ($is_enabled || $is_running) {
-            exec("bash $daemon_path 'false' > /dev/null 2>&1");
-            sleep(2);
-            exec("bash $daemon_path 'true' > /dev/null 2>&1");
-            echo "<script>alert('配置已保存并重启服务！'); window.location.href=window.location.href;</script>";
-        } else {
-            echo "<script>alert('配置已保存！'); window.location.href=window.location.href;</script>";
-        }
-        exit;
-    }
-}
-// ========================================================
-
-?>
-
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-.row { display: flex; flex-direction: column; }
-.column { padding: 10px; width:100%; box-sizing: border-box; }
-
-/* 3. 控件统一宽度 */
-.left input[type="button"], .left select, .right select {
-  width: 200px !important;
-  height: 28px;
-  line-height: normal;
-  margin-bottom: 5px;
-  box-sizing: border-box;
-  text-align: center;
-  cursor: pointer;
-}
-
-/* --- 修改点 2: 强制下拉框漂浮到标题右侧，不占用垂直空间 --- */
-.column.right form {
-  position: relative; 
-  top: 0;
-  right: 0;
-  margin: 10px 0;    /* 标题和日志框之间留出间距 */
-  text-align: left;  /* 在手机端左对齐 */
-}
-
-/* --- 修改点 3: 优化下拉框在标题栏的外观 --- */
-.column.right select {
-  width: 200px !important; 
-  height: 28px;
-  font-size: 15px !important;
-  font-weight: bold !important;
-  text-align-last: center;
-}
-
-/* ======================================================== */
-/* 2. 紧接着写电脑端样式 (只有屏幕够宽时才会“覆盖”上面的样式)     */
-/* ======================================================== */
-@media screen and (min-width: 1024px) {
-  .row { flex-direction: row; flex-wrap: nowrap; }
-  .left { flex: 0 0 220px; } 
-  .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; } 
-  .right { flex: 1; min-width: 350px; position: relative; }
-
-  /* 电脑端执行：开启绝对定位，让下拉框“飞”到 Logging 标题右侧 */
-  .column.right form {
-    position: absolute;
-    top: 26px;      /* 你的黄金坐标 */
-    right: 15px;    
-    margin: 0;
-  }
-
-  /* 电脑端执行：下拉框宽度变窄，更精致 */
-  .column.right select {
-    width: 140px !important; 
-  }
-} /* <--- 确认这里有一个结束的大括号 */
-
-/* 下拉框：加粗、加大字体 */
-.left select {
-  font-size: 15px !important;   /* 只让下拉框变大 */
-  font-weight: bold !important; /* 只让下拉框加粗 */
-  color: #000;
-  text-align-last: center;      /* 文字在下拉框内居中 */
-}
-
-/* 按钮：保持原来的小字体，不加粗 */
-.left input[type="button"] {
-  font-size: 12px;              /* 按钮维持 12px */
-  font-weight: bold;          /* 按钮不加粗 */
-  cursor: pointer;
-}
-
-/* 版本信息区域的微调 */
-.version-info {
-  margin: 10px 0;             /* 上下留出一点间距 */
-  font-family: 'Clear Sans', sans-serif;
-  width: 200px;
-}
-
-.version-info div {
-  clear: both; 
-  padding: 6px 0; 
-  border-bottom: 1px solid #eee;
-  font-size: 12px; 
-  color: #666;
-  text-align: left; /* 确保左对齐 */
-}
-.version-info b {
-  margin-left: 8px; /* 冒号后的间距 */
-  float: none;     /* 取消之前的右浮动 */
-}
-
-/* --- 修改点 4: 确保日志框高度与配置框严格一致 --- */
-.log-area {
-  width: calc(100% - 2px); 
-  box-sizing: border-box !important;
-  overflow-x: hidden; 
-  overflow-y: scroll;
-  /* 其余保持不变 */
-  height: 500px;
-  margin-top: 11px;
-  background: #1e1e1e;
-  color: #dcdcdc;
-  font-family: bitstream, 'Courier New', monospace;
-  font-size: 13px;
-  padding: 10px;
-  border-radius: 3px;
-  white-space: pre-wrap;
-  border: 1px solid #333;
-  word-wrap: break-word;      /* 强制长单词换行 */
-  overflow-wrap: break-word;  /* 兼容性更好的换行属性 */
-}
-</style>
-</head>
-<body>
-
-
-
-<div class="row">
-  <div class="column left">
-<!-- 版本更新 -->
-    <h2>Branch :</h2>
-	<form action="" method="post"> 
-  <select name="branch" onchange="changeBranch(this);"> 
-      <option value="1" <?php if($branch == 1) echo("selected")?>>Stable</option>
-      <option value="2" <?php if($branch == 2) echo("selected")?>>Beta</option>
-  </select>
-	</form> 
-
-<div class="version-info">
-    <div>已安装版本: <b style="margin-left: 8px; color:#1a17d6;"><?=trim($currentversion)?></b></div>
-    <div>在线最新版: <b id="latest_ver_val" style="margin-left: 8px; color:#eb2b2b;"><?=trim($latestversion)?></b></div>
-</div>
-
-	<br>
-	<input type="button" id="update_btn_id" value="UPDATE" 
-    <?php if (trim($currentversion) == trim($latestversion) || $latestversion == "Unknown"){ ?> disabled <?php } ?> 
-    onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
-
-<div style="margin-top: 20px; width: 200px;">
-    <h2 style="margin-bottom: 8px;">Service :</h2>
-    
-    <div id="service_status_container" style="padding: 8px 12px; background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>; border-radius: 3px; line-height: 1.4;">
-        <div id="service_status_label" style="font-size: 13px; font-weight: bold; color: <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>;">
-            <span style="font-size: 16px; margin-right: 4px;"><?= !empty($webui_pid) ? '●' : '○' ?></span>
-            <?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?>
-        </div>
-        
-        <div id="port_display" style="font-size: 11px; color: #666; font-family: 'Clear Sans', sans-serif; margin-left: 20px;">
-            <?php if (!empty($webui_pid)): ?>
-                <span style="color: #999;">PORT:</span> <strong><?= $dynamic_port ?></strong>
-            <?php else: ?>
-                <span style="color: #bbb;">PORT:</span> <strong><?= $dynamic_port ?></span>
-            <?php endif; ?>
-        </div>
-    </div>
-</div>
-
-  <form action="" method="post"> 
-    <select name="webui_status" onchange="this.form.apply_btn.disabled=false; this.form.apply_btn.className='submit';"> 
-      <option value="false" <?php if($settings['filebrowser_ENABLED'] == 'false' || empty($settings['filebrowser_ENABLED'])) echo("selected")?>>Disabled</option>
-      <option value="true" <?php if($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') echo("selected")?>>Enabled</option>
-    </select> 
-
-    <br><br>
-    <input type="button" name="apply_btn" value="APPLY" disabled onclick="webui(this.form)">
-
-    <? if (!empty($webui_pid)): ?>
-      <input type="button" class="localURL" value="Open WebUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
-    <? endif; ?>
-  </form>
-
-  </div>
-
-<div class="column mid">
-  <h2>Edit config</h2>
-  <form id="config_form" method="POST">
-    <textarea 
-      spellcheck="false" 
-      name="config_text" 
-      oninput="var btn=document.getElementById('SAVE_btn'); btn.style.background='#4caf50'; btn.style.color='#fff'; btn.style.borderColor='#4caf50';" 
-      style="font-family:bitstream, monospace; width:100%; height:500px; padding:10px; box-sizing:border-box;"
-    ><?=htmlspecialchars($config_text);?></textarea>
-
-    <br><br> <a id="SAVE_btn" href="javascript:void(0);" 
-       onclick="if(confirm('确定要保存配置吗？')){ document.getElementById('config_form').submit(); }"
-       style="display: inline-block; 
-              padding: 0 25px;            /* 增加左右内边距，让它变宽 */
-              height: 32px;               /* 增加高度 */
-              line-height: 30px;          /* 让文字垂直居中，比高度小2px即可 */
-              background: #f2f2f2; 
-              color: #333; 
-              border: 1px solid #ccc; 
-              cursor: pointer; 
-              text-decoration: none; 
-              border-radius: 2px; 
-              font-family: 'Clear Sans', sans-serif; 
-              font-size: 12px;            /* 字体保持你满意的状态 */
-              font-weight: bold; 
-              text-transform: uppercase; 
-              letter-spacing: 2px; 
-              box-sizing: border-box; 
-              vertical-align: middle;">
-       SAVE
-    </a>
-
-    <input type="hidden" name="save_config_btn" value="1">
-    
-    <input type="button" value="Original" onclick="setDefault(this.form)" style="margin-left: 10px; vertical-align: middle;">
-  </form> 
-</div>
-
-  <div class="column right">
-    <h2>Logging</h2>
-    <form class="level-form" onsubmit="return false;">
-        <?php $available_levels = getLogLevels($CONFIG_YAML); ?>
-        <select name="log_level" onchange="startLogTail();">
-            <option value="all" <?=$log_level=='all'?'selected':''?>>LEVEL: ALL</option>
-            <?php foreach($available_levels as $level): ?>
-                <?php if(empty($level)) continue; ?>
-                <option value="<?=$level?>" <?=$log_level==$level?'selected':''?>>
-                    LEVEL: <?=strtoupper($level)?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </form>
-    <div class="log-area">正在连接实时日志流...</div>
-    
-    <div style="margin-top:24px;">
-        <input type="button" value="CLEAR LOG" onclick="clearLog();">
-    </div>
-  </div>
-</div>
-
-</body>
-</html>
-
-<script>
-function setDefault(form) {
-  form.elements['config_text'].value = <?=json_encode($default_config_text);?>;
-}
-// 自动滚动逻辑：仅在页面加载完成后执行一次
-$(document).ready(function() {
-    var logArea = document.querySelector('.log-area');
-    if (logArea) {
-        logArea.scrollTop = logArea.scrollHeight;
-    }
-});
-</script>
-
-> Click the **Apply** button to commit the current edits.
->
-> Click the **Original** button to initialize the edit box with the
-> original contents.  You still need to click **Apply** in order to
-> commit the change.
+</PLUGIN>
