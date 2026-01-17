@@ -235,6 +235,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 .row { display: flex; flex-direction: column; align-items: flex-start; }
 .column { padding: 10px; width: 100%; box-sizing: border-box; }
 
+.column.left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* 注意：这里建议用 flex-start 或 center */
+}
+
 /* 1. 统一标题大小，对齐 Edit config / Logging */
 .column h2 { 
     margin: 0 0 15px 0 !important; 
