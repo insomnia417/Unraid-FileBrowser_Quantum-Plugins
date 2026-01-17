@@ -229,8 +229,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 .column h2 { 
     margin: 0 0 15px 0 !important; 
     font-size: 1.6rem !important; 
-    font-weight: normal !important;
+    font-weight: bold !important;
     line-height: 1.2;
+    color: #333;
 }
 
 /* 2. 左侧按钮文字居中修正 */
