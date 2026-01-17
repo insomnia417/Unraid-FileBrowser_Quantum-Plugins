@@ -51,29 +51,29 @@ function webui(form) {
 var evtSource = null;
 
 function startLogTail() {
-    stopLogTail(); // 停掉旧连接
+    stopLogTail(); // 1. 彻底切断旧连接
 
     const logArea = document.querySelector('.log-area');
-    if (logArea) {
-        // --- 关键：切换时给用户反馈，并清空旧日志 ---
-        logArea.innerHTML = "<b style='color:yellow;'>正在切换至 " + ($("select[name='log_level']").val() || 'ALL') + " 级别...</b><br>";
-    }
+    if (!logArea) return;
 
+    // 2. 清空旧日志，给用户直观反馈
     const logLevel = $("select[name='log_level']").val() || 'all';
+    logArea.innerHTML = "<b style='color:yellow;'>[System] 正在连接 " + logLevel.toUpperCase() + " 日志流...</b><br>";
     
-    // 3. 创建 SSE 对象（加上时间戳 t 防止浏览器或反代缓存请求）
+    // 3. 创建新连接（t=时间戳强制刷新缓存）
     evtSource = new EventSource("/plugins/filebrowser_quantum/log_stream.php?level=" + logLevel + "&t=" + new Date().getTime());
 
     const logArea = document.querySelector('.log-area');
 
     evtSource.onmessage = function(e) {
-        if (!logArea) return;
-        
-        // 自动滚动判断
+                // 自动滚动判断
         const isAtBottom = logArea.scrollHeight - logArea.scrollTop <= logArea.clientHeight + 80;
         
-        // 使用 appendChild 追加日志行，更高效
+        // 创建新行
         const newLog = document.createElement("span");
+        // 如果是心跳包，不显示内容（避免屏幕全是空行）
+        if (e.data.trim() === "heartbeat") return; 
+
         newLog.innerHTML = e.data + "<br>"; 
         logArea.appendChild(newLog);
 
@@ -83,11 +83,11 @@ function startLogTail() {
     };
 
     evtSource.onerror = function(err) {
-        console.warn("SSE 连接中断，正在清理...");
-        stopLogTail(); // 报错立即断开，不再重试，彻底解决 Nginx 报错循环
-        if (logArea) {
+        console.warn("SSE 中断");
+        // 只有当不是因为用户手动关闭导致的错误才显示
+        if (evtSource && evtSource.readyState !== 2) { 
             const statusNode = document.createElement("div");
-            statusNode.innerHTML = "<br><b style='color:orange;'>[System] 已断开日志连接 (服务重启或卸载中)</b>";
+            statusNode.innerHTML = "<b style='color:orange;'>[System] 连接已重置，正在尝试重新连接...</b>";
             logArea.appendChild(statusNode);
         }
     };
@@ -193,8 +193,6 @@ if ($latestversion == "Unknown") {
 $webui_pid = exec('pgrep -f "' . basename($BINARY) . '"');
 // 日志初始内容
 $log_level = isset($_POST['log_level']) ? $_POST['log_level'] : 'all';
-$grep_cmd = ($log_level !== 'all') ? " | grep -i ".escapeshellarg($log_level) : "";
-
 
 // --- E. 保存配置逻辑 ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
