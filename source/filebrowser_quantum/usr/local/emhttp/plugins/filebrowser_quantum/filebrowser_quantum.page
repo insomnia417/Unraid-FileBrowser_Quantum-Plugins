@@ -115,36 +115,35 @@ function clearLog() {
     }
 }
 
-function changeBranch(selectElement) {
-    const newBranch = selectElement.value;
+// branch 切换逻辑: 单选按钮
+function changeBranch(value) {
     const latestText = $("#latest_ver_val");
     const updateBtn = $("#update_btn_id");
-    
-    // 【修复点 1】：不要依赖 PHP 变量，直接从页面上已经显示的“已安装版本”那一行取值
-    // 假设你的“已安装版本”那个 <b> 标签没有 id，我们给它加一个，或者用下面的选择器
-    const currentVer = $(".version-info div:first b").text().trim(); 
+    const currentVer = $(".current_ver_text").text().trim(); 
 
     latestText.css("opacity", "0.5").text("Checking...");
     updateBtn.prop("disabled", true); 
 
-    $.post("/plugins/filebrowser_quantum/ajax_version.php", { branch: newBranch }, function(data) {
+    $.post("/plugins/filebrowser_quantum/ajax_version.php", { branch: value }, function(data) {
         const latestVer = data.trim();
-
-        // 更新 UI 上的在线版本号
         latestText.text(latestVer).css("opacity", "1");
 
-        // 【调试大法】：如果你发现还是不行，请按 F12 检查控制台
-        console.log("Current:", currentVer, "Latest:", latestVer);
-
-        // 【修复点 2】：增加严格的逻辑判断
         if (latestVer !== "Unknown" && latestVer !== "" && latestVer !== currentVer) {
             updateBtn.prop("disabled", false);
-            updateBtn.attr("onclick", "updatefilebrowser_quantum('" + newBranch + "')");
+            updateBtn.attr("onclick", "updatefilebrowser_quantum('" + value + "')");
         } else {
             updateBtn.prop("disabled", true);
             updateBtn.removeAttr("onclick"); 
         }
     });
+}
+
+function toggleService(value) {
+    const applyBtn = document.getElementsByName('apply_btn')[0];
+    applyBtn.disabled = false;
+    applyBtn.className = 'submit';
+    // 将选中的值赋给隐藏的 webui_status 变量，以便 webui() 函数读取
+    document.getElementById('webui_status_hidden').value = value;
 }
 
 // 页面加载后立即启动
@@ -340,17 +339,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 <body>
 
 <div class="row">
-  <div class="column left">
+<div class="column left">
     
     <div style="margin-top: 10px; width: 200px;">
         <h2 style="margin-bottom: 8px;">Branch :</h2>
-        <div style="padding: 8px 12px; background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid #666; border-radius: 3px;">
-            <form action="" method="post" style="margin:0;">
-                <select name="branch" onchange="changeBranch(this);" style="width: 100% !important; border:none; background:transparent; font-weight:bold; height:24px; padding:0; cursor:pointer;">
-                    <option value="1" <?php if($branch == 1) echo("selected")?>>Stable Branch</option>
-                    <option value="2" <?php if($branch == 2) echo("selected")?>>Beta Branch</option>
-                </select>
-            </form>
+        <div style="padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid #666; border-radius: 3px; font-size: 12px;">
+            <label style="display:block; cursor:pointer; margin-bottom:5px;">
+                <input type="radio" name="branch_radio" value="1" <?php if($branch == 1) echo "checked"; ?> onclick="changeBranch(this.value);"> Stable Branch
+            </label>
+            <label style="display:block; cursor:pointer;">
+                <input type="radio" name="branch_radio" value="2" <?php if($branch == 2) echo "checked"; ?> onclick="changeBranch(this.value);"> Beta Branch
+            </label>
         </div>
     </div>
 
@@ -376,25 +375,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
                 <span id="status_dot" style="font-size: 16px; margin-right: 4px;"><?= !empty($webui_pid) ? '●' : '○' ?></span>
                 <span id="status_text"><?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?></span>
             </div>
-            <div id="port_display" style="font-size: 11px; color: #666; font-family: 'Clear Sans', sans-serif; margin-left: 20px;">
-                <span style="color: #999;">PORT:</span> <strong id="dynamic_port_val"><?= $dynamic_port ?></strong>
+            <div style="font-size: 11px; color: #666; margin-left: 20px;">
+                <span style="color: #999;">PORT:</span> <strong><?= $dynamic_port ?></strong>
             </div>
         </div>
     </div>
 
-    <form action="" method="post" style="margin-top: 10px;"> 
-        <select name="webui_status" onchange="this.form.apply_btn.disabled=false; this.form.apply_btn.className='submit';"> 
-          <option value="false" <?php if($settings['filebrowser_ENABLED'] == 'false' || empty($settings['filebrowser_ENABLED'])) echo("selected")?>>Disabled</option>
-          <option value="true" <?php if($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') echo("selected")?>>Enabled</option>
-        </select> 
-        <br><br>
-        <input type="button" name="apply_btn" value="APPLY" disabled onclick="webui(this.form)">
+    <div style="margin-top: 10px; width: 200px;">
+        <form action="" method="post" style="margin:0;">
+            <div style="padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid #666; border-radius: 3px; font-size: 12px;">
+                <label style="display:block; cursor:pointer; margin-bottom:5px;">
+                    <input type="radio" name="webui_radio" value="true" <?php if($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') echo "checked"; ?> onclick="toggleService(this.value);"> Enabled
+                </label>
+                <label style="display:block; cursor:pointer;">
+                    <input type="radio" name="webui_radio" value="false" <?php if($settings['filebrowser_ENABLED'] == 'false' || empty($settings['filebrowser_ENABLED'])) echo "checked"; ?> onclick="toggleService(this.value);"> Disabled
+                </label>
+            </div>
+            
+            <input type="hidden" id="webui_status_hidden" name="webui_status" value="<?= ($settings['filebrowser_ENABLED'] == 'true') ? 'true' : 'false' ?>">
+            
+            <br>
+            <input type="button" name="apply_btn" value="APPLY" disabled onclick="webui(this.form)">
 
-        <? if (!empty($webui_pid)): ?>
-          <input type="button" class="localURL" value="Open WebUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
-        <? endif; ?>
-    </form>
-  </div>
+            <? if (!empty($webui_pid)): ?>
+              <input type="button" class="localURL" value="Open WebUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
+            <? endif; ?>
+        </form>
+    </div>
+</div>
 
   <div class="column mid">
     <h2>Edit config</h2>
