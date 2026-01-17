@@ -395,15 +395,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     <div class="log-area">正在连接实时日志流...</div>
     
     <div style="margin-top:21px;">
-        <input type="button" value="CLEAR LOG" onclick="clearLog();" 
-            style="height: 32px; 
-                    line-height: 30px;
-                    padding: 0 17px;
-                    min-width: 96px;
+        <input type="button" value="CLEAR" onclick="clearLog();" 
+            style="height: 30px; 
+                    line-height: 28px;
+                    padding: 0 15px;
+                    box-sizing: border-box;
+                    min-width: 50px;
                     vertical-align: middle;
                     font-size: 12px;
                     font-weight: bold;
-                    text-transform: uppercase;">
+                    text-transform: uppercase;
+                    cursor: pointer;">
     </div>
     </div>
 </div>
