@@ -51,29 +51,29 @@ function webui(form) {
 var evtSource = null;
 
 function startLogTail() {
-    stopLogTail(); // 1. 彻底切断旧连接
+    // 1. 彻底切断旧连接
+    stopLogTail(); 
 
     const logArea = document.querySelector('.log-area');
-    if (!logArea) return;
-
     // 2. 清空旧日志，给用户直观反馈
     const logLevel = $("select[name='log_level']").val() || 'all';
-    logArea.innerHTML = "<b style='color:yellow;'>[System] 正在连接 " + logLevel.toUpperCase() + " 日志流...</b><br>";
+    
+    // 强制清空并显示连接中
+    logArea.innerHTML = "<b style='color:yellow;'>[System] 正在请求 SSE 流 (Level: " + logLevel.toUpperCase() + ")...</b><br>";
     
     // 3. 创建新连接（t=时间戳强制刷新缓存）
     evtSource = new EventSource("/plugins/filebrowser_quantum/log_stream.php?level=" + logLevel + "&t=" + new Date().getTime());
 
-    const logArea = document.querySelector('.log-area');
+    // [新增] 监听连接成功
+    evtSource.onopen = function() {
+        logArea.innerHTML = "<b style='color:green;'>[System] 实时日志连接成功！</b><br>";
+    };
 
     evtSource.onmessage = function(e) {
-                // 自动滚动判断
-        const isAtBottom = logArea.scrollHeight - logArea.scrollTop <= logArea.clientHeight + 80;
+        if (e.data.trim() === "heartbeat") return;
         
-        // 创建新行
+        const isAtBottom = logArea.scrollHeight - logArea.scrollTop <= logArea.clientHeight + 80;
         const newLog = document.createElement("span");
-        // 如果是心跳包，不显示内容（避免屏幕全是空行）
-        if (e.data.trim() === "heartbeat") return; 
-
         newLog.innerHTML = e.data + "<br>"; 
         logArea.appendChild(newLog);
 
