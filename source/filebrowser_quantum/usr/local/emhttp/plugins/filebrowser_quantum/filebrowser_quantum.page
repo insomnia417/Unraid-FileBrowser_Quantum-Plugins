@@ -396,7 +396,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     
     <div style="margin-top:21px;">
         <input type="button" value="CLEAR" onclick="clearLog();" 
-            style="height: 30px; 
+            style=  "
+                    width: auto !important;
+                    height: 32px !important; 
                     line-height: 28px;
                     padding: 0 15px;
                     box-sizing: border-box;
@@ -405,8 +407,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
                     font-size: 12px;
                     font-weight: bold;
                     text-transform: uppercase;
-                    cursor: pointer;">
+                    cursor: pointer;
+                    ">
     </div>
+
     </div>
 </div>
 
