@@ -51,26 +51,26 @@ function webui(form) {
 var evtSource = null;
 
 function startLogTail() {
-    // 1. 每次启动前先彻底关闭旧连接 (防止 F5 或切换页面残留)
+    // 1. 彻底关闭旧连接
     stopLogTail();
 
-    const logLevel = $("select[name='log_level']").val();
-    // 2. 创建 SSE 对象 (带上日志级别参数)
-    // 注意：这里需要你的 log_stream.php 能处理 log_level，或者简单起见先传过去
-    evtSource = new EventSource("/plugins/filebrowser_quantum/log_stream.php?level=" + logLevel);
+    // 2. 获取当前的日志级别（不通过页面提交，而是直接 JS 获取）
+    const logLevel = $("select[name='log_level']").val() || 'all';
+    
+    // 3. 创建 SSE 对象（加上时间戳 t 防止浏览器或反代缓存请求）
+    evtSource = new EventSource("/plugins/filebrowser_quantum/log_stream.php?level=" + logLevel + "&t=" + new Date().getTime());
 
     const logArea = document.querySelector('.log-area');
 
-    // 3. 监听消息推送
     evtSource.onmessage = function(e) {
         if (!logArea) return;
         
-        // 判断是否需要滚动
+        // 自动滚动判断
         const isAtBottom = logArea.scrollHeight - logArea.scrollTop <= logArea.clientHeight + 80;
         
-        // 追加日志内容
+        // 使用 appendChild 追加日志行，更高效
         const newLog = document.createElement("span");
-        newLog.innerHTML = e.data; 
+        newLog.innerHTML = e.data + "<br>"; 
         logArea.appendChild(newLog);
 
         if (isAtBottom) {
@@ -78,15 +78,13 @@ function startLogTail() {
         }
     };
 
-    // 4. 关键：错误处理（斩杀 Nginx 报错）
     evtSource.onerror = function(err) {
-        console.warn("SSE 连接中断。");
-        // 如果是因为插件卸载导致 404，或者后台进程没了
-        // 我们主动关闭对象，浏览器就不会再尝试重连，Nginx 也就不会再报错
-        stopLogTail();
-        
+        console.warn("SSE 连接中断，正在清理...");
+        stopLogTail(); // 报错立即断开，不再重试，彻底解决 Nginx 报错循环
         if (logArea) {
-            logArea.innerHTML += "\n<b style='color:orange;'>[System] 已断开与日志流的连接。</b>\n";
+            const statusNode = document.createElement("div");
+            statusNode.innerHTML = "<br><b style='color:orange;'>[System] 已断开日志连接 (服务重启或卸载中)</b>";
+            logArea.appendChild(statusNode);
         }
     };
 }
@@ -98,12 +96,12 @@ function stopLogTail() {
     }
 }
 
-// 修改原有的 clearLog 逻辑，清空后重新连接
+// 清空日志逻辑，清空后重新连接
 function clearLog() {
     if (confirm('确定要清空所有日志内容吗？')) {
         $.post(window.location.href, { clear_log_ajax: "1" }, function() {
             $(".log-area").html("");
-            // 清空后，SSE 会因为 tail 命令检测到文件变动而自动继续显示新日志
+            // 清空后不需要重启 startLogTail，因为 tail -f 会自动感知文件变动
         });
     }
 }
@@ -145,7 +143,7 @@ $(document).ready(function() {
     startLogTail();
 });
 
-// 页面离开或关闭时自动断连
+// 页面离开或关闭时自动断连 , 管理生命周期
 $(window).on('beforeunload', function() {
     stopLogTail();
 });
@@ -191,7 +189,7 @@ $webui_pid = exec('pgrep -f "' . basename($BINARY) . '"');
 // 日志初始内容
 $log_level = isset($_POST['log_level']) ? $_POST['log_level'] : 'all';
 $grep_cmd = ($log_level !== 'all') ? " | grep -i ".escapeshellarg($log_level) : "";
-$log_content = shell_exec("tail -n 50 $logfile $grep_cmd 2>&1") ?: "正在连接日志流...";
+
 
 // --- E. 保存配置逻辑 ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
@@ -222,13 +220,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 <style>
 .row { display: flex; flex-direction: column; }
 .column { padding: 10px; width:100%; box-sizing: border-box; }
-/* 2. 核心自适应：电脑端（宽度大于1024px）自动变横排 */
-@media screen and (min-width: 1024px) {
-  .row { flex-direction: row; flex-wrap: nowrap; }
-  .left { flex: 0 0 220px; } 
-  .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; } 
-  .right { flex: 1; min-width: 350px; position: relative; }
-}
 
 /* 3. 控件统一宽度 */
 .left input[type="button"], .left select, .right select {
@@ -334,6 +325,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
   border-radius: 3px;
   white-space: pre-wrap;
   border: 1px solid #333;
+  word-wrap: break-word;      /* 强制长单词换行 */
+  overflow-wrap: break-word;  /* 兼容性更好的换行属性 */
 }
 </style>
 </head>
@@ -424,9 +417,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
   <div class="column right">
     <h2>Logging</h2>
-    <form class="level-form" action="" method="post">
+    <form class="level-form" onsubmit="return false;">
         <?php $available_levels = getLogLevels($CONFIG_YAML); ?>
-        <select name="log_level" onchange="this.form.submit();">
+        <select name="log_level" onchange="startLogTail();">
             <option value="all" <?=$log_level=='all'?'selected':''?>>LEVEL: ALL</option>
             <?php foreach($available_levels as $level): ?>
                 <?php if(empty($level)) continue; ?>
@@ -436,7 +429,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
             <?php endforeach; ?>
         </select>
     </form>
-    <div class="log-area"><?=htmlspecialchars($log_content)?></div>
+    <div class="log-area">正在连接实时日志流...</div>
     
     <div style="margin-top:24px;">
         <input type="button" value="CLEAR LOG" onclick="clearLog();">
