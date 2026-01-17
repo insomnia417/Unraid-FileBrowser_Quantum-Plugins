@@ -398,7 +398,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
             style="height: 32px; 
                     line-height: 30px; 
                     padding: 0 15px; 
-                    min-width: 100px; 
                     vertical-align: middle; 
                     font-size: 12px; 
                     font-weight: bold; 
