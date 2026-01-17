@@ -391,7 +391,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     ><?=htmlspecialchars($config_text);?></textarea>
 
     <br><br> <a id="SAVE_btn" href="javascript:void(0);" 
-       onclick="if(confirm('确定要保存配置并重启服务吗？')){ document.getElementById('config_form').submit(); }"
+       onclick="if(confirm('确定要保存配置吗？')){ document.getElementById('config_form').submit(); }"
        style="display: inline-block; 
               padding: 0 25px;            /* 增加左右内边距，让它变宽 */
               height: 32px;               /* 增加高度 */
