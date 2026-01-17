@@ -290,14 +290,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     }
     .mid { 
         /* [核心] flex: 1.5 意味着中间栏会比右侧栏占用更多剩余空间 */
-        flex: 1.5; 
+        flex: 1; 
         border-right: 1px solid #eee; 
         border-left: 1px solid #eee; 
         min-width: 350px; 
         padding: 0 10px; /* 给边框内侧留点呼吸空间 */
     }
     .right { 
-        flex: 1; 
+        flex: 1.5; 
         min-width: 350px; 
         position: relative; 
     }
