@@ -1,7 +1,9 @@
 <?php
-// v2.0.2 - SSE Backend with Filter
+// v2.0.4 - SSE Debug Edition
 require_once "base.php";
 
+// 彻底禁用输出缓存
+while (ob_get_level()) ob_end_clean();
 set_time_limit(0);
 ignore_user_abort(false);
 
@@ -11,22 +13,30 @@ header('X-Accel-Buffering: no');
 header('Connection: keep-alive');
 
 $logfile = getLogPath($CONFIG_YAML);
-$level = $_GET['level'] ?? 'all';
 
-// 如果文件不存在，发送错误消息并退出
+// 调试点 1: 检查文件权限和路径
 if (!file_exists($logfile)) {
-    echo "data: <b style='color:red;'>[System] 日志文件不存在，请检查配置。</b>\n\n";
+    echo "data: [Error] 无法找到日志文件: $logfile \n\n";
     flush();
     exit;
 }
 
-// 构建命令：如果不是 all，则增加 grep 过滤
-$cmd = "stdbuf -oL tail -n 50 -f " . escapeshellarg($logfile);
+if (!is_readable($logfile)) {
+    echo "data: [Error] PHP 无权读取日志 (nobody用户权限不足)\n\n";
+    flush();
+    exit;
+}
 
+$level = $_GET['level'] ?? 'all';
+$cmd = "stdbuf -oL tail -n 50 -f " . escapeshellarg($logfile);
 if ($level !== 'all') {
     // 强制 grep 也不要缓存
     $cmd .= " | stdbuf -oL grep -i --line-buffered " . escapeshellarg($level);
 }
+
+// 调试点 2: 显式告知连接成功
+echo "data: [System] 已连接到日志: " . basename($logfile) . " (Level: " . strtoupper($level) . ")\n\n";
+flush();
 
 $descriptorspec = [1 => ["pipe", "w"], 2 => ["pipe", "w"]];
 $process = proc_open($cmd, $descriptorspec, $pipes);
@@ -36,14 +46,14 @@ if (is_resource($process)) {
 
     while (!connection_aborted()) {
         $line = fgets($pipes[1]);
-        if ($line) {
+        if ($line !== false && $line !== "") {
             echo "data: " . htmlspecialchars(trim($line)) . "\n\n";
             flush();
         } else {
-            // 心跳，防止某些反代超时
+            // 心跳：一定要发送，防止 Nginx 超时断开
             echo ": heartbeat\n\n";
             flush();
-            usleep(200000); 
+            usleep(300000); 
         }
     }
 
@@ -52,5 +62,8 @@ if (is_resource($process)) {
     fclose($pipes[2]);
     proc_terminate($process, 9);
     proc_close($process);
+} else {
+    echo "data: [Error] 无法启动 tail 进程\n\n";
+    flush();
 }
 ?>
