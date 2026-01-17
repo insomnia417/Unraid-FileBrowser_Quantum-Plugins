@@ -276,11 +276,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 }
 
 @media screen and (min-width: 1024px) {
-    .row { flex-direction: row; flex-wrap: nowrap; align-items: flex-start; }
-    .left { flex: 0 0 170px; }
-    .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; }
-    .right { flex: 1; min-width: 350px; position: relative; }
-    
+    .row { 
+        flex-direction: row; 
+        flex-wrap: nowrap; 
+        align-items: flex-start; 
+        /* [新增] 调整这个值可以改变三栏之间的空隙 */
+        gap: 20px; 
+    }
+    .left { 
+        /* [核心] 宽度设定为 170px，且禁止它增长或收缩 */
+        flex: 0 0 170px; 
+        width: 170px; 
+    }
+    .mid { 
+        /* [核心] flex: 1.5 意味着中间栏会比右侧栏占用更多剩余空间 */
+        flex: 1.5; 
+        border-right: 1px solid #eee; 
+        border-left: 1px solid #eee; 
+        min-width: 350px; 
+        padding: 0 10px; /* 给边框内侧留点呼吸空间 */
+    }
+    .right { 
+        flex: 1; 
+        min-width: 350px; 
+        position: relative; 
+    }
     /* 下拉框位置微调 */
     .column.right form.level-form { position: absolute; top: 5px; right: 15px; margin: 0; }
 }
