@@ -339,75 +339,73 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 </head>
 <body>
 
-
-
 <div class="row">
   <div class="column left">
-<!-- 版本更新 -->
-    <h2>Branch :</h2>
-	<form action="" method="post"> 
-  <select name="branch" onchange="changeBranch(this);"> 
-      <option value="1" <?php if($branch == 1) echo("selected")?>>Stable</option>
-      <option value="2" <?php if($branch == 2) echo("selected")?>>Beta</option>
-  </select>
-	</form> 
-
-<div class="version-info">
-    <div>已安装版本: <b style="margin-left: 8px; color:#1a17d6;"><?=trim($currentversion)?></b></div>
-    <div>在线最新版: <b id="latest_ver_val" style="margin-left: 8px; color:#eb2b2b;"><?=trim($latestversion)?></b></div>
-</div>
-
-	<br>
-	<input type="button" id="update_btn_id" value="UPDATE" 
-    <?php if (trim($currentversion) == trim($latestversion) || $latestversion == "Unknown"){ ?> disabled <?php } ?> 
-    onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
-
-<div style="margin-top: 20px; width: 200px;">
-    <h2 style="margin-bottom: 8px;">Service :</h2>
     
-    <div id="service_status_container" style="padding: 8px 12px; background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>; border-radius: 3px; line-height: 1.4;">
-        <div id="service_status_label" style="font-size: 13px; font-weight: bold; color: <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>;">
-            <span style="font-size: 16px; margin-right: 4px;"><?= !empty($webui_pid) ? '●' : '○' ?></span>
-            <?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?>
-        </div>
-        
-        <div id="port_display" style="font-size: 11px; color: #666; font-family: 'Clear Sans', sans-serif; margin-left: 20px;">
-            <?php if (!empty($webui_pid)): ?>
-                <span style="color: #999;">PORT:</span> <strong><?= $dynamic_port ?></strong>
-            <?php else: ?>
-                <span style="color: #bbb;">PORT:</span> <strong><?= $dynamic_port ?></span>
-            <?php endif; ?>
+    <div style="margin-top: 10px; width: 200px;">
+        <h2 style="margin-bottom: 8px;">Branch :</h2>
+        <div style="padding: 8px 12px; background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid #666; border-radius: 3px;">
+            <form action="" method="post" style="margin:0;">
+                <select name="branch" onchange="changeBranch(this);" style="width: 100% !important; border:none; background:transparent; font-weight:bold; height:24px; padding:0; cursor:pointer;">
+                    <option value="1" <?php if($branch == 1) echo("selected")?>>Stable Branch</option>
+                    <option value="2" <?php if($branch == 2) echo("selected")?>>Beta Branch</option>
+                </select>
+            </form>
         </div>
     </div>
-</div>
 
-  <form action="" method="post"> 
-    <select name="webui_status" onchange="this.form.apply_btn.disabled=false; this.form.apply_btn.className='submit';"> 
-      <option value="false" <?php if($settings['filebrowser_ENABLED'] == 'false' || empty($settings['filebrowser_ENABLED'])) echo("selected")?>>Disabled</option>
-      <option value="true" <?php if($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') echo("selected")?>>Enabled</option>
-    </select> 
+    <div style="margin-top: 10px; width: 200px;">
+        <div class="version-info-box" style="padding: 8px 12px; background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid #51aee5; border-radius: 3px; line-height: 1.6;">
+            <div style="font-size: 11px; color: #666;">
+                已安装: <b class="current_ver_text" style="color:#1a17d6; margin-left:4px;"><?=trim($currentversion)?></b>
+            </div>
+            <div style="font-size: 11px; color: #666;">
+                最新版: <b id="latest_ver_val" style="color:#eb2b2b; margin-left:4px;"><?=trim($latestversion)?></b>
+            </div>
+        </div>
+    </div>
 
-    <br><br>
-    <input type="button" name="apply_btn" value="APPLY" disabled onclick="webui(this.form)">
+    <input type="button" id="update_btn_id" value="UPDATE" style="margin-top:8px;"
+        <?php if (trim($currentversion) == trim($latestversion) || $latestversion == "Unknown"){ ?> disabled <?php } ?> 
+        onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
-    <? if (!empty($webui_pid)): ?>
-      <input type="button" class="localURL" value="Open WebUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
-    <? endif; ?>
-  </form>
+    <div style="margin-top: 20px; width: 200px;">
+        <h2 style="margin-bottom: 8px;">Service :</h2>
+        <div id="service_status_container" style="padding: 8px 12px; background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>; border-radius: 3px; line-height: 1.4;">
+            <div id="service_status_label" style="font-size: 13px; font-weight: bold; color: <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>;">
+                <span id="status_dot" style="font-size: 16px; margin-right: 4px;"><?= !empty($webui_pid) ? '●' : '○' ?></span>
+                <span id="status_text"><?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?></span>
+            </div>
+            <div id="port_display" style="font-size: 11px; color: #666; font-family: 'Clear Sans', sans-serif; margin-left: 20px;">
+                <span style="color: #999;">PORT:</span> <strong id="dynamic_port_val"><?= $dynamic_port ?></strong>
+            </div>
+        </div>
+    </div>
 
+    <form action="" method="post" style="margin-top: 10px;"> 
+        <select name="webui_status" onchange="this.form.apply_btn.disabled=false; this.form.apply_btn.className='submit';"> 
+          <option value="false" <?php if($settings['filebrowser_ENABLED'] == 'false' || empty($settings['filebrowser_ENABLED'])) echo("selected")?>>Disabled</option>
+          <option value="true" <?php if($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') echo("selected")?>>Enabled</option>
+        </select> 
+        <br><br>
+        <input type="button" name="apply_btn" value="APPLY" disabled onclick="webui(this.form)">
+
+        <? if (!empty($webui_pid)): ?>
+          <input type="button" class="localURL" value="Open WebUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
+        <? endif; ?>
+    </form>
   </div>
 
-<div class="column mid">
-  <h2>Edit config</h2>
-  <form id="config_form" method="POST">
-    <textarea 
-      spellcheck="false" 
-      name="config_text" 
-      oninput="var btn=document.getElementById('SAVE_btn'); btn.style.background='#4caf50'; btn.style.color='#fff'; btn.style.borderColor='#4caf50';" 
-      style="font-family:bitstream, monospace; width:100%; height:500px; padding:10px; box-sizing:border-box;"
-    ><?=htmlspecialchars($config_text);?></textarea>
+  <div class="column mid">
+    <h2>Edit config</h2>
+    <form id="config_form" method="POST">
+      <textarea spellcheck="false" name="config_text" 
+        oninput="var btn=document.getElementById('SAVE_btn'); btn.style.background='#4caf50'; btn.style.color='#fff'; btn.style.borderColor='#4caf50';" 
+        style="font-family:bitstream, monospace; width:100%; height:500px; padding:10px; box-sizing:border-box;"
+      ><?=htmlspecialchars($config_text);?></textarea>
 
-    <br><br> <a id="SAVE_btn" href="javascript:void(0);" 
+      <br><br> 
+      <a id="SAVE_btn" href="javascript:void(0);" 
        onclick="if(confirm('确定要保存配置吗？')){ document.getElementById('config_form').submit(); }"
        style="display: inline-block; 
               padding: 0 25px;            /* 增加左右内边距，让它变宽 */
