@@ -273,7 +273,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 }
 
 .log-area {
-    height: 445px !important;
+    height: 478px !important;
     background: #1e1e1e;
     color: #dcdcdc;
     font-family: bitstream, monospace;
@@ -393,8 +393,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     </form>
     <div class="log-area">正在连接实时日志流...</div>
     
-    <div style="margin-top:24px;">
-        <input type="button" value="CLEAR LOG" onclick="clearLog();">
+    <div style="margin-top:21px;">
+        <input type="button" value="CLEAR LOG" onclick="clearLog();" 
+            style="height: 32px; 
+                    line-height: 30px; 
+                    padding: 0 15px; 
+                    min-width: 100px; 
+                    vertical-align: middle; 
+                    font-size: 12px; 
+                    font-weight: bold; 
+                    text-transform: uppercase;">
     </div>
     </div>
 </div>
