@@ -136,7 +136,7 @@ function changeBranch(value) {
 }
 
 // v2.1.3 适配 Radio 的 Service 切换
-var originalServiceState = "<?= ($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') ? 'true' : 'false' ?>";
+var originalServiceState = "<?= $current_enabled ?>";
 
 function toggleService(value) {
     const applyBtn = $("input[name='apply_btn']");
@@ -190,7 +190,8 @@ $branch = file_exists($BETA_MARKER) ? "2" : "1";
 
 // --- D. 动态数据获取 ---
 $settings = @parse_ini_file($SETTINGS_FILE);
-$current_enabled = (string)$settings['filebrowser_ENABLED'];
+$raw_enabled = $settings['filebrowser_ENABLED'] ?? 'false';
+$current_enabled = ($raw_enabled === 'true' || $raw_enabled === '1') ? 'true' : 'false';
 $dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
 $currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
 // 直接从 settings.cfg 读缓存.只有当第一次安装，缓存完全不存在时才跑一次
@@ -337,20 +338,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
         <form action="" method="post" style="margin:0;">
             <div class="status-box" style="border-left: 4px solid #666; margin-bottom: 10px;">
                 <label style="display:block; cursor:pointer; margin-bottom:5px;">
-            <input type="radio" name="webui_radio" value="true" 
-                <?php if($current_enabled === 'true' || $current_enabled === '1') echo "checked"; ?> 
-                onclick="toggleService(this.value);"> Enabled
+                <input type="radio" name="webui_radio" value="true" <?php if($current_enabled === 'true') echo "checked"; ?> onclick="toggleService(this.value);"> Enabled
                 </label>
                 <label style="display:block; cursor:pointer;">
-            <input type="radio" name="webui_radio" value="false" 
-                <?php if($current_enabled !== 'true' && $current_enabled !== '1') echo "checked"; ?> 
-                onclick="toggleService(this.value);"> Disabled
+                <input type="radio" name="webui_radio" value="false" <?php if($current_enabled === 'false') echo "checked"; ?> onclick="toggleService(this.value);"> Disabled
                 </label>
             </div>
             
-            <input type="hidden" id="webui_status_hidden" name="webui_status" 
-                value="<?= ($current_enabled === 'true' || $current_enabled === '1') ? 'true' : 'false' ?>">
-            
+            <input type="hidden" id="webui_status_hidden" name="webui_status" value="<?= $current_enabled ?>">            
             <input type="button" name="apply_btn" value="APPLY" disabled onclick="webui(this.form)">
             <? if (!empty($webui_pid)): ?>
             <input type="button" class="localURL" value="OPEN WEBUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
