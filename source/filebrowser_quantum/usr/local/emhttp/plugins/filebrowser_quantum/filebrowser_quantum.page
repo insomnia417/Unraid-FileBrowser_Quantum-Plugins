@@ -355,7 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     <?php if (trim($currentversion) == trim($latestversion) || $latestversion == "Unknown"){ ?> disabled <?php } ?> 
     onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
-<h2>服务
+<h2>Service
   <span id="service_status_label" style="font-size:0.6em; color: <?= !empty($webui_pid) ? 'green' : 'red' ?>;">
     &nbsp;&nbsp;&nbsp;<?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?>
     <span id="port_val" style="margin-left: 10px;">
