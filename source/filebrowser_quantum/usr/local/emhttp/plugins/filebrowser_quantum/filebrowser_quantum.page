@@ -136,8 +136,6 @@ function changeBranch(value) {
 }
 
 // v2.1.3 适配 Radio 的 Service 切换
-var originalServiceState = "<?= $current_enabled ?>";
-
 function toggleService(value) {
     const applyBtn = $("input[name='apply_btn']");
     const hiddenInput = $("#webui_status_hidden");
@@ -430,14 +428,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 </html>
 
 <script>
+var originalServiceState = "";
+
 function setDefault(form) {
   form.elements['config_text'].value = <?=json_encode($default_config_text);?>;
 }
 // 自动滚动逻辑：仅在页面加载完成后执行一次
 $(document).ready(function() {
+    // 1. 初始化原始状态（此时 PHP 变量 $current_enabled 肯定已经定义好了）
+    originalServiceState = "<?= $current_enabled ?>";
+    
+    // 2. 日志自动滚动逻辑
     var logArea = document.querySelector('.log-area');
     if (logArea) {
         logArea.scrollTop = logArea.scrollHeight;
     }
+    
+    console.log("Service 初始状态已锁定为: " + originalServiceState);
 });
 </script>
