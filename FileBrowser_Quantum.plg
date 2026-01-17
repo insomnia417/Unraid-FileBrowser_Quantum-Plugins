@@ -1,8 +1,8 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
   <!ENTITY branch "log-rebuild">
-  <!ENTITY version "2026.01.02">
-  <!ENTITY bundleversion "2026.01.02">
+  <!ENTITY version "2026.01.03">
+  <!ENTITY bundleversion "2026.01.03">
   <!ENTITY author "insomnia417">
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY launch "Settings/filebrowser_quantum">
@@ -110,7 +110,10 @@
 
         # settings.cfg
         if [ ! -f /boot/config/plugins/${NAME}/settings.cfg ]; then
+            echo "首次安装，初始化默认开启配置。"
             echo "filebrowser_ENABLED=true" > /boot/config/plugins/${NAME}/settings.cfg
+        else
+            echo "检测到已有配置文件，正在保持原有设置..."
         fi
 
         # 智能清理：保留当前 txz 和当前 binary
@@ -120,14 +123,21 @@
             find "$INSTALL_PATH" -name "${NAME}-v*" ! -name "$(basename "$INSTALLED_BINARY")" -delete
         fi
 
-        /usr/local/emhttp/plugins/${NAME}/Daemon.sh "VERSION"
-        if [ "$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/${NAME}/settings.cfg)" == "true" ]; then
-            /usr/local/emhttp/plugins/${NAME}/Daemon.sh "true"
-            echo "开始运行FileBrowser守护进程"
-            echo "●"
-            echo "●"
-            echo "●"
+        # --- [3. 核心：根据配置状态决定是否拉起服务] ---
+        # 使用 grep 提取当前的使能状态 (true/false)
+        ENABLE_STATE=$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/${NAME}/settings.cfg)
+
+        if [ "$ENABLE_STATE" == "true" ]; then
+            echo "配置状态为 [启用]，正在启动 FileBrowser 守护进程..."
+            # 使用 v2.0.6 Daemon.sh 的 START_ONLY 参数：静默启动进程，不写磁盘
+            /usr/local/emhttp/plugins/${NAME}/Daemon.sh "START_ONLY"
+            echo "● Filebrowser_Quantum 已在后台启动"
+        else
+            echo "配置状态为 [禁用]，跳过自动启动。"
         fi
+
+        # 刷新远程版本号缓存
+        /usr/local/emhttp/plugins/${NAME}/Daemon.sh "VERSION"
 
         echo ""
         echo "${NAME} ${PLUGIN_V} 安装成功！"
@@ -167,15 +177,14 @@
         PLUGIN_V="&version;"
         NAME="&name;"
         <![CDATA[
-        # 1. 尝试通过官方守护脚本优雅停止
+    # 1. 使用 STOP_ONLY 停止服务：只杀进程，不改配置
         if [ -x "/usr/local/emhttp/plugins/${NAME}/Daemon.sh" ]; then
-            echo "正在停止 ${NAME} 服务..."
-            /usr/local/emhttp/plugins/${NAME}/Daemon.sh "false" >/dev/null 2>&1
+        echo "正在停止 ${NAME} 服务并保留自启动的设置..."
+        /usr/local/emhttp/plugins/${NAME}/Daemon.sh "STOP_ONLY" >/dev/null 2>&1
             sleep 2
         fi
 
-        # 2. 强力清理所有相关残留进程（兜底逻辑）
-        # 包括主程序、日志流脚本、以及 tail 监控进程
+    # 2. 清理其他进程逻辑 (保持不变)
         echo "清理残留进程..."
         pkill -f "filebrowser_quantumorig" >/dev/null 2>&1
         pkill -f "log_stream.php" >/dev/null 2>&1
