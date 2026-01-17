@@ -21,9 +21,11 @@ if (!file_exists($logfile)) {
 }
 
 // 构建命令：如果不是 all，则增加 grep 过滤
-$cmd = "tail -n 50 -f " . escapeshellarg($logfile);
+$cmd = "stdbuf -oL tail -n 50 -f " . escapeshellarg($logfile);
+
 if ($level !== 'all') {
-    $cmd .= " | grep -i --line-buffered " . escapeshellarg($level);
+    // 强制 grep 也不要缓存
+    $cmd .= " | stdbuf -oL grep -i --line-buffered " . escapeshellarg($level);
 }
 
 $descriptorspec = [1 => ["pipe", "w"], 2 => ["pipe", "w"]];
