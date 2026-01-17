@@ -221,11 +221,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-/* 核心布局 */
-.row { display: flex; flex-direction: column; }
+/* v2.1.5 - 标题与高度精准对齐版 */
+.row { display: flex; flex-direction: column; align-items: flex-start; }
 .column { padding: 10px; width: 100%; box-sizing: border-box; }
 
-/* 修复按钮：强制文字居中 */
+/* 1. 统一标题大小，对齐 Edit config / Logging */
+.column h2 { 
+    margin: 0 0 15px 0 !important; 
+    font-size: 1.6rem !important; 
+    font-weight: normal !important;
+    line-height: 1.2;
+}
+
+/* 2. 左侧按钮文字居中修正 */
 .left input[type="button"], .right input[type="button"] {
     width: 200px !important;
     height: 34px !important;
@@ -255,20 +263,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 }
 
 @media screen and (min-width: 1024px) {
-    .row { flex-direction: row; flex-wrap: nowrap; }
+    .row { flex-direction: row; flex-wrap: nowrap; align-items: flex-start; }
     .left { flex: 0 0 230px; }
     .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; }
     .right { flex: 1; min-width: 350px; position: relative; }
     
-    /* 顶部对齐：让三列的标题高度一致 */
-    .column h2 { margin-top: 0; margin-bottom: 15px; }
-    
-    .column.right form { position: absolute; top: 0px; right: 15px; margin: 0; }
-    .column.right select { width: 140px !important; }
+    /* 下拉框位置微调 */
+    .column.right form.level-form { position: absolute; top: 5px; right: 15px; margin: 0; }
 }
 
 .log-area {
-    height: 500px;
+    height: 445px !important;
     background: #1e1e1e;
     color: #dcdcdc;
     font-family: bitstream, monospace;
@@ -288,7 +293,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 <div class="row">
 
     <div class="column left">
-        <h2 style="font-size:1.2rem;">Status :</h2>
+        <h2>Status :</h2>
         <div class="status-box" style="border-left: 4px solid #51aee5; margin-bottom: 10px;">
             <div style="color: #666; margin-bottom: 4px;">已安装: <b class="current_ver_text" style="color:#1a17d6; margin-left:4px;"><?=trim($currentversion)?></b></div>
             <div style="color: #666;">最新版: <b id="latest_ver_val" style="color:#eb2b2b; margin-left:4px;"><?=trim($latestversion)?></b></div>
@@ -309,7 +314,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
         <hr style="width:200px; margin: 15px 0; border:0; border-top:1px solid #eee;">
 
-        <h2 style="font-size:1.2rem;">Service :</h2>
+        <h2>Service :</h2>
         <div id="service_status_container" class="status-box" style="border-left: 4px solid <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>; margin-bottom: 10px;">
             <div id="service_status_label" style="font-weight: bold; color: <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>;">
                 <span><?= !empty($webui_pid) ? '● RUNNING' : '○ STOPPED' ?></span>
