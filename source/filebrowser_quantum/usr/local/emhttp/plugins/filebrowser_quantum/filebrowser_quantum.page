@@ -51,10 +51,13 @@ function webui(form) {
 var evtSource = null;
 
 function startLogTail() {
-    // 1. 彻底关闭旧连接
-    stopLogTail();
+    stopLogTail(); // 必须先断开旧的
 
-    // 2. 获取当前的日志级别（不通过页面提交，而是直接 JS 获取）
+    const logArea = document.querySelector('.log-area');
+    if (logArea) {
+        logArea.innerHTML = "正在切换日志级别..."; // [新增] 给用户直观反馈
+    }
+
     const logLevel = $("select[name='log_level']").val() || 'all';
     
     // 3. 创建 SSE 对象（加上时间戳 t 防止浏览器或反代缓存请求）
@@ -93,6 +96,7 @@ function stopLogTail() {
     if (evtSource) {
         evtSource.close();
         evtSource = null;
+        console.log("Log stream closed.");
     }
 }
 
