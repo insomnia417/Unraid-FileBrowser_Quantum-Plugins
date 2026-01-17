@@ -25,7 +25,7 @@ function updatefilebrowser_quantum(branch) {
 }
 
 function webui(form) {
-    var state = form.webui_status.value;
+    var state = document.getElementById('webui_status_hidden').value;
     const container = $("#service_status_container");
     const statusLabel = $("#service_status_label");
     const statusDot = $("#status_dot");
@@ -120,14 +120,11 @@ function changeBranch(value) {
     const latestText = $("#latest_ver_val");
     const updateBtn = $("#update_btn_id");
     const currentVer = $(".current_ver_text").text().trim(); 
-
     latestText.css("opacity", "0.5").text("Checking...");
     updateBtn.prop("disabled", true); 
-
     $.post("/plugins/filebrowser_quantum/ajax_version.php", { branch: value }, function(data) {
         const latestVer = data.trim();
         latestText.text(latestVer).css("opacity", "1");
-
         if (latestVer !== "Unknown" && latestVer !== "" && latestVer !== currentVer) {
             updateBtn.prop("disabled", false);
             updateBtn.attr("onclick", "updatefilebrowser_quantum('" + value + "')");
@@ -138,12 +135,11 @@ function changeBranch(value) {
     });
 }
 
+// v2.1.3 适配 Radio 的 Service 切换
 function toggleService(value) {
-    const applyBtn = document.getElementsByName('apply_btn')[0];
-    applyBtn.disabled = false;
-    applyBtn.className = 'submit';
-    // 将选中的值赋给隐藏的 webui_status 变量，以便 webui() 函数读取
-    document.getElementById('webui_status_hidden').value = value;
+    const applyBtn = $("input[name='apply_btn']");
+    applyBtn.prop("disabled", false).addClass("submit");
+    $("#webui_status_hidden").val(value);
 }
 
 // 页面加载后立即启动
@@ -223,127 +219,82 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
+/* 核心布局 */
 .row { display: flex; flex-direction: column; }
-.column { padding: 10px; width:100%; box-sizing: border-box; }
+.column { padding: 10px; width: 100%; box-sizing: border-box; }
 
-/* 3. 控件统一宽度 */
-.left input[type="button"], .left select, .right select {
-  width: 200px !important;
-  height: 28px;
-  line-height: normal;
-  margin-bottom: 5px;
-  box-sizing: border-box;
-  text-align: center;
-  cursor: pointer;
+/* 修复按钮：强制文字居中 */
+.left input[type="button"], .right input[type="button"] {
+    width: 200px !important;
+    height: 34px !important;
+    line-height: 32px !important; 
+    padding: 0 !important;
+    margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: center;
+    cursor: pointer;
+    /* 居中核心 */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* --- 修改点 2: 强制下拉框漂浮到标题右侧，不占用垂直空间 --- */
-.column.right form {
-  position: relative; 
-  top: 0;
-  right: 0;
-  margin: 10px 0;    /* 标题和日志框之间留出间距 */
-  text-align: left;  /* 在手机端左对齐 */
+/* 侧边容器：统一宽度与样式 */
+.status-box {
+    width: 200px;
+    padding: 10px;
+    background: #fdfdfd;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 12px;
+    box-sizing: border-box;
 }
 
-/* --- 修改点 3: 优化下拉框在标题栏的外观 --- */
-.column.right select {
-  width: 200px !important; 
-  height: 28px;
-  font-size: 15px !important;
-  font-weight: bold !important;
-  text-align-last: center;
-}
-
-/* ======================================================== */
-/* 2. 紧接着写电脑端样式 (只有屏幕够宽时才会“覆盖”上面的样式)     */
-/* ======================================================== */
 @media screen and (min-width: 1024px) {
-  .row { flex-direction: row; flex-wrap: nowrap; }
-  .left { flex: 0 0 220px; } 
-  .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; } 
-  .right { flex: 1; min-width: 350px; position: relative; }
-
-  /* 电脑端执行：开启绝对定位，让下拉框“飞”到 Logging 标题右侧 */
-  .column.right form {
-    position: absolute;
-    top: 26px;      /* 你的黄金坐标 */
-    right: 15px;    
-    margin: 0;
-  }
-
-  /* 电脑端执行：下拉框宽度变窄，更精致 */
-  .column.right select {
-    width: 140px !important; 
-  }
-} /* <--- 确认这里有一个结束的大括号 */
-
-/* 下拉框：加粗、加大字体 */
-.left select {
-  font-size: 15px !important;   /* 只让下拉框变大 */
-  font-weight: bold !important; /* 只让下拉框加粗 */
-  color: #000;
-  text-align-last: center;      /* 文字在下拉框内居中 */
+    .row { flex-direction: row; flex-wrap: nowrap; }
+    .left { flex: 0 0 230px; }
+    .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; }
+    .right { flex: 1; min-width: 350px; position: relative; }
+    
+    /* 顶部对齐：让三列的标题高度一致 */
+    .column h2 { margin-top: 0; margin-bottom: 15px; }
+    
+    .column.right form { position: absolute; top: 0px; right: 15px; margin: 0; }
+    .column.right select { width: 140px !important; }
 }
 
-/* 按钮：保持原来的小字体，不加粗 */
-.left input[type="button"] {
-  font-size: 12px;              /* 按钮维持 12px */
-  font-weight: bold;          /* 按钮不加粗 */
-  cursor: pointer;
-}
-
-/* 版本信息区域的微调 */
-.version-info {
-  margin: 10px 0;             /* 上下留出一点间距 */
-  font-family: 'Clear Sans', sans-serif;
-  width: 200px;
-}
-
-.version-info div {
-  clear: both; 
-  padding: 6px 0; 
-  border-bottom: 1px solid #eee;
-  font-size: 12px; 
-  color: #666;
-  text-align: left; /* 确保左对齐 */
-}
-.version-info b {
-  margin-left: 8px; /* 冒号后的间距 */
-  float: none;     /* 取消之前的右浮动 */
-}
-
-/* --- 修改点 4: 确保日志框高度与配置框严格一致 --- */
 .log-area {
-  width: calc(100% - 2px); 
-  box-sizing: border-box !important;
-  overflow-x: hidden; 
-  overflow-y: scroll;
-  /* 其余保持不变 */
-  height: 500px;
-  margin-top: 11px;
-  background: #1e1e1e;
-  color: #dcdcdc;
-  font-family: bitstream, 'Courier New', monospace;
-  font-size: 13px;
-  padding: 10px;
-  border-radius: 3px;
-  white-space: pre-wrap;
-  border: 1px solid #333;
-  word-wrap: break-word;      /* 强制长单词换行 */
-  overflow-wrap: break-word;  /* 兼容性更好的换行属性 */
+    height: 500px;
+    background: #1e1e1e;
+    color: #dcdcdc;
+    font-family: bitstream, monospace;
+    font-size: 12px;
+    padding: 10px;
+    border-radius: 3px;
+    white-space: pre-wrap;
+    overflow-y: scroll;
+    border: 1px solid #333;
 }
 </style>
+
 </head>
+
 <body>
 
 <div class="row">
-<div class="column left">
-    
-    <div style="margin-top: 10px; width: 200px;">
-        <h2 style="margin-bottom: 8px;">Branch :</h2>
-        <div style="padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid #666; border-radius: 3px; font-size: 12px;">
+
+    <div class="column left">
+        <h2 style="font-size:1.2rem;">Status :</h2>
+        <div class="status-box" style="border-left: 4px solid #51aee5; margin-bottom: 10px;">
+            <div style="color: #666; margin-bottom: 4px;">已安装: <b class="current_ver_text" style="color:#1a17d6; margin-left:4px;"><?=trim($currentversion)?></b></div>
+            <div style="color: #666;">最新版: <b id="latest_ver_val" style="color:#eb2b2b; margin-left:4px;"><?=trim($latestversion)?></b></div>
+        </div>
+
+        <div class="status-box" style="border-left: 4px solid #666; margin-bottom: 10px;">
             <label style="display:block; cursor:pointer; margin-bottom:5px;">
                 <input type="radio" name="branch_radio" value="1" <?php if($branch == 1) echo "checked"; ?> onclick="changeBranch(this.value);"> Stable Branch
             </label>
@@ -351,60 +302,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
                 <input type="radio" name="branch_radio" value="2" <?php if($branch == 2) echo "checked"; ?> onclick="changeBranch(this.value);"> Beta Branch
             </label>
         </div>
-    </div>
 
-    <div style="margin-top: 10px; width: 200px;">
-        <div class="version-info-box" style="padding: 8px 12px; background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid #51aee5; border-radius: 3px; line-height: 1.6;">
-            <div style="font-size: 11px; color: #666;">
-                已安装: <b class="current_ver_text" style="color:#1a17d6; margin-left:4px;"><?=trim($currentversion)?></b>
+        <input type="button" id="update_btn_id" value="UPDATE" 
+            <?php if (trim($currentversion) == trim($latestversion) || $latestversion == "Unknown") echo "disabled"; ?> 
+            onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
+
+        <hr style="width:200px; margin: 15px 0; border:0; border-top:1px solid #eee;">
+
+        <h2 style="font-size:1.2rem;">Service :</h2>
+        <div id="service_status_container" class="status-box" style="border-left: 4px solid <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>; margin-bottom: 10px;">
+            <div id="service_status_label" style="font-weight: bold; color: <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>;">
+                <span><?= !empty($webui_pid) ? '● RUNNING' : '○ STOPPED' ?></span>
             </div>
-            <div style="font-size: 11px; color: #666;">
-                最新版: <b id="latest_ver_val" style="color:#eb2b2b; margin-left:4px;"><?=trim($latestversion)?></b>
-            </div>
+            <div style="color: #999; margin-top:4px;">PORT: <strong style="color:#666;"><?= $dynamic_port ?></strong></div>
         </div>
-    </div>
 
-    <input type="button" id="update_btn_id" value="UPDATE" style="margin-top:8px;"
-        <?php if (trim($currentversion) == trim($latestversion) || $latestversion == "Unknown"){ ?> disabled <?php } ?> 
-        onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
-
-    <div style="margin-top: 20px; width: 200px;">
-        <h2 style="margin-bottom: 8px;">Service :</h2>
-        <div id="service_status_container" style="padding: 8px 12px; background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>; border-radius: 3px; line-height: 1.4;">
-            <div id="service_status_label" style="font-size: 13px; font-weight: bold; color: <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>;">
-                <span id="status_dot" style="font-size: 16px; margin-right: 4px;"><?= !empty($webui_pid) ? '●' : '○' ?></span>
-                <span id="status_text"><?= !empty($webui_pid) ? 'RUNNING' : 'STOPPED' ?></span>
-            </div>
-            <div style="font-size: 11px; color: #666; margin-left: 20px;">
-                <span style="color: #999;">PORT:</span> <strong><?= $dynamic_port ?></strong>
-            </div>
-        </div>
-    </div>
-
-    <div style="margin-top: 10px; width: 200px;">
         <form action="" method="post" style="margin:0;">
-            <div style="padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid #666; border-radius: 3px; font-size: 12px;">
+            <div class="status-box" style="border-left: 4px solid #666; margin-bottom: 10px;">
                 <label style="display:block; cursor:pointer; margin-bottom:5px;">
-                    <input type="radio" name="webui_radio" value="true" <?php if($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1') echo "checked"; ?> onclick="toggleService(this.value);"> Enabled
+                    <input type="radio" name="webui_radio" value="true" <?php if($settings['filebrowser_ENABLED'] == 'true') echo "checked"; ?> onclick="toggleService(this.value);"> Enabled
                 </label>
                 <label style="display:block; cursor:pointer;">
-                    <input type="radio" name="webui_radio" value="false" <?php if($settings['filebrowser_ENABLED'] == 'false' || empty($settings['filebrowser_ENABLED'])) echo "checked"; ?> onclick="toggleService(this.value);"> Disabled
+                    <input type="radio" name="webui_radio" value="false" <?php if($settings['filebrowser_ENABLED'] != 'true') echo "checked"; ?> onclick="toggleService(this.value);"> Disabled
                 </label>
             </div>
-            
             <input type="hidden" id="webui_status_hidden" name="webui_status" value="<?= ($settings['filebrowser_ENABLED'] == 'true') ? 'true' : 'false' ?>">
             
-            <br>
             <input type="button" name="apply_btn" value="APPLY" disabled onclick="webui(this.form)">
-
             <? if (!empty($webui_pid)): ?>
-              <input type="button" class="localURL" value="Open WebUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
+            <input type="button" class="localURL" value="OPEN WEBUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
             <? endif; ?>
         </form>
     </div>
-</div>
 
-  <div class="column mid">
+    <div class="column mid">
     <h2>Edit config</h2>
     <form id="config_form" method="POST">
       <textarea spellcheck="false" name="config_text" 
@@ -439,9 +370,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     
     <input type="button" value="Original" onclick="setDefault(this.form)" style="margin-left: 10px; vertical-align: middle;">
   </form> 
-</div>
+    </div>
 
-  <div class="column right">
+    <div class="column right">
     <h2>Logging</h2>
     <form class="level-form" onsubmit="return false;">
         <?php $available_levels = getLogLevels($CONFIG_YAML); ?>
@@ -460,7 +391,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     <div style="margin-top:24px;">
         <input type="button" value="CLEAR LOG" onclick="clearLog();">
     </div>
-  </div>
+    </div>
 </div>
 
 </body>
