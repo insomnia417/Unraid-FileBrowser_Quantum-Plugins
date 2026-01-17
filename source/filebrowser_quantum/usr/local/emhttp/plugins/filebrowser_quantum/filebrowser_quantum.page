@@ -238,8 +238,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 .column.left {
     display: flex;
     flex-direction: column;
-    align-items: flex-start; /* 注意：这里建议用 flex-start 或 center */
-    overflow: hidden;
+    padding-top: 0px !important;
+   
+    
 }
 
 /* 1. 统一标题大小，对齐 Edit config / Logging */
@@ -296,34 +297,51 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
         width: 170px; 
     }
     .mid { 
-        /* [核心] flex: 1.5 意味着中间栏会比右侧栏占用更多剩余空间 */
-        flex: 1; 
-        border-right: 1px solid #eee; 
-        border-left: 1px solid #eee; 
+        flex: 0.8; 
         min-width: 350px; 
-        padding: 0 10px; /* 给边框内侧留点呼吸空间 */
+        padding: 0 0px; /* 给边框内侧留点呼吸空间 */
     }
     .right { 
         flex: 1.5; 
         min-width: 350px; 
         position: relative; 
+        padding-top: 0px !important;
     }
     /* 下拉框位置微调 */
     .column.right form.level-form { position: absolute; top: 5px; right: 15px; margin: 0; }
 }
 
 .log-area {
-    height: 478px !important;
+    height: 499px !important;
     background: #1e1e1e;
     color: #dcdcdc;
     font-family: bitstream, monospace;
     font-size: 12px;
-    padding: 10px;
     border-radius: 3px;
     white-space: pre-wrap;
     overflow-y: scroll;
     border: 1px solid #333;
 }
+
+.level-form select {
+    background-color: #1100ff; /* 背景改成和日志框一样的深色 */
+    color: #fbff00;            /* 文字改成淡蓝色，和你 Status 边框颜色一致 */
+    border: 1px solid #ff0000;    /* 细边框 */
+    border-radius: 3px;        /* 圆角 */
+    padding: 2px 8px;          /* 内边距 */
+    font-family: 'Clear Sans', sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    outline: none;
+}
+
+/* 鼠标移上去稍微亮一点 */
+.level-form select:hover {
+    background-color: #558ffc;
+    border-color: #ff0000;
+}
+
 </style>
 
 </head>
@@ -381,11 +399,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     </div>
 
     <div class="column mid">
-    <h2>Edit config</h2>
+    <h2>config.yaml :</h2>
     <form id="config_form" method="POST">
       <textarea spellcheck="false" name="config_text" 
         oninput="var btn=document.getElementById('SAVE_btn'); btn.style.background='#4caf50'; btn.style.color='#fff'; btn.style.borderColor='#4caf50';" 
-        style="font-family:bitstream, monospace; width:100%; height:500px; padding:10px; box-sizing:border-box;"
+        style="font-family:bitstream, monospace; width:100%; height:500px; padding:5px; box-sizing:border-box;"
       ><?=htmlspecialchars($config_text);?></textarea>
 
       <br><br> 
@@ -418,7 +436,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     </div>
 
     <div class="column right">
-    <h2>Logging</h2>
+    <h2>Logging :</h2>
     <form class="level-form" onsubmit="return false;">
         <?php $available_levels = getLogLevels($CONFIG_YAML); ?>
         <select name="log_level" onchange="startLogTail();">
