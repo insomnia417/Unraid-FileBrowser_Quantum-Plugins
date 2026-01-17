@@ -31,7 +31,7 @@
 ### 方法 2：手动安装
 在 Unraid **插件 (Plugins)** 标签页，点击 **安装插件**，在输入框中输入以下 URL：
 ```
-[https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg]
+https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/main/FileBrowser_Quantum.plg
 ````
 ## 配置说明
 安装完成后，您前往以下路径进行插件的详细配置： Settings (设置) -> Utilities (实用工具) -> FileBrowser Quantum
