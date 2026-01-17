@@ -9,8 +9,9 @@ server:
     - path: "/"
       name: "Root Dir"
       config:
-        denyByDefault: false
-        defaultEnabled: true
+  filesystem:
+    createFilePermission: "777"
+    createDirectoryPermission: "777"
 userDefaults:
   darkMode: true
   permissions:
