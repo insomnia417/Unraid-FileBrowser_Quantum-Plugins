@@ -47,15 +47,16 @@ function webui(form) {
    });
 }
 
-// v2.0.1 - SSE Logic
+// v2.0.3 - SSE Logic
 var evtSource = null;
 
 function startLogTail() {
-    stopLogTail(); // 必须先断开旧的
+    stopLogTail(); // 停掉旧连接
 
     const logArea = document.querySelector('.log-area');
     if (logArea) {
-        logArea.innerHTML = "正在切换日志级别..."; // [新增] 给用户直观反馈
+        // --- 关键：切换时给用户反馈，并清空旧日志 ---
+        logArea.innerHTML = "<b style='color:yellow;'>正在切换至 " + ($("select[name='log_level']").val() || 'ALL') + " 级别...</b><br>";
     }
 
     const logLevel = $("select[name='log_level']").val() || 'all';
