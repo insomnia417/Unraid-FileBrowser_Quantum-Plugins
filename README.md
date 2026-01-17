@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="img/FB.png" width="100%" alt="Logo">
-  <img src="img/settings.png" width="100%" alt="Logo">
+  <img src="" width="100%" alt="Logo">
 </p>
 
 ---
