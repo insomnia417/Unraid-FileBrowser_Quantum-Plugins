@@ -239,6 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     display: flex;
     flex-direction: column;
     align-items: flex-start; /* 注意：这里建议用 flex-start 或 center */
+    overflow: hidden;
 }
 
 /* 1. 统一标题大小，对齐 Edit config / Logging */
@@ -351,7 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
             <?php if (trim($currentversion) == trim($latestversion) || $latestversion == "Unknown") echo "disabled"; ?> 
             onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
 
-        <hr style="width:200px; margin: 15px 0; border:0; border-top:1px solid #eee;">
+        <hr style="width: 100%; max-width: 170px; margin: 15px 0; border: 0; border-top: 1px solid #eee;">
 
         <h2>Service :</h2>
         <div id="service_status_container" class="status-box" style="border-left: 4px solid <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>; margin-bottom: 10px;">
