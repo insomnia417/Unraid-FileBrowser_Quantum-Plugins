@@ -246,7 +246,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
 /* 2. 左侧按钮文字居中修正 */
 .left input[type="button"], .right input[type="button"] {
-    width: 200px !important;
+    width: 100% !important;
+    max-width: 170px;
     height: 34px !important;
     line-height: 32px !important; 
     padding: 0 !important;
@@ -264,7 +265,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
 /* 侧边容器：统一宽度与样式 */
 .status-box {
-    width: 200px;
+    width: 100% !important;
+    max-width: 170px;
     padding: 10px;
     background: #fdfdfd;
     border: 1px solid #ddd;
@@ -275,7 +277,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
 @media screen and (min-width: 1024px) {
     .row { flex-direction: row; flex-wrap: nowrap; align-items: flex-start; }
-    .left { flex: 0 0 230px; }
+    .left { flex: 0 0 170px; }
     .mid { flex: 1; border-right: 1px solid #eee; border-left: 1px solid #eee; min-width: 350px; }
     .right { flex: 1; min-width: 350px; position: relative; }
     
