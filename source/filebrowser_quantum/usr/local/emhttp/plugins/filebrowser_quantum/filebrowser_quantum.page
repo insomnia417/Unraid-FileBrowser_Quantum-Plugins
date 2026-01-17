@@ -396,11 +396,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     <div style="margin-top:21px;">
         <input type="button" value="CLEAR LOG" onclick="clearLog();" 
             style="height: 32px; 
-                    line-height: 30px; 
-                    padding: 0 15px; 
-                    vertical-align: middle; 
-                    font-size: 12px; 
-                    font-weight: bold; 
+                    line-height: 30px;
+                    padding: 0 17px;
+                    min-width: 96px;
+                    vertical-align: middle;
+                    font-size: 12px;
+                    font-weight: bold;
                     text-transform: uppercase;">
     </div>
     </div>
@@ -421,9 +422,3 @@ $(document).ready(function() {
     }
 });
 </script>
-
-> Click the **Apply** button to commit the current edits.
->
-> Click the **Original** button to initialize the edit box with the
-> original contents.  You still need to click **Apply** in order to
-> commit the change.
