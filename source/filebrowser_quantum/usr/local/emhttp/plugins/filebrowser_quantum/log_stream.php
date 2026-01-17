@@ -9,8 +9,9 @@ ignore_user_abort(false);
 
 header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
-header('X-Accel-Buffering: no');
 header('Connection: keep-alive');
+header('X-Accel-Buffering: no'); // [关键] 告诉 Unraid 的 Nginx 不要缓存这个流
+header('Content-Encoding: none'); // [关键] 防止 Gzip 压缩导致缓冲
 
 $logfile = getLogPath($CONFIG_YAML);
 
