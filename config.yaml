@@ -1,6 +1,7 @@
 server:
   port: 8081
   baseURL: "/"
+  internalUrl: "" 
   database: "/boot/config/plugins/filebrowser_quantum/database.db"
   logging:
     - levels: "info|debug|warning|error"
