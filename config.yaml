@@ -10,6 +10,26 @@ server:
     - path: "/"
       name: "Root Dir"
       config:
+        conditionals:
+          ignoreHidden: true
+          rules:
+            - folderPath: "/bin"
+            - folderPath: "/boot"
+            - folderPath: "/dev"
+            - folderPath: "/etc"
+            - folderPath: "/home"
+            - folderPath: "/hugetlbfs"
+            - folderPath: "/lib"
+            - folderPath: "/lib64"
+            - folderPath: "/opt"
+            - folderPath: "/proc"
+            - folderPath: "/root"
+            - folderPath: "/run"
+            - folderPath: "/sbin"
+            - folderPath: "/sys"
+            - folderPath: "/tmp"
+            - folderPath: "/usr"
+            - folderPath: "/var"
   filesystem:
     createFilePermission: "777"
     createDirectoryPermission: "777"
