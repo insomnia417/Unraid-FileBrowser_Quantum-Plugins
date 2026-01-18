@@ -106,7 +106,7 @@
         # 下载默认 config.yaml (如果缺失)
         if [ ! -f /boot/config/plugins/${NAME}/config.yaml ]; then
             echo "正在下载默认配置..."
-            curl --connect-timeout 10 --retry 3 -L -o /boot/config/plugins/${NAME}/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/test/config.yaml"
+            curl --connect-timeout 10 --retry 3 -L -o /boot/config/plugins/${NAME}/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/&branch;/config.yaml"
         fi
 
         # settings.cfg
