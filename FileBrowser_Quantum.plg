@@ -1,0 +1,212 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+  <!ENTITY branch "test">
+  <!ENTITY version "2026.01.17">
+  <!ENTITY bundleversion "2026.01.17">
+  <!ENTITY author "insomnia417">
+  <!ENTITY name "filebrowser_quantum">
+  <!ENTITY launch "Settings/filebrowser_quantum">
+  <!ENTITY description "FileBrowser Quantum for unRAID">
+  <!ENTITY support "https://forums.unraid.net/topic/196447-filebrowser-quantum-plugin">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/&branch;/FileBrowser_Quantum.plg">
+  <!ENTITY bundleURL "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/refs/heads/&branch;/archive/filebrowser_quantum-&bundleversion;-x86_64.txz">
+]>
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;">
+
+<CHANGES>
+### &name;
+#### 🆕 最新更新 (v&version;)
+- **逻辑优化**：UI界面美化调整，更易用。
+
+#### 📜 历史改进
+- **安全加固**：新增二进制文件 SHA256 完整性校验，确保下载安全。
+- **逻辑优化**：完善 AJAX 分支切换逻辑，实现版本号与 UI 按钮的实时联动。
+- **内核升级**：引入架构自适应逻辑，为跨平台运行奠定基础。
+- **智能安装**：支持本地缓存校验与自动清理，大幅提升离线安装/重启速度。
+- **交互重构**：设置界面改为三列布局，实现 `config.yaml` 全可视化 UI 管理。
+- **动态适配**：端口更改自动同步，新增服务启停开关，端口显示，Beta/Stable 分支切换。
+- **运维增强**：新增基于 PHP 的实时日志流监控及一键清空日志功能。
+
+#### 🚀 计划中 (TO DO)
+- **安全连接**：推进 iframe 框架下的 HTTPS 协议适配。
+- **多端优化**：持续改进移动端 UI 的操作顺滑度。
+</CHANGES>
+
+  <FILE Name="/boot/config/plugins/filebrowser_quantum/install/filebrowser_quantum-&bundleversion;-x86_64.txz" Run="upgradepkg --install-new">
+    <URL>&bundleURL;</URL>
+  </FILE>
+
+  <FILE Run="/bin/bash" Method="install">
+    <INLINE>
+        BUNDLE_V="&bundleversion;"
+        PLUGIN_V="&version;"
+        NAME="&name;"
+        <![CDATA[
+        GITHUB_REPO="gtsteffaniak/filebrowser"
+        INSTALL_PATH="/boot/config/plugins/${NAME}/install"
+        mkdir -p "$INSTALL_PATH"
+
+        # 1. 寻找本地缓存
+        LOCAL_BINARY=$(ls -t $INSTALL_PATH/${NAME}-v* 2>/dev/null | head -n 1)
+
+        if [ -f "$LOCAL_BINARY" ]; then
+            echo "检测到本地主程序缓存: $(basename $LOCAL_BINARY)，跳过联网检测。"
+            cp "$LOCAL_BINARY" /usr/sbin/filebrowser_quantumorig.new
+            mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
+            current_version=$(basename "$LOCAL_BINARY" | cut -d'-' -f3-)
+            INSTALLED_BINARY="$LOCAL_BINARY"
+        else
+            echo "本地无缓存，正在联网查询最新版本..."
+            TAG_LIST=$(curl -s --connect-timeout 5 "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
+            
+            if [ -z "$TAG_LIST" ]; then
+            echo "警告：无法连接 GitHub API，将使用保底版本号..."
+            current_version="v1.1.0-stable"
+            else
+            if [ -f $INSTALL_PATH/beta ]; then
+                current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
+                echo "Beta mode detected. Target version: $current_version"
+                [ -z "$current_version" ] && current_version="v1.1.6-beta"
+            else
+                current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
+                echo "检测到最新稳定版号为: $current_version"
+                [ -z "$current_version" ] && current_version="v1.1.0-stable"
+            fi
+            fi
+
+            INSTALLED_BINARY="$INSTALL_PATH/${NAME}-$current_version"
+            filebrowser_quantumurl="https://github.com/$GITHUB_REPO/releases/download/$current_version/linux-amd64-filebrowser"
+
+            echo "开始下载并安装: $current_version ..."
+            curl --connect-timeout 15 --retry 3 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
+
+            if [ -f "$INSTALLED_BINARY" ]; then
+            cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig.new
+            mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
+            else
+            echo "错误：下载失败且本地无缓存！"
+            exit 1
+            fi
+        fi
+
+        # --- [2. 核心校验：如果到这步还没文件，才报错退出] ---
+        if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
+            echo "安装失败：无法获取二进制文件（联网失败且无本地缓存）"
+            removepkg ${NAME}-${BUNDLE_V}-x86_64 >/dev/null
+            exit 1
+        fi
+
+        # --- [3. 后勤处理：赋权、配置、清理] ---
+        chown root:root /usr/sbin/filebrowser_quantumorig
+        chmod 755 /usr/sbin/filebrowser_quantumorig
+        chown -R root:root /usr/local/emhttp/plugins/${NAME}
+        chmod +x /usr/local/emhttp/plugins/${NAME}/*.sh
+        chmod 644 /usr/local/emhttp/plugins/${NAME}/*.php
+
+        # 下载默认 config.yaml (如果缺失)
+        if [ ! -f /boot/config/plugins/${NAME}/config.yaml ]; then
+            echo "正在下载默认配置..."
+            curl --connect-timeout 10 --retry 3 -L -o /boot/config/plugins/${NAME}/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/&branch;/config.yaml"
+        fi
+
+        # settings.cfg
+        if [ ! -f /boot/config/plugins/${NAME}/settings.cfg ]; then
+            echo "首次安装，初始化默认开启配置。"
+            echo "filebrowser_ENABLED=true" > /boot/config/plugins/${NAME}/settings.cfg
+        else
+            echo "检测到已有配置文件，正在保持原有设置..."
+        fi
+
+        # 智能清理：保留当前 txz 和当前 binary
+        echo "正在清理旧的安装文件..."
+        find "$INSTALL_PATH" -name "${NAME}-*.txz" ! -name "${NAME}-${BUNDLE_V}-x86_64.txz" -delete
+        if [ -n "$INSTALLED_BINARY" ]; then
+            find "$INSTALL_PATH" -name "${NAME}-v*" ! -name "$(basename "$INSTALLED_BINARY")" -delete
+        fi
+
+        # --- [3. 核心：根据配置状态决定是否拉起服务] ---
+        # 使用 grep 提取当前的使能状态 (true/false)
+        ENABLE_STATE=$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/${NAME}/settings.cfg)
+
+        if [ "$ENABLE_STATE" == "true" ]; then
+            echo "配置状态为 [启用]，正在启动 FileBrowser 守护进程..."
+            # 使用 v2.0.6 Daemon.sh 的 START_ONLY 参数：静默启动进程，不写磁盘
+            /usr/local/emhttp/plugins/${NAME}/Daemon.sh "START_ONLY"
+            echo "● Filebrowser_Quantum 已在后台启动"
+        else
+            echo "配置状态为 [禁用]，跳过自动启动。"
+        fi
+
+        # 刷新远程版本号缓存
+        /usr/local/emhttp/plugins/${NAME}/Daemon.sh "VERSION"
+
+        echo ""
+        echo "${NAME} ${PLUGIN_V} 安装成功！"
+        echo "-----------------------------------------------------------"
+        echo ""
+        ]]>
+    </INLINE>
+  </FILE>
+
+  <FILE Run="/bin/bash">
+    <INLINE>
+        if ! [ -f /bin/fusermount ]; then
+        if [ -f /usr/bin/fusermount3 ]; then
+            ln -s /usr/bin/fusermount3 /bin/fusermount
+        fi;
+        fi;
+    </INLINE>
+  </FILE>
+
+  <FILE Name="/usr/sbin/filebrowser_quantum" Mode="0755">
+    <INLINE>
+        #!/bin/bash
+        config=/boot/config/plugins/filebrowser_quantum/config.yaml
+        filebrowser_quantumorig -c $config "$@";
+    </INLINE>
+  </FILE>
+
+  <FILE Name="/boot/config/plugins/filebrowser_quantum/.gitignore" Mode="0600">
+    <INLINE>
+        config.yaml
+    </INLINE>
+  </FILE>
+
+  <FILE Run="/bin/bash" Method="remove">
+    <INLINE>
+        BUNDLE_V="&bundleversion;"
+        PLUGIN_V="&version;"
+        NAME="&name;"
+        <![CDATA[
+    # 1. 使用 STOP_ONLY 停止服务：只杀进程，不改配置
+        if [ -x "/usr/local/emhttp/plugins/${NAME}/Daemon.sh" ]; then
+        echo "正在停止 ${NAME} 服务并保留自启动的设置..."
+        /usr/local/emhttp/plugins/${NAME}/Daemon.sh "STOP_ONLY" >/dev/null 2>&1
+            sleep 2
+        fi
+
+    # 2. 清理其他进程逻辑 (保持不变)
+        echo "清理残留进程..."
+        pkill -f "filebrowser_quantumorig" >/dev/null 2>&1
+        pkill -f "log_stream.php" >/dev/null 2>&1
+        pkill -f "tail -n 50 -f" >/dev/null 2>&1
+        
+        # 3. 删除系统路径下的二进制文件和链接
+        rm -f /usr/sbin/filebrowser_quantumorig
+        rm -f /usr/sbin/filebrowser_quantum
+        removepkg ${NAME}-${BUNDLE_V}-x86_64 >/dev/null 2>&1
+        rm -f /var/lib/pkgtools/packages/${NAME}-*
+        rm -rf /usr/local/emhttp/plugins/${NAME}
+        echo "正在清理 U 盘上的插件功能包..."
+        rm -f /boot/config/plugins/${NAME}/install/${NAME}-${BUNDLE_V}-x86_64.txz
+        echo ""
+        echo "-----------------------------------------------------------"
+        echo "${NAME} ${PLUGIN_V} 卸载成功！"
+        echo "${NAME}二进制主程序文件仍保留在U盘"
+        echo "-----------------------------------------------------------"
+        echo ""
+        ]]>
+    </INLINE>
+  </FILE>
+
+</PLUGIN>
