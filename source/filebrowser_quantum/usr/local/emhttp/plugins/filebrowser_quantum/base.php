@@ -2,23 +2,8 @@
 // 1. 找到唯一的来源
 $conf = "/usr/local/emhttp/plugins/filebrowser_quantum/paths.conf";
 $paths = file_exists($conf) ? parse_ini_file($conf) : [];
-
-// --- 增强解析：支持 ${VAR} 变量替换 ---
-if (!empty($paths)) {
-    foreach ($paths as $key => $value) {
-        $limit = 5; // 防止死循环
-        while (strpos($paths[$key], '${') !== false && $limit-- > 0) {
-            foreach ($paths as $k => $v) {
-                // 只有当依赖变量已解析（不含 ${）时才替换，或者简单的全量替换
-                // 这里采用简单全量替换，依赖 paths.conf 定义顺序
-                $paths[$key] = str_replace('${'.$k.'}', $v, $paths[$key]);
-            }
-        }
-    }
-}
-
 $DAEMON_SCRIPT = $paths['DAEMON_SCRIPT'] ?? "/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh";
-// 2. 变量同步
+// 2. 变量同步（将 Bash 变量名转为 PHP 变量名，兼容旧代码）
 $BINARY        = $paths['BINARY']        ?? "/usr/sbin/filebrowser_quantumorig";
 $PLG_PATH      = $paths['PLG_PATH']      ?? "/boot/config/plugins/filebrowser_quantum";
 $CONFIG_YAML   = $paths['CONFIG_YAML']   ?? "$PLG_PATH/config.yaml";
