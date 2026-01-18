@@ -116,24 +116,6 @@ function clearLog() {
 }
 
 // branch 切换逻辑: 单选按钮
-// 语义化版本比较函数 (SemVer)
-// 返回值: 1 (v1 > v2), -1 (v1 < v2), 0 (相等)
-function compareVersions(v1, v2) {
-    if (!v1 || !v2) return 0;
-    
-    // 移除 'v' 前缀
-    var s1 = v1.replace(/^v/, '').split('.').map(Number);
-    var s2 = v2.replace(/^v/, '').split('.').map(Number);
-    
-    for (var i = 0; i < Math.max(s1.length, s2.length); i++) {
-        var n1 = s1[i] || 0;
-        var n2 = s2[i] || 0;
-        if (n1 > n2) return 1;
-        if (n1 < n2) return -1;
-    }
-    return 0;
-}
-
 // branch 切换逻辑: 单选按钮 (防抖优化版)
 let changeBranchTimer = null;
 function changeBranch(value) {
@@ -153,9 +135,7 @@ function changeBranch(value) {
         $.post("/plugins/filebrowser_quantum/ajax_version.php", { branch: value }, function(data) {
             const latestVer = data.trim();
             latestText.text(latestVer).css("opacity", "1");
-            
-            // 使用 SemVer 比较逻辑: 只有当 latestVer > currentVer 时才允许更新
-            if (latestVer !== "Unknown" && latestVer !== "" && compareVersions(latestVer, currentVer) > 0) {
+            if (latestVer !== "Unknown" && latestVer !== "" && latestVer !== currentVer) {
                 updateBtn.prop("disabled", false);
                 updateBtn.attr("onclick", "updatefilebrowser_quantum('" + value + "')");
             } else {
@@ -239,37 +219,20 @@ $log_level = isset($_POST['log_level']) ? $_POST['log_level'] : 'all';
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     $new_content = $_POST['config_text'];
     $daemon_path = "/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh";
-    
-    // [新增] YAML 语法预检
-    // Unraid 默认已安装 Python3 和 PyYAML，利用它们进行严格校验
-    $temp_file = tempnam(sys_get_temp_dir(), 'fq_yaml_');
-    file_put_contents($temp_file, $new_content);
-    $cmd = "python3 -c 'import yaml; yaml.safe_load(open(\"$temp_file\"))' 2>&1";
-    exec($cmd, $output, $return_var);
-    unlink($temp_file); // 清理临时文件
-    
-    if ($return_var !== 0) {
-        // 验证失败：阻止保存并弹窗
-        // 处理 Python 报错信息，只保留关键部分，防止弹窗过大
-        $error_msg = json_encode(array_slice($output, -3)); 
-        echo "<script>alert('❌ 配置保存失败：YAML 语法错误！\\n请检查缩进或格式。\\n详细错误：' + $error_msg);</script>";
-    } else {
-        // 验证通过：执行保存
-        if (file_put_contents($CONFIG_YAML, $new_content) !== false) {
-            // 依然检测进程，确保用户改完配置后能即时生效（使用 escapeshellarg 防止命令注入）
-            $safe_binary_name = escapeshellarg(basename($BINARY));
-            $is_running = !empty(exec("pgrep -f $safe_binary_name"));
-            $is_enabled = ($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1');
-            if ($is_enabled || $is_running) {
-                exec("bash $daemon_path 'false' > /dev/null 2>&1");
-                sleep(2);
-                exec("bash $daemon_path 'true' > /dev/null 2>&1");
-                echo "<script>alert('✅ 验证通过：配置已保存并重启服务！'); window.location.href=window.location.href;</script>";
-            } else {
-                echo "<script>alert('✅ 验证通过：配置已保存！'); window.location.href=window.location.href;</script>";
-            }
-            exit;
+    if (file_put_contents($CONFIG_YAML, $new_content) !== false) {
+        // 依然检测进程，确保用户改完配置后能即时生效（使用 escapeshellarg 防止命令注入）
+        $safe_binary_name = escapeshellarg(basename($BINARY));
+        $is_running = !empty(exec("pgrep -f $safe_binary_name"));
+        $is_enabled = ($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1');
+        if ($is_enabled || $is_running) {
+            exec("bash $daemon_path 'false' > /dev/null 2>&1");
+            sleep(2);
+            exec("bash $daemon_path 'true' > /dev/null 2>&1");
+            echo "<script>alert('配置已保存并重启服务！'); window.location.href=window.location.href;</script>";
+        } else {
+            echo "<script>alert('配置已保存！'); window.location.href=window.location.href;</script>";
         }
+        exit;
     }
 }
 // ========================================================
