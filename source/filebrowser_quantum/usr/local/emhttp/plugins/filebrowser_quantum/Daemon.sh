@@ -75,19 +75,6 @@ log_msg() {
     else
         echo "${prefix} ${msg}" | tee >(logger -t "$TAG")
     fi
-    else
-        echo "${prefix} ${msg}" | tee >(logger -t "$TAG")
-    fi
-}
-
-# 辅助函数：获取配置端口
-get_config_port() {
-    if [ -f "$CONFIG_YAML" ]; then
-        local port=$(grep -E '^port:|^  port:' "$CONFIG_YAML" | head -n 1 | awk -F: '{print $2}' | tr -d '" ' | tr -d "'")
-        echo "${port:-${DEFAULT_PORT:-8081}}"
-    else
-        echo "${DEFAULT_PORT:-8081}"
-    fi
 }
 
 # --- 1. 处理启动逻辑 (true 或 START_ONLY) ---
@@ -138,25 +125,13 @@ elif [ "${1}" == "false" ] || [ "${1}" == "STOP_ONLY" ]; then
 
 # --- 3. 获取端口 (供 WebUI 按钮使用) ---
 elif [ "${1}" == "GET_PORT" ]; then
-    get_config_port
-    exit 0
-
-# --- 3.1 健康检查 ---
-elif [ "${1}" == "HEALTH_CHECK" ]; then
-    PORT=$(get_config_port)
-    # 尝试访问根路径，只检查 HTTP 状态码是否为 200-399
-    # -s: 静默模式
-    # -o /dev/null: 丢弃输出
-    # -w "%{http_code}": 只输出状态码
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT")
-    
-    if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]] || [[ "$HTTP_CODE" =~ ^3[0-9][0-9]$ ]]; then
-        echo "Healthy (HTTP $HTTP_CODE)"
-        exit 0
+    if [ -f "$CONFIG_YAML" ]; then
+        PORT=$(grep -E '^port:|^  port:' "$CONFIG_YAML" | head -n 1 | awk -F: '{print $2}' | tr -d '" ' | tr -d "'")
+        echo "${PORT:-${DEFAULT_PORT:-8081}}"
     else
-        echo "Unhealthy (HTTP $HTTP_CODE)"
-        exit 1
+        echo "${DEFAULT_PORT:-8081}"
     fi
+    exit 0
 
 # --- 4. 获取本地版本号 ---
 elif [ "${1}" == "GET_LOCAL_VER" ]; then
