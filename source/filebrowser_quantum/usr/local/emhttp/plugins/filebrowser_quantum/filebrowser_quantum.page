@@ -352,7 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 <div class="row">
 
     <div class="column left">
-        <h2>Status :</h2>
+        <h2>Version :</h2>
         <div class="status-box" style="border-left: 4px solid #51aee5; margin-bottom: 10px;">
             <div style="color: #666; margin-bottom: 4px;">已安装: <b class="current_ver_text" style="color:#1a17d6; margin-left:4px;"><?=trim($currentversion)?></b></div>
             <div style="color: #666;">最新版: <b id="latest_ver_val" style="color:#eb2b2b; margin-left:4px;"><?=trim($latestversion)?></b></div>
@@ -373,7 +373,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 
         <hr style="width: 100%; max-width: 170px; margin: 15px 0; border: 0; border-top: 1px solid #eee;">
 
-        <h2>Service :</h2>
+        <h2>Status :</h2>
         <div id="service_status_container" class="status-box" style="border-left: 4px solid <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>; margin-bottom: 10px;">
             <div id="service_status_label" style="font-weight: bold; color: <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>;">
                 <span><?= !empty($webui_pid) ? '● RUNNING' : '○ STOPPED' ?></span>
