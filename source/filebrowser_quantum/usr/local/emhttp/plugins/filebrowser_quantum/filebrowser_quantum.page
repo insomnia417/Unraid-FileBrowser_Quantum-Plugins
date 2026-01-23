@@ -30,6 +30,7 @@ function webui(form) {
     const statusLabel = $("#service_status_label");
     const statusDot = $("#status_dot");
     const statusText = $("#status_text");
+    const portValue = $("#port_value");
     
     // 即时反馈逻辑：让用户点击后立刻看到UI变化
     if (state === "true") {
@@ -37,11 +38,13 @@ function webui(form) {
         statusLabel.css("color", "#4caf50");
         statusDot.text("●");
         statusText.text("STARTING...");
+        portValue.css("color", "#4caf50");
     } else {
         container.css("border-left-color", "#f44336");
         statusLabel.css("color", "#f44336");
         statusDot.text("○");
         statusText.text("STOPPING...");
+        portValue.css("color", "#999");
     }
     
     openBox('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh&arg1='+state,"filebrowser_quantum WebUI",450,800,true);
@@ -109,7 +112,7 @@ function stopLogTail() {
 function clearLog() {
     if (confirm('确定要清空所有日志内容吗？')) {
         $.post(window.location.href, { clear_log_ajax: "1" }, function() {
-            $(".log-area").html("");
+            $(".log-area").html("<b style='color:gray;'>[System] 日志已清空，正在等待新日志产生...</b><br>");
             // 清空后不需要重启 startLogTail，因为 tail -f 会自动感知文件变动
         });
     }
@@ -175,9 +178,7 @@ $logfile = getLogPath($CONFIG_YAML);
 
 // --- B. 处理清空日志请求 (AJAX 专属逻辑) ---
 if (isset($_POST['clear_log_ajax'])) {
-    if (file_exists($logfile)) {
-        file_put_contents($logfile, ""); // 清空文件内容
-    }
+    if (file_exists($logfile)) {file_put_contents($logfile, ""); } // 清空文件内容
     // 关键：直接退出，不要让 PHP 继续往下执行 HTML 渲染
     echo "success"; 
     exit;
@@ -377,7 +378,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
             <div id="service_status_label" style="font-weight: bold; color: <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>;">
                 <span><?= !empty($webui_pid) ? '● RUNNING' : '○ STOPPED' ?></span>
             </div>
-            <div style="color: #999; margin-top:4px;">PORT: <strong style="color:#666;"><?= $dynamic_port ?></strong></div>
+            <div style="color: #999; margin-top:4px;">PORT: <strong id="port_value" style="color: <?= !empty($webui_pid) ? '#4caf50' : '#666' ?>;"><?= $dynamic_port ?></strong></div>
         </div>
 
         <form action="" method="post" style="margin:0;">
