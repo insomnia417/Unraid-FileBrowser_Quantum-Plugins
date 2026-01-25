@@ -111,15 +111,21 @@
             echo "正在下载默认配置..."
             if ! curl -fsSL --connect-timeout 10 --retry 3 -o "/boot/config/plugins/${NAME}/config.yaml" "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/${BRANCH}/config.yaml"; then
                 echo "下载失败，正在生成本地默认配置..."
-### 保底 config.yaml
+### ----------保底 config.yaml
 cat <<EOF > "/boot/config/plugins/${NAME}/config.yaml"
 server:
   port: 8081
   baseURL: "/"
-logging:
-  levels: ["info", "error"]
+  internalUrl: "" 
+  database: "/boot/config/plugins/filebrowser_quantum/database.db"
+  logging:
+    - levels: "info|debug|warning|error"
+      output: "/var/log/filebrowser_quantum.log"
+  sources:
+    - path: "/"
+      name: "Root Dir"
 EOF
-###
+### ----------
             fi
         fi
 
