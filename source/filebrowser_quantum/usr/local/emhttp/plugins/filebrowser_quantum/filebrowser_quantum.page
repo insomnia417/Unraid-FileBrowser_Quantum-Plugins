@@ -19,44 +19,46 @@ Icon="filebrowser_quantum.png"
 > To setup filebrowser_quantum for the first time execute the command `filebrowser_quantum config` in command line.
 
 <script>
+// v14.8 - 逻辑精简优化版
+var originalServiceState = "";
+var evtSource = null; // 统一定义在顶部
+
 function updatefilebrowser_quantum(branch) {
-   var path = "/usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh"
-   openBox('/usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh&arg1='+path+'&arg2='+branch,"Update filebrowser_quantum",450,800,true);
+    var path = "/usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh"
+    openBox('/usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh&arg1='+path+'&arg2='+branch,"Update filebrowser_quantum",450,800,true);
 }
 
-function webui(form) {
-    var state = document.getElementById('webui_status_hidden').value;
+// UI 视觉控制中心：负责所有颜色、文字、按钮的显示
+function webui(form, forceState = null) { 
+    if (!form) form = $("form").has('input[value="APPLY"]');
+    var state = forceState || document.getElementById('webui_status_hidden').value;
     const container = $("#service_status_container");
     const statusLabel = $("#service_status_label");
-    const statusDot = $("#status_dot");
-    const statusText = $("#status_text");
+    const statusSpan = $("#service_status_label span"); 
     const portValue = $("#port_value");
+    const applyBtn = $(form).find('input[value="APPLY"]');
     
-    // 即时反馈逻辑：让用户点击后立刻看到UI变化
     if (state === "true") {
+        // 运行态：全员变绿
         container.css("border-left-color", "#4caf50");
         statusLabel.css("color", "#4caf50");
-        statusDot.text("●");
-        statusText.text("STARTING...");
+        statusSpan.text("● RUNNING").css("color", "#4caf50");
         portValue.css("color", "#4caf50");
+        if ($(".localURL").length === 0) {
+            $('<input type="button" class="localURL" value="OPEN WEBUI" />')
+                .attr("onclick", "window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')")
+                .insertAfter(applyBtn);
+        }
     } else {
         container.css("border-left-color", "#f44336");
         statusLabel.css("color", "#f44336");
-        statusDot.text("○");
-        statusText.text("STOPPING...");
+        statusSpan.text("○ STOPPED").css("color", "#f44336");
         portValue.css("color", "#999");
+        $(".localURL").remove();
     }
-    
-    openBox('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh&arg1='+state,"filebrowser_quantum WebUI",450,800,true);
-    
-    $(window).once('focus', function() {
-        window.location.reload();
-    });
 }
 
 // v2.0.3 - SSE Logic
-var evtSource = null;
-
 function startLogTail() {
     // 1. 彻底切断旧连接
     stopLogTail(); 
@@ -138,14 +140,14 @@ function changeBranch(value) {
     });
 }
 
-// v2.1.3 适配 Radio 的 Service 切换
+// 适配 Radio 的 Service 切换
 function toggleService(value) {
-    const applyBtn = $("input[name='apply_btn']");
+    const applyBtn = $("input[value='APPLY']"); // 精确匹配按钮
     const hiddenInput = $("#webui_status_hidden");
     
     hiddenInput.val(value);
 
-    // 只有当用户改变了当前状态时，才激活 APPLY 按钮
+    // 逻辑修复：如果选中的值和 originalServiceState（当前运行状态）不同，才允许点击
     if (value !== originalServiceState) {
         applyBtn.prop("disabled", false).addClass("submit");
     } else {
@@ -224,6 +226,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
     }
 }
 // ========================================================
+
+if (isset($_POST['is_ajax_apply']) && $_POST['is_ajax_apply'] == "true") {
+    $enabled = $_POST['filebrowser_ENABLED'];
+    // 这里的逻辑和你原来的 shell_exec 保持一致，但加了 > /dev/null & 确保它后台运行不阻塞
+    shell_exec("/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh " . escapeshellarg($enabled) . " > /dev/null 2>&1 &");
+    exit; // 关键！直接结束 PHP，不输出 HTML，这就是前后端分离的“静默处理”
+}
 
 ?>
 
@@ -391,8 +400,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
                 </label>
             </div>
             
-            <input type="hidden" id="webui_status_hidden" name="webui_status" value="<?= $current_enabled ?>">            
-            <input type="button" name="apply_btn" value="APPLY" disabled onclick="webui(this.form)">
+            <input type="hidden" id="webui_status_hidden" name="webui_status" value="<?= $current_enabled ?>">      
+            <input type="button" value="APPLY" onclick="applyService(this.form)">
             <? if (!empty($webui_pid)): ?>
             <input type="button" class="localURL" value="OPEN WEBUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
             <? endif; ?>
@@ -476,22 +485,61 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
 </html>
 
 <script>
-var originalServiceState = "";
 
 function setDefault(form) {
   form.elements['config_text'].value = <?=json_encode($default_config_text);?>;
 }
 // 自动滚动逻辑：仅在页面加载完成后执行一次
 $(document).ready(function() {
-    // 1. 初始化原始状态（此时 PHP 变量 $current_enabled 肯定已经定义好了）
     originalServiceState = "<?= $current_enabled ?>";
-    
-    // 2. 日志自动滚动逻辑
-    var logArea = document.querySelector('.log-area');
-    if (logArea) {
-        logArea.scrollTop = logArea.scrollHeight;
-    }
-    
-    console.log("Service 初始状态已锁定为: " + originalServiceState);
+    toggleService(originalServiceState); 
+    startLogTail();
+    // 初始化颜色
+    webui(null, originalServiceState);
 });
+
+$(window).on('beforeunload', function() {
+    stopLogTail();
+});
+
+function applyService(form) {
+    const applyBtn = $(form).find('input[value="APPLY"]');
+    const statusSpan = $("#service_status_label span");
+    const container = $("#service_status_container");
+    const portValue = $("#port_value");
+    const enabledValue = document.getElementById('webui_status_hidden').value;
+    if (enabledValue === originalServiceState) return; 
+
+    // 1. 点击瞬间：全员变灰 (PROCESSING 状态)
+    applyBtn.prop('disabled', true).val('PROCESSING...');
+    statusSpan.text('● PROCESSING...').css("color", "#999"); 
+    portValue.css("color", "#999"); 
+    container.css("border-left-color", "#ccc");
+    
+    // --- 2. 异步请求 ---
+    $.post(window.location.href, { "filebrowser_ENABLED": enabledValue, "is_ajax_apply": "true" });
+
+    // --- 3. 轮询检测 ---
+    let checkTimer = setInterval(function() {
+        $.get(window.location.href, function(data) {
+            const newState = $(data).find('#webui_status_hidden').val();
+            
+            if (newState !== originalServiceState) {
+                clearInterval(checkTimer);
+                originalServiceState = newState;
+                
+                // 恢复按钮文字
+                applyBtn.val('APPLY'); 
+                
+                // 更新隐藏域和按钮禁用逻辑
+                toggleService(newState); 
+                
+                // 【核心修复】呼叫唯一的颜色管理中心，并强制传入新状态
+                webui(form, newState); 
+                console.log("UI 已恢复，当前状态: " + newState);
+            }
+        });
+    }, 2000);
+}
+
 </script>
