@@ -55,7 +55,6 @@ if ($action == 'save_config') {
     $is_running = ($running_output === 'running');
     
     $restarted = false;
-    $error_output = '';
     
     // Logic: If either enabled or running, we need to restart to apply new config
     if ($is_enabled || $is_running) {
@@ -64,14 +63,14 @@ if ($action == 'save_config') {
          
          // 2. Only start if enabled
          if ($is_enabled) {
-             // Fully delegate start (Daemon.sh has its own 5s verification loop)
+             // Fully delegate start (Daemon.sh now has its own 5s path-accurate loop)
              exec("bash $DAEMON_SCRIPT 'START_ONLY' 2>&1", $shell_out, $return_var);
              
              // Check Daemon.sh exit code (0 = Success, 1 = Failed)
              if ($return_var === 0) {
                  $restarted = true;
              } else {
-                 // Startup FAILED - Daemon.sh handles logging to syslog, but we grab log file for UI
+                 // Startup FAILED
                  $logfile = getLogPath($CONFIG_YAML);
                  $log_snippet = "";
                  if (file_exists($logfile)) {
@@ -80,7 +79,7 @@ if ($action == 'save_config') {
                  }
                  
                  $shell_msg = implode("\n", $shell_out);
-                 $combined_err = "--- [Binary Log] ---\n" . ($log_snippet ?: "No logs found.") . "\n\n--- [Daemon Output] ---\n" . ($shell_msg ?: "No output.");
+                 $combined_err = "--- [Binary Log] ---\n" . ($log_snippet ?: "No logs.") . "\n\n--- [Daemon Output] ---\n" . ($shell_msg ?: "No output.");
                  
                  sendResponse(false, ['restarted' => false, 'log' => $combined_err], 'Config saved, but Service failed to start. Binary rejected the configuration.');
              }
@@ -95,7 +94,7 @@ if ($action == 'get_status') {
     
     $port = exec($DAEMON_SCRIPT . ' "GET_PORT"');
     
-    // Delegation: Use Daemon.sh as single source of truth for process status
+    // Delegation: Single Source of Truth
     $running_output = trim(shell_exec("bash $DAEMON_SCRIPT 'CHECK'"));
     $running = ($running_output === 'running');
     
@@ -185,23 +184,22 @@ function isValidYamlSyntax($content) {
         
         // YAML Key-Value check
         if (strpos($trim, ':') !== false) {
-             // Enhanced: Catch boolean typos (like 'tr', 'fa', 'truesfff')
+             // Enhanced: Catch boolean typos (like 't', 'tr', 'f', 'fa', 'ye', 'no')
              // 1. Matches "key: value" (with space)
              if (preg_match('/:\s+([^#\s]+)/', $trim, $matches)) {
                  $val = strtolower($matches[1]);
                  $valid_standard = ['true', 'false', 'yes', 'no', 'on', 'off'];
                  
-                 // If it starts with common boolean prefixes but isn't a valid full word
-                 if (preg_match('/^(tr|fa|ye|no)/', $val) && !in_array($val, $valid_standard)) {
+                 // Catch any keyword that starts like a boolean but isn't one
+                 if (preg_match('/^(t|f|y|n)/', $val) && !in_array($val, $valid_standard)) {
                      return "YAML Error (Line " . ($i + 1) . "): Invalid keyword '$val'. Did you mean 'true' or 'false'?";
                  }
              } 
-             // 2. Matches "key:value" (Invalid YAML mapping, usually a string typo)
+             // 2. Matches "key:value" (Missing space)
              elseif (preg_match('/:([^\s#]+)/', $trim, $matches)) {
                  $val = $matches[1];
-                 // If the value after colon is likely meant to be a boolean but missing space
                  if (in_array(strtolower($val), ['true', 'false', 'yes', 'no'])) {
-                     return "YAML Error (Line " . ($i + 1) . "): Missing space after colon. YAML requires 'key: $val' instead of 'key:$val'.";
+                     return "YAML Error (Line " . ($i + 1) . "): Missing space after colon. YAML requires 'key: $val'.";
                  }
              }
              continue;
