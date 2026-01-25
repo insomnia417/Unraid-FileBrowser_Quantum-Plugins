@@ -10,6 +10,7 @@ $PLG_PATH      = $paths['PLG_PATH']      ?? "/boot/config/plugins/filebrowser_qu
 $CONFIG_YAML   = $paths['CONFIG_YAML']   ?? "$PLG_PATH/config.yaml";
 $SETTINGS_FILE = $paths['SETTINGS_FILE'] ?? "$PLG_PATH/settings.cfg";
 $INSTALL_PATH  = $paths['INSTALL_PATH']  ?? "$PLG_PATH/install";
+$YQ_BINARY     = $paths['YQ_BINARY']     ?? "/usr/sbin/yq";
 
 /**
  * 读取 settings.cfg 中的配置项
