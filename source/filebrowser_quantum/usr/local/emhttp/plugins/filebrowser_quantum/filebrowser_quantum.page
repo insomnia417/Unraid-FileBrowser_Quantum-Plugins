@@ -261,7 +261,7 @@ var currentBranch = "1";
 var evtSource = null;
 var defaultConfigText = "";
 var serverAddress = "<?= $_SERVER['SERVER_ADDR'] ?>"; // PHP 注入最小化: 仅保留服务器地址
-var apiBase = "/usr/local/emhttp/plugins/filebrowser_quantum/api_config.php";
+var apiBase = "/plugins/filebrowser_quantum/api_config.php";
 
 // --- 初始化入口 ---
 $(document).ready(function() {
