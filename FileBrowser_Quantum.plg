@@ -1,8 +1,8 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
   <!ENTITY branch "test">
-  <!ENTITY version "2026.01.04">
-  <!ENTITY bundleversion "2026.01.04">
+  <!ENTITY version "2026.01.26">
+  <!ENTITY bundleversion "2026.01.26">
   <!ENTITY author "insomnia417">
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY launch "Settings/filebrowser_quantum">
@@ -16,7 +16,8 @@
 <CHANGES>
 ### &name;
 #### 🆕 最新更新 (v&version;)
-- **逻辑优化**：启停逻辑更顺畅,不再弹窗.
+- **配置整合**：将分散的配置文件统一到 settings.cfg。
+- **逻辑优化**：启停逻辑更顺畅,不再弹窗。
 
 #### 📜 历史改进
 - **逻辑优化**：UI界面美化调整，修复端口颜色不变的问题，更易用。
@@ -47,7 +48,50 @@
         <![CDATA[
         GITHUB_REPO="gtsteffaniak/filebrowser"
         INSTALL_PATH="/boot/config/plugins/${NAME}/install"
+        SETTINGS_FILE="/boot/config/plugins/${NAME}/settings.cfg"
+        DAEMON_SCRIPT="/usr/local/emhttp/plugins/${NAME}/Daemon.sh"
+        
         mkdir -p "$INSTALL_PATH"
+
+        # === 辅助函数：读取 settings.cfg ===
+        get_setting() {
+            local key="$1"
+            local default="$2"
+            if [ -f "$SETTINGS_FILE" ]; then
+                local val=$(grep "^${key}=" "$SETTINGS_FILE" | cut -d'=' -f2 | tr -d '"')
+                echo "${val:-$default}"
+            else
+                echo "$default"
+            fi
+        }
+
+        # === 辅助函数：写入 settings.cfg ===
+        set_setting() {
+            local key="$1"
+            local value="$2"
+            [ ! -f "$SETTINGS_FILE" ] && touch "$SETTINGS_FILE"
+            
+            if grep -q "^${key}=" "$SETTINGS_FILE"; then
+                sed -i "/^${key}=/c\\${key}=\"${value}\"" "$SETTINGS_FILE"
+            else
+                echo "${key}=\"${value}\"" >> "$SETTINGS_FILE"
+            fi
+        }
+
+        # === 迁移旧 beta 标记文件 ===
+        if [ -f "$INSTALL_PATH/beta" ]; then
+            echo "检测到旧版 beta 标记文件，正在迁移..."
+            set_setting "filebrowser_BRANCH" "beta"
+            rm -f "$INSTALL_PATH/beta"
+        fi
+
+        # === 迁移旧 latest 标记文件 ===
+        if [ -f "$INSTALL_PATH/latest" ]; then
+            echo "检测到旧版 latest 标记文件，正在迁移..."
+            OLD_LATEST=$(cat "$INSTALL_PATH/latest")
+            set_setting "filebrowser_LATEST" "$OLD_LATEST"
+            rm -f "$INSTALL_PATH/latest"
+        fi
 
         # 1. 寻找本地缓存
         LOCAL_BINARY=$(ls -t $INSTALL_PATH/${NAME}-v* 2>/dev/null | head -n 1)
@@ -66,7 +110,10 @@
                 echo "警告：无法连接 GitHub API，将使用保底版本号..."
                 current_version="v1.1.0-stable"
             else
-                if [ -f $INSTALL_PATH/beta ]; then
+                # 从 settings.cfg 读取分支
+                CURRENT_BRANCH=$(get_setting "filebrowser_BRANCH" "stable")
+                
+                if [ "$CURRENT_BRANCH" == "beta" ]; then
                     current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
                     echo "Beta mode detected. Target version: $current_version"
                     [ -z "$current_version" ] && current_version="v1.1.6-beta"
@@ -92,26 +139,25 @@
             fi
         fi
 
-        # --- [2. 核心校验：如果到这步还没文件，才报错退出] ---
+        # 核心校验
         if [ ! -f /usr/sbin/filebrowser_quantumorig ]; then
-            echo "安装失败：无法获取二进制文件（联网失败且无本地缓存）"
+            echo "安装失败：无法获取二进制文件"
             removepkg ${NAME}-${BUNDLE_V}-x86_64 >/dev/null
             exit 1
         fi
 
-        # --- [3. 后勤处理：赋权、配置、清理] ---
+        # 后勤处理
         chown root:root /usr/sbin/filebrowser_quantumorig
         chmod 755 /usr/sbin/filebrowser_quantumorig
         chown -R root:root /usr/local/emhttp/plugins/${NAME}
         chmod +x /usr/local/emhttp/plugins/${NAME}/*.sh
         chmod 644 /usr/local/emhttp/plugins/${NAME}/*.php
 
-        # 下载默认 config.yaml (如果缺失)
+        # 下载默认 config.yaml
         if [ ! -f "/boot/config/plugins/${NAME}/config.yaml" ]; then
             echo "正在下载默认配置..."
             if ! curl -fsSL --connect-timeout 10 --retry 3 -o "/boot/config/plugins/${NAME}/config.yaml" "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/${BRANCH}/config.yaml"; then
                 echo "下载失败，正在生成本地默认配置..."
-### ----------保底 config.yaml
 cat <<EOF > "/boot/config/plugins/${NAME}/config.yaml"
 server:
   port: 8081
@@ -128,36 +174,33 @@ EOF
             fi
         fi
 
-        # settings.cfg
-        if [ ! -f /boot/config/plugins/${NAME}/settings.cfg ]; then
-            echo "首次安装，初始化默认开启配置。"
-            echo "filebrowser_ENABLED=true" > /boot/config/plugins/${NAME}/settings.cfg
-        else
-            echo "检测到已有配置文件，正在保持原有设置..."
+        # 初始化 settings.cfg
+        if [ ! -f "$SETTINGS_FILE" ]; then
+            echo "首次安装，初始化默认配置。"
+            set_setting "filebrowser_ENABLED" "true"
+            set_setting "filebrowser_BRANCH" "stable"
         fi
 
-        # 智能清理：保留当前 txz 和当前 binary
+        # 智能清理
         echo "正在清理旧的安装文件..."
         find "$INSTALL_PATH" -name "${NAME}-*.txz" ! -name "${NAME}-${BUNDLE_V}-x86_64.txz" -delete
         if [ -n "$INSTALLED_BINARY" ]; then
             find "$INSTALL_PATH" -name "${NAME}-v*" ! -name "$(basename "$INSTALLED_BINARY")" -delete
         fi
 
-        # --- [3. 核心：根据配置状态决定是否拉起服务] ---
-        # 使用 grep 提取当前的使能状态 (true/false)
-        ENABLE_STATE=$(grep -oP 'filebrowser_ENABLED=\K\w+' /boot/config/plugins/${NAME}/settings.cfg)
+        # 根据配置状态启动服务
+        ENABLE_STATE=$(get_setting "filebrowser_ENABLED" "false")
 
         if [ "$ENABLE_STATE" == "true" ]; then
             echo "配置状态为 [启用]，正在启动 FileBrowser 守护进程..."
-            # 使用 v2.0.6 Daemon.sh 的 START_ONLY 参数：静默启动进程，不写磁盘
-            /usr/local/emhttp/plugins/${NAME}/Daemon.sh "START_ONLY"
+            "$DAEMON_SCRIPT" "START_ONLY"
             echo "● Filebrowser_Quantum 已在后台启动"
         else
             echo "配置状态为 [禁用]，跳过自动启动。"
         fi
 
         # 刷新远程版本号缓存
-        /usr/local/emhttp/plugins/${NAME}/Daemon.sh "VERSION"
+        "$DAEMON_SCRIPT" "VERSION"
 
         echo ""
         echo "${NAME} ${PLUGIN_V} 安装成功！"
@@ -197,20 +240,19 @@ EOF
         PLUGIN_V="&version;"
         NAME="&name;"
         <![CDATA[
-    # 1. 使用 STOP_ONLY 停止服务：只杀进程，不改配置
-        if [ -x "/usr/local/emhttp/plugins/${NAME}/Daemon.sh" ]; then
-        echo "正在停止 ${NAME} 服务并保留自启动的设置..."
-        /usr/local/emhttp/plugins/${NAME}/Daemon.sh "STOP_ONLY" >/dev/null 2>&1
+        DAEMON_SCRIPT="/usr/local/emhttp/plugins/${NAME}/Daemon.sh"
+        
+        if [ -x "$DAEMON_SCRIPT" ]; then
+            echo "正在停止 ${NAME} 服务..."
+            "$DAEMON_SCRIPT" "STOP_ONLY" >/dev/null 2>&1
             sleep 2
         fi
 
-    # 2. 清理其他进程逻辑 (保持不变)
         echo "清理残留进程..."
         pkill -f "filebrowser_quantumorig" >/dev/null 2>&1
         pkill -f "log_stream.php" >/dev/null 2>&1
         pkill -f "tail -n 50 -f" >/dev/null 2>&1
         
-        # 3. 删除系统路径下的二进制文件和链接
         rm -f /usr/sbin/filebrowser_quantumorig
         rm -f /usr/sbin/filebrowser_quantum
         removepkg ${NAME}-${BUNDLE_V}-x86_64 >/dev/null 2>&1
