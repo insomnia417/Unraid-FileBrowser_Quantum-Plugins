@@ -66,46 +66,23 @@ function updateServiceUI(isRunning, port) {
 /**
  * Real-time YAML validation (mirrors PHP logic)
  */
-function validateYamlRealtime(content) {
-    const errors = [];
-    const lines = content.split('\n');
-    
-    lines.forEach((line, i) => {
-        const trim = line.trim();
-        if (!trim) return; // Empty line OK
-        if (trim.startsWith('#')) return; // Comment OK
-        if (trim.startsWith('-')) return; // List item OK
-        if (trim.includes(':')) return; // Key-value OK
-        
-        errors.push({ line: i + 1, message: `"${trim.substring(0, 30)}..." is invalid` });
-    });
-    
-    // Tab check
-    if (content.includes('\t')) {
-        errors.push({ line: 0, message: "Tabs are not allowed in YAML" });
-    }
-    
-    // Required section check
-    if (!content.includes('server:')) {
-        errors.push({ line: 0, message: "Missing required 'server:' section" });
-    }
-    
-    return errors;
-}
-
 /**
- * Display validation result in UI
+ * Real-time YAML validation using backend yq API
  */
-function displayValidationResult(errors) {
-    const statusEl = $("#save_status");
-    const btn = document.getElementById('SAVE_btn');
-    
-    if (errors.length === 0) {
-        statusEl.text("✓ Valid YAML").css("color", "#4caf50").show();
-    } else {
-        const msg = errors.map(e => e.line > 0 ? `Line ${e.line}: ${e.message}` : e.message).join("; ");
-        statusEl.text("✗ " + msg).css("color", "#f44336").show();
-    }
+function triggerValidation() {
+    clearTimeout(validateTimer);
+    validateTimer = setTimeout(function() {
+        const content = $("#config_text").val();
+        
+        $.post("/plugins/filebrowser_quantum/api_config.php?action=validate_config", { content: content }, function(response) {
+            const statusEl = $("#save_status");
+            if (response.success) {
+                statusEl.text("✓ Valid YAML").css("color", "#4caf50").show();
+            } else {
+                statusEl.text("✗ " + response.message).css("color", "#f44336").show();
+            }
+        }, "json");
+    }, 500);
 }
 
 // ============================================================
@@ -301,9 +278,10 @@ function saveConfig() {
     var btn = document.getElementById('SAVE_btn');
     btn.innerText = "SAVING...";
     
-    var postData = "content=" + encodeURIComponent(content);
+    // UI Feedback: Show processing status
+    $("#save_status").text("Saving and verifying startup...").css("color", "gray").show();
     
-    $("#save_status").hide();
+    var postData = "content=" + encodeURIComponent(content);
 
     $.ajax({
         url: "/plugins/filebrowser_quantum/api_config.php?action=save_config",
@@ -331,9 +309,24 @@ function saveConfig() {
                     $("#port_value").text(newPort);
                     $(".localURL").attr("onclick", "window.open('http://' + window.location.hostname + ':" + newPort + "', '_blank')");
                 }
+                
+                // Immediately check status to update RUNNING indicator
+                updateStatusViaAPI();
             } else {
-                $("#save_status").text(response.message).css("color", "#f44336").show();
+                // Error (incl Startup failure)
                 btn.innerText = "SAVE";
+                let errorMsg = response.message;
+                if (response.data && response.data.log) {
+                    // Show startup log in the status area or log area
+                    const logSnippet = response.data.log.trim();
+                    errorMsg += "\n\nBinary Output:\n" + logSnippet;
+                    // Also inject into log-area for better visibility
+                    $(".log-area").prepend("<b style='color:red;'>[Critical] Service fail to start:</b><br><pre style='color:orange;'>" + logSnippet + "</pre><hr>");
+                }
+                $("#save_status").text(errorMsg).css("color", "#f44336").show();
+                
+                // Even on save failure (startup failure), update UI status (will show STOPPED)
+                updateStatusViaAPI();
             }
         },
         error: function(xhr, status, error) {
@@ -342,6 +335,19 @@ function saveConfig() {
         }
     });
 }
+
+/**
+ * Helper to force status sync from API
+ */
+function updateStatusViaAPI() {
+    $.getJSON("/plugins/filebrowser_quantum/api_config.php?action=get_status", function(response) {
+        if (response.success) {
+            const data = response.data;
+            updateServiceUI(data.running, data.port);
+        }
+    });
+}
+
 
 // ============================================================
 // Initialization
