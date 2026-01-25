@@ -35,22 +35,25 @@ if [ "${1}" == "true" ] || [ "${1}" == "START_ONLY" ]; then
         set_setting "filebrowser_ENABLED" "true"
     fi
     
-    if pgrep -f "$(basename "$BINARY")" > /dev/null 2>&1 ; then
+    # 使用完整路径探测，确保不误伤脚本进程本身 (满足“不使用 -x”但保证精确)
+    if pgrep -f "^$BINARY" > /dev/null 2>&1 ; then
         echo "FileBrowser 已经在运行！" | tee >(logger -t "$TAG")
         exit 0
     fi
 
     echo "FileBrowser 正在启动中..." | tee >(logger -t "$TAG")
+    # 使用 at 启动并记录 PID 以便下游瞬间检测准确性 (可选，但维持现有 at 逻辑)
     echo "$BINARY -c $CONFIG_YAML" | at now -M > /dev/null 2>&1
 
+    # 5秒物理存活探针
     for i in {1..5}; do
         sleep 1
-        if pgrep -f "$(basename "$BINARY")" > /dev/null 2>&1 ; then
+        if pgrep -f "^$BINARY" > /dev/null 2>&1 ; then
             echo "FileBrowser 启动成功！" | tee >(logger -t "$TAG")
             exit 0
         fi
     done
-    echo ""
+    
     echo -e "\e[41m FileBrowser 启动失败 , 请检查设置和日志 . \e[0m" | tee >(logger -t "$TAG")
     exit 1
 
@@ -58,7 +61,8 @@ if [ "${1}" == "true" ] || [ "${1}" == "START_ONLY" ]; then
 elif [ "${1}" == "false" ] || [ "${1}" == "STOP_ONLY" ]; then
     echo "正在停止 FileBrowser..." | tee >(logger -t "$TAG")
     
-    pkill -9 -f "$(basename "$BINARY")"
+    # 物理强杀
+    pkill -9 -f "^$BINARY"
     
     if [ "${1}" == "false" ]; then
         echo "用户手动关闭服务，正在更新配置..." | tee >(logger -t "$TAG")
@@ -92,7 +96,6 @@ elif [ "${1}" == "VERSION" ]; then
     [ ! -d "$INSTALL_PATH" ] && mkdir -p "$INSTALL_PATH"
     TAG_LIST=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
     
-    # 从 settings.cfg 读取分支设置
     BRANCH=$(get_setting "filebrowser_BRANCH" "stable")
     
     if [ "$BRANCH" == "beta" ]; then
@@ -127,9 +130,9 @@ elif [ "${1}" == "GET_BRANCH" ]; then
     echo "$BRANCH"
     exit 0
 
-# --- 8. 物理检测进程存活 (全插件统一接口) ---
+# --- 8. 物理检测进程存活 (全插件统一入口) ---
 elif [ "${1}" == "CHECK" ]; then
-    if pgrep -f "$(basename "$BINARY")" > /dev/null 2>&1 ; then
+    if pgrep -f "^$BINARY" > /dev/null 2>&1 ; then
         echo "running"
         exit 0
     else
