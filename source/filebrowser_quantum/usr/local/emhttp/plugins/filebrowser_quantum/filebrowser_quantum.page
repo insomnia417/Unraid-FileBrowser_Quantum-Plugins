@@ -18,228 +18,9 @@ Icon="filebrowser_quantum.png"
 >
 > To setup filebrowser_quantum for the first time execute the command `filebrowser_quantum config` in command line.
 
-<script>
-// v14.8 - 逻辑精简优化版
-var originalServiceState = "";
-var evtSource = null; // 统一定义在顶部
-
-function updatefilebrowser_quantum(branch) {
-    var path = "/usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh"
-    openBox('/usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh&arg1='+path+'&arg2='+branch,"Update filebrowser_quantum",450,800,true);
-}
-
-// UI 视觉控制中心：负责所有颜色、文字、按钮的显示
-function webui(form, forceState = null) { 
-    if (!form) form = $("form").has('input[value="APPLY"]');
-    var state = forceState || document.getElementById('webui_status_hidden').value;
-    const container = $("#service_status_container");
-    const statusLabel = $("#service_status_label");
-    const statusSpan = $("#service_status_label span"); 
-    const portValue = $("#port_value");
-    const applyBtn = $(form).find('input[value="APPLY"]');
-    
-    if (state === "true") {
-        // 运行态：全员变绿
-        container.css("border-left-color", "#4caf50");
-        statusLabel.css("color", "#4caf50");
-        statusSpan.text("● RUNNING").css("color", "#4caf50");
-        portValue.css("color", "#4caf50");
-        if ($(".localURL").length === 0) {
-            $('<input type="button" class="localURL" value="OPEN WEBUI" />')
-                .attr("onclick", "window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')")
-                .insertAfter(applyBtn);
-        }
-    } else {
-        container.css("border-left-color", "#f44336");
-        statusLabel.css("color", "#f44336");
-        statusSpan.text("○ STOPPED").css("color", "#f44336");
-        portValue.css("color", "#999");
-        $(".localURL").remove();
-    }
-}
-
-// v2.0.3 - SSE Logic
-function startLogTail() {
-    // 1. 彻底切断旧连接
-    stopLogTail(); 
-
-    const logArea = document.querySelector('.log-area');
-    // 2. 清空旧日志，给用户直观反馈
-    const logLevel = $("select[name='log_level']").val() || 'all';
-    
-    // 强制清空并显示连接中
-    logArea.innerHTML = "<b style='color:yellow;'>[System] 正在请求 SSE 流 (Level: " + logLevel.toUpperCase() + ")...</b><br>";
-    
-    // 3. 创建新连接（t=时间戳强制刷新缓存）
-    evtSource = new EventSource("/plugins/filebrowser_quantum/log_stream.php?level=" + logLevel + "&t=" + new Date().getTime());
-
-    // [新增] 监听连接成功
-    evtSource.onopen = function() {
-        logArea.innerHTML = "<b style='color:green;'>[System] 实时日志连接成功！</b><br>";
-    };
-
-    evtSource.onmessage = function(e) {
-        if (e.data.trim() === "heartbeat") return;
-        
-        const isAtBottom = logArea.scrollHeight - logArea.scrollTop <= logArea.clientHeight + 80;
-        const newLog = document.createElement("span");
-        newLog.innerHTML = e.data + "<br>"; 
-        logArea.appendChild(newLog);
-
-        if (isAtBottom) {
-            logArea.scrollTop = logArea.scrollHeight;
-        }
-    };
-
-    evtSource.onerror = function(err) {
-        console.warn("SSE 中断");
-        // 只有当不是因为用户手动关闭导致的错误才显示
-        if (evtSource && evtSource.readyState !== 2) { 
-            const statusNode = document.createElement("div");
-            statusNode.innerHTML = "<b style='color:orange;'>[System] 连接已重置，正在尝试重新连接...</b>";
-            logArea.appendChild(statusNode);
-        }
-    };
-}
-
-function stopLogTail() {
-    if (evtSource) {
-        evtSource.close();
-        evtSource = null;
-        console.log("Log stream closed.");
-    }
-}
-
-// 清空日志逻辑，清空后重新连接
-function clearLog() {
-    if (confirm('确定要清空所有日志内容吗？')) {
-        $.post(window.location.href, { clear_log_ajax: "1" }, function() {
-            $(".log-area").html("<b style='color:gray;'>[System] 日志已清空，正在等待新日志产生...</b><br>");
-            // 清空后不需要重启 startLogTail，因为 tail -f 会自动感知文件变动
-        });
-    }
-}
-
-// branch 切换逻辑: 单选按钮
-function changeBranch(value) {
-    const latestText = $("#latest_ver_val");
-    const updateBtn = $("#update_btn_id");
-    const currentVer = $(".current_ver_text").text().trim(); 
-    latestText.css("opacity", "0.5").text("Checking...");
-    updateBtn.prop("disabled", true); 
-    $.post("/plugins/filebrowser_quantum/ajax_version.php", { branch: value }, function(data) {
-        const latestVer = data.trim();
-        latestText.text(latestVer).css("opacity", "1");
-        if (latestVer !== "Unknown" && latestVer !== "" && latestVer !== currentVer) {
-            updateBtn.prop("disabled", false);
-            updateBtn.attr("onclick", "updatefilebrowser_quantum('" + value + "')");
-        } else {
-            updateBtn.prop("disabled", true);
-            updateBtn.removeAttr("onclick"); 
-        }
-    });
-}
-
-// 适配 Radio 的 Service 切换
-function toggleService(value) {
-    const applyBtn = $("input[value='APPLY']"); // 精确匹配按钮
-    const hiddenInput = $("#webui_status_hidden");
-    
-    hiddenInput.val(value);
-
-    // 逻辑修复：如果选中的值和 originalServiceState（当前运行状态）不同，才允许点击
-    if (value !== originalServiceState) {
-        applyBtn.prop("disabled", false).addClass("submit");
-    } else {
-        applyBtn.prop("disabled", true).removeClass("submit");
-    }
-}
-
-// 页面加载后立即启动
-$(document).ready(function() {
-    startLogTail();
-});
-
-// 页面离开或关闭时自动断连 , 管理生命周期
-$(window).on('beforeunload', function() {
-    stopLogTail();
-});
-
-</script>
-
-<?PHP
-// --- A. 路径与基础数据 ---
-// 引入基础定义后，$CONFIG_YAML, $SETTINGS_FILE, $INSTALL_PATH 等变量直接可用
-require_once "/usr/local/emhttp/plugins/filebrowser_quantum/base.php";
-
-$config_text = file_get_contents($CONFIG_YAML); // config.yaml文本
-$default_config_text = $config_text; // 用于 修改conifg.yaml的时候的重置按钮
-
-// 2. 动态解析日志路径 (从 YAML 中提取)
-$logfile = getLogPath($CONFIG_YAML);
-
-// --- B. 处理清空日志请求 (AJAX 专属逻辑) ---
-if (isset($_POST['clear_log_ajax'])) {
-    if (file_exists($logfile)) {file_put_contents($logfile, ""); } // 清空文件内容
-    // 关键：直接退出，不要让 PHP 继续往下执行 HTML 渲染
-    echo "success"; 
-    exit;
-}
-
-// --- C. 更新版本分支逻辑 ---
-$branch = file_exists($BETA_MARKER) ? "2" : "1";
-
-// --- D. 动态数据获取 ---
-$settings = @parse_ini_file($SETTINGS_FILE);
-$raw_enabled = $settings['filebrowser_ENABLED'] ?? 'false';
-$current_enabled = ($raw_enabled === 'true' || $raw_enabled === '1') ? 'true' : 'false';
-$dynamic_port = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_PORT"');
-$currentversion = exec('/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh "GET_LOCAL_VER"');
-// 直接从 settings.cfg 读缓存.只有当第一次安装，缓存完全不存在时才跑一次
-$latestversion = $settings['filebrowser_LATEST'] ?? "Unknown";
-
-if ($latestversion == "Unknown") {
-    $latestversion = exec($DAEMON_SCRIPT . ' "VERSION"');
-}
-// 获取 WebUI 进程 PID
-$webui_pid = exec('pgrep -f "' . basename($BINARY) . '"');
-// 日志初始内容
-$log_level = isset($_POST['log_level']) ? $_POST['log_level'] : 'all';
-
-// --- E. 保存配置逻辑 ---
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_config_btn'])) {
-    $new_content = $_POST['config_text'];
-    $daemon_path = "/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh";
-    if (file_put_contents($CONFIG_YAML, $new_content) !== false) {
-        // 依然检测进程，确保用户改完配置后能即时生效
-        $is_running = !empty(exec('pgrep -f "' . basename($BINARY) . '"'));
-        $is_enabled = ($settings['filebrowser_ENABLED'] == 'true' || $settings['filebrowser_ENABLED'] == '1');
-        if ($is_enabled || $is_running) {
-            exec("bash $daemon_path 'false' > /dev/null 2>&1");
-            sleep(2);
-            exec("bash $daemon_path 'true' > /dev/null 2>&1");
-            echo "<script>alert('配置已保存并重启服务！'); window.location.href=window.location.href;</script>";
-        } else {
-            echo "<script>alert('配置已保存！'); window.location.href=window.location.href;</script>";
-        }
-        exit;
-    }
-}
-// ========================================================
-
-if (isset($_POST['is_ajax_apply']) && $_POST['is_ajax_apply'] == "true") {
-    $enabled = $_POST['filebrowser_ENABLED'];
-    // 这里的逻辑和你原来的 shell_exec 保持一致，但加了 > /dev/null & 确保它后台运行不阻塞
-    shell_exec("/usr/local/emhttp/plugins/filebrowser_quantum/Daemon.sh " . escapeshellarg($enabled) . " > /dev/null 2>&1 &");
-    exit; // 关键！直接结束 PHP，不输出 HTML，这就是前后端分离的“静默处理”
-}
-
-?>
-
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <style>
 /* v2.1.5 - 标题与高度精准对齐版 */
 .row { display: flex; flex-direction: column; align-items: flex-start; }
@@ -249,8 +30,6 @@ if (isset($_POST['is_ajax_apply']) && $_POST['is_ajax_apply'] == "true") {
     display: flex;
     flex-direction: column;
     padding-top: 0px !important;
-   
-    
 }
 
 /* 1. 统一标题大小，对齐 Edit config / Logging */
@@ -351,9 +130,7 @@ if (isset($_POST['is_ajax_apply']) && $_POST['is_ajax_apply'] == "true") {
     background-color: #558ffc;
     border-color: #ff0000;
 }
-
 </style>
-
 </head>
 
 <body>
@@ -363,66 +140,65 @@ if (isset($_POST['is_ajax_apply']) && $_POST['is_ajax_apply'] == "true") {
     <div class="column left">
         <h2>Version :</h2>
         <div class="status-box" style="border-left: 4px solid #51aee5; margin-bottom: 10px;">
-            <div style="color: #666; margin-bottom: 4px;">已安装: <b class="current_ver_text" style="color:#1a17d6; margin-left:4px;"><?=trim($currentversion)?></b></div>
-            <div style="color: #666;">最新版: <b id="latest_ver_val" style="color:#eb2b2b; margin-left:4px;"><?=trim($latestversion)?></b></div>
+            <div style="color: #666; margin-bottom: 4px;">已安装: <b id="val_installed" class="current_ver_text" style="color:#1a17d6; margin-left:4px;">...</b></div>
+            <div style="color: #666;">最新版: <b id="latest_ver_val" style="color:#eb2b2b; margin-left:4px;">...</b></div>
         </div>
 
         <div class="status-box" style="border-left: 4px solid #666; margin-bottom: 10px;">
             <label style="display:block; cursor:pointer; margin-bottom:5px;">
-                <input type="radio" name="branch_radio" value="1" <?php if($branch == 1) echo "checked"; ?> onclick="changeBranch(this.value);"> Stable Branch
+                <input type="radio" name="branch_radio" value="1" id="branch_stable" onclick="changeBranch(this.value);"> Stable Branch
             </label>
             <label style="display:block; cursor:pointer;">
-                <input type="radio" name="branch_radio" value="2" <?php if($branch == 2) echo "checked"; ?> onclick="changeBranch(this.value);"> Beta Branch
+                <input type="radio" name="branch_radio" value="2" id="branch_beta" onclick="changeBranch(this.value);"> Beta Branch
             </label>
         </div>
 
-        <input type="button" id="update_btn_id" value="UPDATE" 
-            <?php if (trim($currentversion) == trim($latestversion) || $latestversion == "Unknown") echo "disabled"; ?> 
-            onclick="updatefilebrowser_quantum('<?php echo $branch; ?>')">
+        <input type="button" id="update_btn_id" value="UPDATE" disabled onclick="updatefilebrowser_quantum(currentBranch)">
 
         <hr style="width: 100%; max-width: 170px; margin: 15px 0; border: 0; border-top: 1px solid #eee;">
 
         <h2>Status :</h2>
-        <div id="service_status_container" class="status-box" style="border-left: 4px solid <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>; margin-bottom: 10px;">
-            <div id="service_status_label" style="font-weight: bold; color: <?= !empty($webui_pid) ? '#4caf50' : '#f44336' ?>;">
-                <span><?= !empty($webui_pid) ? '● RUNNING' : '○ STOPPED' ?></span>
+        <!-- 初始状态设为中性 (Loading) 防止红绿闪烁 -->
+        <div id="service_status_container" class="status-box" style="border-left: 4px solid #ccc; margin-bottom: 10px;">
+            <div id="service_status_label" style="font-weight: bold; color: #666;">
+                <span id="service_status_text">● LOADING...</span>
             </div>
-            <div style="color: #999; margin-top:4px;">PORT: <strong id="port_value" style="color: <?= !empty($webui_pid) ? '#4caf50' : '#666' ?>;"><?= $dynamic_port ?></strong></div>
+            <div style="color: #999; margin-top:4px;">PORT: <strong id="port_value" style="color: #666;">...</strong></div>
         </div>
 
         <form action="" method="post" style="margin:0;">
             <div class="status-box" style="border-left: 4px solid #666; margin-bottom: 10px;">
                 <label style="display:block; cursor:pointer; margin-bottom:5px;">
-                <input type="radio" name="webui_radio" value="true" <?php if($current_enabled === 'true') echo "checked"; ?> onclick="toggleService(this.value);"> Enabled
+                <input type="radio" name="webui_radio" value="true" id="webui_enabled" onclick="toggleService(this.value);"> Enabled
                 </label>
                 <label style="display:block; cursor:pointer;">
-                <input type="radio" name="webui_radio" value="false" <?php if($current_enabled === 'false') echo "checked"; ?> onclick="toggleService(this.value);"> Disabled
+                <input type="radio" name="webui_radio" value="false" id="webui_disabled" onclick="toggleService(this.value);"> Disabled
                 </label>
             </div>
             
-            <input type="hidden" id="webui_status_hidden" name="webui_status" value="<?= $current_enabled ?>">      
-            <input type="button" value="APPLY" onclick="applyService(this.form)">
-            <? if (!empty($webui_pid)): ?>
-            <input type="button" class="localURL" value="OPEN WEBUI" onclick="window.open('http://<?= $_SERVER['SERVER_ADDR'] ?>:<?= $dynamic_port ?>', '_blank')" />
-            <? endif; ?>
+            <input type="hidden" id="webui_status_hidden" name="webui_status" value="">      
+            <input type="button" id="btn_apply" value="APPLY" disabled onclick="applyService()">
+            
+            <!-- Open WebUI 按钮将由 JS 动态添加 -->
+            <div id="open_webui_container"></div>
         </form>
     </div>
 
     <div class="column mid">
     <h2>config.yaml :</h2>
-    <form id="config_form" method="POST">
-      <textarea spellcheck="false" name="config_text" 
-        oninput="var btn=document.getElementById('SAVE_btn'); btn.style.background='#4caf50'; btn.style.color='#fff'; btn.style.borderColor='#4caf50';" 
+    <form id="config_form" onsubmit="return false;">
+      <textarea id="config_text" spellcheck="false" name="config_text" 
+        oninput="handleConfigInput()"
         style="font-family:bitstream, monospace; width:100%; height:500px; padding:5px; box-sizing:border-box;"
-      ><?=htmlspecialchars($config_text);?></textarea>
+      >Loading configuration...</textarea>
 
       <br><br> 
       <a id="SAVE_btn" href="javascript:void(0);" 
-       onclick="if(confirm('确定要保存配置吗？')){ document.getElementById('config_form').submit(); }"
+       onclick="saveConfig()"
        style="display: inline-block; 
-              padding: 0 25px;            /* 增加左右内边距，让它变宽 */
-              height: 32px;               /* 增加高度 */
-              line-height: 30px;          /* 让文字垂直居中，比高度小2px即可 */
+              padding: 0 25px;            
+              height: 32px;               
+              line-height: 30px;          
               background: #f2f2f2; 
               color: #333; 
               border: 1px solid #ccc; 
@@ -430,7 +206,7 @@ if (isset($_POST['is_ajax_apply']) && $_POST['is_ajax_apply'] == "true") {
               text-decoration: none; 
               border-radius: 2px; 
               font-family: 'Clear Sans', sans-serif; 
-              font-size: 12px;            /* 字体保持你满意的状态 */
+              font-size: 12px;            
               font-weight: bold; 
               text-transform: uppercase; 
               letter-spacing: 2px; 
@@ -439,27 +215,19 @@ if (isset($_POST['is_ajax_apply']) && $_POST['is_ajax_apply'] == "true") {
        SAVE
     </a>
 
-    <input type="hidden" name="save_config_btn" value="1">
-    
-    <input type="button" value="Original" onclick="setDefault(this.form)" style="margin-left: 10px; vertical-align: middle;">
+    <!-- Reset to default (loaded) content -->
+    <input type="button" value="Original" onclick="setDefault()" style="margin-left: 10px; vertical-align: middle;">
   </form> 
     </div>
 
     <div class="column right">
     <h2>Logging :</h2>
     <form class="level-form" onsubmit="return false;">
-        <?php $available_levels = getLogLevels($CONFIG_YAML); ?>
-        <select name="log_level" onchange="startLogTail();">
-            <option value="all" <?=$log_level=='all'?'selected':''?>>LEVEL: ALL</option>
-            <?php foreach($available_levels as $level): ?>
-                <?php if(empty($level)) continue; ?>
-                <option value="<?=$level?>" <?=$log_level==$level?'selected':''?>>
-                    LEVEL: <?=strtoupper($level)?>
-                </option>
-            <?php endforeach; ?>
+        <select id="log_level_select" name="log_level" onchange="startLogTail();">
+            <option value="all">Loading...</option>
         </select>
     </form>
-    <div class="log-area">正在连接实时日志流...</div>
+    <div class="log-area">等待连接...</div>
     
     <div style="margin-top:21px;">
         <input type="button" value="CLEAR LOG" onclick="clearLog();" 
@@ -484,62 +252,343 @@ if (isset($_POST['is_ajax_apply']) && $_POST['is_ajax_apply'] == "true") {
 </body>
 </html>
 
+<!-- Unified Script Block -->
 <script>
+/* <![CDATA[ */
+// 全局状态变量
+var originalServiceState = "";
+var currentBranch = "1";
+var evtSource = null;
+var defaultConfigText = "";
+var serverAddress = "<?= $_SERVER['SERVER_ADDR'] ?>"; // PHP 注入最小化: 仅保留服务器地址
+var apiBase = "/usr/local/emhttp/plugins/filebrowser_quantum/api_config.php";
 
-function setDefault(form) {
-  form.elements['config_text'].value = <?=json_encode($default_config_text);?>;
-}
-// 自动滚动逻辑：仅在页面加载完成后执行一次
+// --- 初始化入口 ---
 $(document).ready(function() {
-    originalServiceState = "<?= $current_enabled ?>";
-    toggleService(originalServiceState); 
-    startLogTail();
-    // 初始化颜色
-    webui(null, originalServiceState);
+    loadMetadata();
+    loadConfig();
+    // 初始启动日志，默认为 all，等 metadata 加载完更新下拉框后用户可切换
+    startLogTail(); 
 });
+
+// --- 核心功能: 加载元数据 (状态, 版本, 日志等级, 端口) ---
+function loadMetadata() {
+    $.getJSON(apiBase, { action: 'get_metadata' }, function(response) {
+        if (!response.success) {
+            console.error("Failed to load metadata", response.message);
+            return;
+        }
+        var data = response.data;
+        
+        // 1. 更新 Port
+        $("#port_value").text(data.port || "N/A");
+        
+        // 2. 更新运行状态
+        originalServiceState = data.isRunning ? "true" : "false";
+        $("#webui_status_hidden").val(originalServiceState);
+        updateServiceUI(originalServiceState); // 统一 UI 更新函数
+        
+        // 3. 更新单选框
+        if (originalServiceState === "true") {
+            $("#webui_enabled").prop("checked", true);
+        } else {
+            $("#webui_disabled").prop("checked", true);
+        }
+        
+        // 4. 更新日志等级
+        var logSelect = $("#log_level_select");
+        logSelect.empty();
+        logSelect.append('<option value="all">LEVEL: ALL</option>');
+        if (data.logLevels && Array.isArray(data.logLevels)) {
+            data.logLevels.forEach(function(level) {
+                if(level) {
+                    logSelect.append('<option value="' + level + '">LEVEL: ' + level.toUpperCase() + '</option>');
+                }
+            });
+        }
+        
+        // 5. 加载版本信息 (复用 get_metadata 或 单独调用 get_version_info)
+        // 为了更快响应，这里单独发起版本请求
+        loadVersionInfo();
+    });
+}
+
+function loadVersionInfo() {
+    $.getJSON(apiBase, { action: 'get_version_info' }, function(response) {
+       if (response.success) {
+           var data = response.data;
+           $("#val_installed").text(data.currentVersion);
+           currentBranch = data.branch;
+           if (currentBranch == "2") {
+               $("#branch_beta").prop("checked", true);
+           } else {
+               $("#branch_stable").prop("checked", true);
+           }
+           
+           // 主动检查一次最新版
+           checkLatestVersion(currentBranch);
+       }
+    });
+}
+
+// --- 核心功能: 加载配置 ---
+function loadConfig() {
+    $.getJSON(apiBase, { action: 'get_config' }, function(response) {
+        if (response.success) {
+            defaultConfigText = response.data.content;
+            $("#config_text").val(defaultConfigText);
+        } else {
+            $("#config_text").val("# Error loading config: " + response.message);
+        }
+    });
+}
+
+// --- 核心功能: 保存配置 ---
+function saveConfig() {
+    var content = $("#config_text").val();
+    if (!confirm('确定要保存配置吗？')) return;
+    
+    var btn = document.getElementById('SAVE_btn');
+    var originalText = btn.innerText;
+    btn.innerText = "SAVING...";
+    
+    $.ajax({
+        url: apiBase + '?action=save_config',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ content: content }),
+        success: function(response) {
+            if (response.success) {
+                alert(response.message); // 使用 alert 因为这是破坏性操作，需要强提醒
+                defaultConfigText = content; // 更新默认值
+                handleConfigInput(); // 重置按钮样式
+                if (response.data.restarted) {
+                    // 如果重启了，刷新状态
+                    setTimeout(loadMetadata, 2000);
+                } else {
+                     setTimeout(loadMetadata, 500); // 没重启也刷新下
+                }
+            } else {
+                alert("在此配置中发现错误:\n" + response.message);
+            }
+        },
+        error: function() {
+            alert("保存请求失败，请检查网络或日志。");
+        },
+        complete: function() {
+            btn.innerText = "SAVE";
+        }
+    });
+}
+
+// --- UI控制: 状态显示 ---
+function updateServiceUI(state) {
+    const container = $("#service_status_container");
+    const statusLabel = $("#service_status_text"); // update span text
+    const portValue = $("#port_value");
+    const openWebUiContainer = $("#open_webui_container");
+    
+    if (state === "true") {
+        container.css("border-left-color", "#4caf50");
+        $("#service_status_label").css("color", "#4caf50");
+        statusLabel.text("● RUNNING");
+        portValue.css("color", "#4caf50");
+        
+        // 动态添加 OPEN WEBUI 按钮
+        var port = portValue.text();
+        if (openWebUiContainer.children().length === 0 && port !== "..." && port !== "N/A") {
+             openWebUiContainer.html('<input type="button" class="localURL" value="OPEN WEBUI" onclick="window.open(\'http://' + serverAddress + ':' + port + '\', \'_blank\')" />');
+        }
+    } else {
+        container.css("border-left-color", "#f44336");
+        $("#service_status_label").css("color", "#f44336");
+        statusLabel.text("○ STOPPED");
+        portValue.css("color", "#999");
+        openWebUiContainer.empty();
+    }
+}
+
+// --- 交互: Config Input ---
+function handleConfigInput() {
+    var btn = document.getElementById('SAVE_btn');
+    var current = $("#config_text").val();
+    if (current !== defaultConfigText) {
+        btn.style.background='#4caf50'; 
+        btn.style.color='#fff'; 
+        btn.style.borderColor='#4caf50';
+    } else {
+        btn.style.background='#f2f2f2'; 
+        btn.style.color='#333'; 
+        btn.style.borderColor='#ccc';
+    }
+}
+
+function setDefault() {
+    $("#config_text").val(defaultConfigText);
+    handleConfigInput();
+}
+
+// --- 交互: Service Toggle ---
+function toggleService(value) {
+    var applyBtn = $("#btn_apply");
+    $("#webui_status_hidden").val(value);
+    
+    if (value !== originalServiceState) {
+        applyBtn.prop("disabled", false).addClass("submit");
+    } else {
+        applyBtn.prop("disabled", true).removeClass("submit");
+    }
+}
+
+function applyService() {
+    var enabledValue = $("#webui_status_hidden").val();
+    if (enabledValue === originalServiceState) return;
+    
+    var applyBtn = $("#btn_apply");
+    var statusLabel = $("#service_status_text");
+    var container = $("#service_status_container");
+    
+    // UI Feedback
+    applyBtn.prop('disabled', true).val('PROCESSING...');
+    statusLabel.text('● PROCESSING...').parent().css("color", "#999");
+    container.css("border-left-color", "#ccc");
+    
+    $.ajax({
+        url: apiBase + '?action=toggle_service',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ enabled: enabledValue }),
+        success: function(response) {
+            // 开始轮询检查状态
+            var checkTimer = setInterval(function() {
+                $.getJSON(apiBase, { action: 'get_metadata' }, function(res) {
+                    var newState = res.data.isRunning ? "true" : "false";
+                    // 逻辑：如果目标状态是开启，我们要等到 isRunning=true。
+                    // 如果目标状态是关闭，我们要等到 isRunning=false。
+                    // 或者更简单：只要状态变了 updateServiceUI 会处理颜色
+                    
+                    if (newState === enabledValue) { // 达到了目标状态
+                        clearInterval(checkTimer);
+                        originalServiceState = newState;
+                        applyBtn.val('APPLY');
+                        toggleService(newState); // Reset button state
+                        updateServiceUI(newState);
+                        console.log("Service state synced: " + newState);
+                    }
+                });
+            }, 2000);
+        }
+    });
+}
+
+// --- 交互: Update Logic ---
+function changeBranch(value) {
+    currentBranch = value;
+    checkLatestVersion(value);
+}
+
+function checkLatestVersion(branch) {
+    var latestText = $("#latest_ver_val");
+    var updateBtn = $("#update_btn_id");
+    var currentVer = $("#val_installed").text().trim();
+    
+    latestText.css("opacity", "0.5").text("Checking...");
+    updateBtn.prop("disabled", true);
+    
+    // 复用 ajax_version.php (或者如果想，也可以迁移到 api_config.php)
+    // Update: 使用 api_config.php?action=set_branch
+    $.ajax({
+        url: apiBase + '?action=set_branch',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ branch: branch }),
+        success: function(response) {
+            if (response.success) {
+                var latestVer = response.data.latestVersion;
+                latestText.text(latestVer).css("opacity", "1");
+                
+                if (latestVer !== "Unknown" && latestVer !== "" && latestVer !== currentVer) {
+                    updateBtn.prop("disabled", false);
+                } else {
+                    updateBtn.prop("disabled", true);
+                }
+            } else {
+                latestText.text("Error");
+            }
+        }
+    });
+}
+
+function updatefilebrowser_quantum(branch) {
+    var path = "/usr/local/emhttp/plugins/filebrowser_quantum/updatefilebrowser_quantum.sh"
+    openBox('/usr/local/emhttp/plugins/filebrowser_quantum/startScript.sh&arg1='+path+'&arg2='+branch,"Update filebrowser_quantum",450,800,true);
+}
+
+// --- 日志系统 (SSE) ---
+function startLogTail() {
+    stopLogTail();
+    
+    var logArea = document.querySelector('.log-area');
+    var logLevel = $("#log_level_select").val() || 'all';
+    
+    logArea.innerHTML = "<b style='color:yellow;'>[System] Connecting (Level: " + logLevel.toUpperCase() + ")...</b><br>";
+    
+    evtSource = new EventSource("/plugins/filebrowser_quantum/log_stream.php?level=" + logLevel + "&t=" + new Date().getTime());
+    
+    evtSource.onopen = function() {
+        logArea.innerHTML = "<b style='color:green;'>[System] Connected!</b><br>";
+    };
+    
+    evtSource.onmessage = function(e) {
+        if (e.data.trim() === "heartbeat") return;
+        var isAtBottom = logArea.scrollHeight - logArea.scrollTop <= logArea.clientHeight + 80;
+        var newLog = document.createElement("span");
+        newLog.innerHTML = e.data + "<br>"; 
+        logArea.appendChild(newLog);
+        if (isAtBottom) logArea.scrollTop = logArea.scrollHeight;
+    };
+    
+    evtSource.onerror = function(err) {
+        if (evtSource && evtSource.readyState !== 2) { 
+            var statusNode = document.createElement("div");
+            statusNode.innerHTML = "<b style='color:orange;'>[System] Connection lost, retrying...</b>";
+            logArea.appendChild(statusNode);
+        }
+    };
+}
+
+function stopLogTail() {
+    if (evtSource) {
+        evtSource.close();
+        evtSource = null;
+    }
+}
+
+function clearLog() {
+    if (confirm('确定要清空所有日志内容吗？')) {
+        // 使用原文件中的逻辑，或者我们在 api_config.php 增加 clear_log?
+        // 为保持简洁，这里直接用 post 到当前页面的 hack 还是不推荐了。
+        // 保留原逻辑的最简方式：log_stream.php 好像不负责清空。
+        // 原页面有 processing $_POST['clear_log_ajax']。
+        // 我们应该在 api_config.php 加 clear_log action。
+        // 但为了不再次修改 API，我先假定原来的 php post 逻辑已经移除。
+        // 我必需在 api_config.php 添加 clear_log，这才是正确做法。
+        // *Addendum*: I will add 'clear_log' handling to API via separate call if needed, 
+        // but for this step I will implement the JS to call api_config.php?action=clear_log
+        // and I will update api_config.php in the next step if I forgot it.
+        
+        // Wait, I forgot 'clear_log' in api_config.php! 
+        // I will add the JS call now and fix the API immediately after.
+        $.getJSON(apiBase, { action: 'clear_log' }, function(res) {
+             if(res.success) {
+                 $(".log-area").html("<b style='color:gray;'>[System] Log cleared.</b><br>");
+             }
+        });
+    }
+}
 
 $(window).on('beforeunload', function() {
     stopLogTail();
 });
-
-function applyService(form) {
-    const applyBtn = $(form).find('input[value="APPLY"]');
-    const statusSpan = $("#service_status_label span");
-    const container = $("#service_status_container");
-    const portValue = $("#port_value");
-    const enabledValue = document.getElementById('webui_status_hidden').value;
-    if (enabledValue === originalServiceState) return; 
-
-    // 1. 点击瞬间：全员变灰 (PROCESSING 状态)
-    applyBtn.prop('disabled', true).val('PROCESSING...');
-    statusSpan.text('● PROCESSING...').css("color", "#999"); 
-    portValue.css("color", "#999"); 
-    container.css("border-left-color", "#ccc");
-    
-    // --- 2. 异步请求 ---
-    $.post(window.location.href, { "filebrowser_ENABLED": enabledValue, "is_ajax_apply": "true" });
-
-    // --- 3. 轮询检测 ---
-    let checkTimer = setInterval(function() {
-        $.get(window.location.href, function(data) {
-            const newState = $(data).find('#webui_status_hidden').val();
-            
-            if (newState !== originalServiceState) {
-                clearInterval(checkTimer);
-                originalServiceState = newState;
-                
-                // 恢复按钮文字
-                applyBtn.val('APPLY'); 
-                
-                // 更新隐藏域和按钮禁用逻辑
-                toggleService(newState); 
-                
-                // 【核心修复】呼叫唯一的颜色管理中心，并强制传入新状态
-                webui(form, newState); 
-                console.log("UI 已恢复，当前状态: " + newState);
-            }
-        });
-    }, 2000);
-}
-
+/* ]]> */
 </script>
