@@ -40,12 +40,18 @@ var validateTimer = null;
 
 /**
  * Unified UI state update function
- * Replaces redundant color/text updates in webui() and startPolling()
+ * Added 'verifying' state for better UX during saves
  */
-function updateServiceUI(isRunning, port) {
-    const color = isRunning ? "#4caf50" : "#f44336";
-    const text = isRunning ? "● RUNNING" : "○ STOPPED";
-    const portColor = isRunning ? "#4caf50" : "#999";
+function updateServiceUI(isRunning, port, verifying = false) {
+    let color = isRunning ? "#4caf50" : "#f44336";
+    let text = isRunning ? "● RUNNING" : "○ STOPPED";
+    
+    if (verifying) {
+        color = "#999";
+        text = "○ VERIFYING...";
+    }
+    
+    const portColor = (isRunning && !verifying) ? "#4caf50" : "#999";
     
     $("#service_status_container").css("border-left-color", color);
     $("#service_status_label").css("color", color);
@@ -56,7 +62,7 @@ function updateServiceUI(isRunning, port) {
     const applyBtn = $("input[value='APPLY']");
     $(".localURL").remove();
     
-    if (isRunning) {
+    if (isRunning && !verifying) {
         $('<input type="button" class="localURL" value="OPEN WEBUI" />')
             .attr("onclick", "window.open('http://' + window.location.hostname + ':" + port + "', '_blank')")
             .insertAfter(applyBtn);
@@ -146,7 +152,7 @@ function changeBranch(value) {
     latestText.css("opacity", "0.5").text("Checking...");
     updateBtn.prop("disabled", true); 
     
-    $.post("/plugins/filebrowser_quantum/api_config.php?action=check_update", { branch: value }, function(response) {
+    $.post("/plugins/filebrowser_quantum/api_config.php?action=check_update&t=" + new Date().getTime(), { branch: value }, function(response) {
         if (response.success) {
             const latestVer = response.data.latest_version;
             latestText.text(latestVer).css("opacity", "1");
@@ -190,35 +196,40 @@ function applyService(form) {
 
     // UI Feedback: Set to PROCESSING
     applyBtn.prop('disabled', true).val('PROCESSING...');
-    $("#service_status_label span").text('● PROCESSING...').css("color", "#999"); 
-    $("#port_value").css("color", "#999"); 
-    $("#service_status_container").css("border-left-color", "#ccc");
+    updateServiceUI(false, $("#port_value").text(), true); // Visual Reset
     
     // Async API Call
-    $.post("/plugins/filebrowser_quantum/api_config.php?action=set_state", { enabled: enabledValue }, function(resp) {
+    $.post("/plugins/filebrowser_quantum/api_config.php?action=set_state&t=" + new Date().getTime(), { enabled: enabledValue }, function(resp) {
         startPolling(form, applyBtn);
     });
 }
 
 function startPolling(form, applyBtn) {
+    let pollCount = 0;
+    const maxPolls = 15; // Max 30 seconds
+    
     let checkTimer = setInterval(function() {
-        $.getJSON("/plugins/filebrowser_quantum/api_config.php?action=get_status", function(response) {
+        $.getJSON("/plugins/filebrowser_quantum/api_config.php?action=get_status&t=" + new Date().getTime(), function(response) {
             if (!response.success) return;
             
             const data = response.data;
             const newState = data.enabled;
-            
-            if (newState !== originalServiceState) {
+            pollCount++;
+
+            // Wait until the backend state matches our intent OR we timeout
+            if (newState === $("#webui_status_hidden").val() || pollCount >= maxPolls) {
+                // If it's Enabled, we also want to wait until it's either RUNNING or officially FAILED
+                if (newState === 'true' && !data.running && pollCount < 5) {
+                    return; // Keep polling a bit longer
+                }
+
                 clearInterval(checkTimer);
                 originalServiceState = newState;
                 
-                applyBtn.val('APPLY'); 
-                toggleService(newState); 
+                applyBtn.val('APPLY').prop('disabled', false).removeClass('submit');
+                $('input[name="webui_radio"][value="' + newState + '"]').prop('checked', true);
                 
-                // Use unified UI update function
                 updateServiceUI(data.running, data.port);
-                
-                console.log("UI synced via API. New State: " + newState);
             }
         });
     }, 2000);
@@ -275,7 +286,7 @@ function stopLogTail() {
 
 function clearLog() {
     if (confirm('确定要清空所有日志内容吗？')) {
-        $.post("/plugins/filebrowser_quantum/api_config.php?action=clear_log", function(response) {
+        $.post("/plugins/filebrowser_quantum/api_config.php?action=clear_log&t=" + new Date().getTime(), function(response) {
             if (response.success) {
                 $(".log-area").html("<b style='color:gray;'>[System] 日志已清空，正在等待新日志产生...</b><br>");
             } else {
@@ -297,13 +308,10 @@ function setDefault(form) {
 }
 
 function onConfigInput() {
-    // Visual feedback: button turns green
     var btn = document.getElementById('SAVE_btn');
     btn.style.background = '#4caf50';
     btn.style.color = '#fff';
     btn.style.borderColor = '#4caf50';
-    
-    // Debounced real-time validation
     triggerValidation();
 }
 
@@ -318,17 +326,19 @@ function triggerValidation() {
 
 function saveConfig() {
     var content = $("#config_text").val();
+    var enabled = $('input[name="webui_radio"]:checked').val(); 
     
     var btn = document.getElementById('SAVE_btn');
     btn.innerText = "SAVING...";
     
-    // UI Feedback: Show processing status
+    // UI Feedback: Visual Reset
     $("#save_status").text("Saving and verifying startup...").css("color", "gray").show();
+    updateServiceUI(false, $("#port_value").text(), true); 
     
-    var postData = "content=" + encodeURIComponent(content);
+    var postData = "content=" + encodeURIComponent(content) + "&enabled=" + enabled;
 
     $.ajax({
-        url: "/plugins/filebrowser_quantum/api_config.php?action=save_config",
+        url: "/plugins/filebrowser_quantum/api_config.php?action=save_config&t=" + new Date().getTime(),
         type: 'POST',
         data: postData, 
         success: function(response) {
@@ -346,36 +356,30 @@ function saveConfig() {
                 btn.style.color = '#333'; 
                 btn.style.borderColor = '#ccc';
                  
-                // Dynamic Port Update
                 var portMatch = content.match(/port:\s*(\d+)/);
                 if (portMatch && portMatch[1]) {
                     var newPort = portMatch[1];
                     $("#port_value").text(newPort);
                     $(".localURL").attr("onclick", "window.open('http://' + window.location.hostname + ':" + newPort + "', '_blank')");
                 }
-                
-                // Immediately check status to update RUNNING indicator
-                updateStatusViaAPI();
             } else {
-                // Error (incl Startup failure)
                 btn.innerText = "SAVE";
                 let errorMsg = response.message;
                 if (response.data && response.data.log) {
-                    // Show startup log in the status area or log area
                     const logSnippet = response.data.log.trim();
                     errorMsg += "\n\nBinary Output:\n" + logSnippet;
-                    // Also inject into log-area for better visibility
-                    $(".log-area").prepend("<b style='color:red;'>[Critical] Service fail to start:</b><br><pre style='color:orange;'>" + logSnippet + "</pre><hr>");
+                    $(".log-area").prepend("<b style='color:red;'>[Critical] Startup failure:</b><br><pre style='color:orange; font-size:10px;'>" + logSnippet + "</pre><hr>");
                 }
                 $("#save_status").text(errorMsg).css("color", "#f44336").show();
-                
-                // Even on save failure (startup failure), update UI status (will show STOPPED)
-                updateStatusViaAPI();
             }
+            
+            // Sync status with half-second delay to allow backend to settle
+            setTimeout(updateStatusViaAPI, 500);
         },
         error: function(xhr, status, error) {
             $("#save_status").text("Comm Error: " + error).css("color", "#f44336").show();
             btn.innerText = "SAVE";
+            updateStatusViaAPI();
         }
     });
 }
@@ -384,7 +388,7 @@ function saveConfig() {
  * Helper to force status sync from API
  */
 function updateStatusViaAPI() {
-    $.getJSON("/plugins/filebrowser_quantum/api_config.php?action=get_status", function(response) {
+    $.getJSON("/plugins/filebrowser_quantum/api_config.php?action=get_status&t=" + new Date().getTime(), function(response) {
         if (response.success) {
             const data = response.data;
             updateServiceUI(data.running, data.port);
@@ -398,50 +402,39 @@ function updateStatusViaAPI() {
 // ============================================================
 
 $(document).ready(function() {
-    // Start log stream
     startLogTail();
 
     // Load config
-    $.getJSON("/plugins/filebrowser_quantum/api_config.php?action=get_config", function(response) {
+    $.getJSON("/plugins/filebrowser_quantum/api_config.php?action=get_config&t=" + new Date().getTime(), function(response) {
         if (response.success) {
             $("#config_text").val(response.data.content);
             window.defaultConfigText = response.data.content;
-            // Trigger initial validation
             triggerValidation();
         } else {
             $("#config_text").val("# Error loading config");
         }
-    }).fail(function(jqXHR, textStatus, errorThrown) {
-        $("#config_text").val("# Load Failed: " + textStatus + "\n" + jqXHR.responseText);
     });
     
     // Load status
-    $.getJSON("/plugins/filebrowser_quantum/api_config.php?action=get_status", function(response) {
+    $.getJSON("/plugins/filebrowser_quantum/api_config.php?action=get_status&t=" + new Date().getTime(), function(response) {
         if (!response.success) return;
         const data = response.data;
         
-        // Version Info
         $(".current_ver_text").text(data.local_version);
         $("#latest_ver_val").text(data.latest_version);
         
-        // Update Button Logic
         const updateBtn = $("#update_btn_id");
         if (data.latest_version !== "Unknown" && data.latest_version !== "" && data.latest_version !== data.local_version) {
             updateBtn.prop("disabled", false);
         }
         
-        // Service State
         originalServiceState = data.enabled;
         $("#webui_status_hidden").val(data.enabled);
         
-        // Init Radios
         $('input[name="webui_radio"][value="' + data.enabled + '"]').prop('checked', true);
         $('input[name="branch_radio"][value="' + data.branch + '"]').prop('checked', true);
         
-        // Init UI using unified function
         updateServiceUI(data.running, data.port);
-        
-        // Trigger toggle logic to set Apply button state
         toggleService(data.enabled);
     });
 });
