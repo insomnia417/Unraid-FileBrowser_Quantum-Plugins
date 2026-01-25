@@ -1,8 +1,8 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
   <!ENTITY branch "main">
-  <!ENTITY version "2026.01.24">
-  <!ENTITY bundleversion "2026.01.24">
+  <!ENTITY version "2026.01.25">
+  <!ENTITY bundleversion "2026.01.25">
   <!ENTITY author "insomnia417">
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY launch "Settings/filebrowser_quantum">
@@ -42,6 +42,7 @@
         BUNDLE_V="&bundleversion;"
         PLUGIN_V="&version;"
         NAME="&name;"
+        BRANCH="&branch;"
         <![CDATA[
         GITHUB_REPO="gtsteffaniak/filebrowser"
         INSTALL_PATH="/boot/config/plugins/${NAME}/install"
@@ -107,7 +108,7 @@
         # 下载默认 config.yaml (如果缺失)
         if [ ! -f /boot/config/plugins/${NAME}/config.yaml ]; then
             echo "正在下载默认配置..."
-            curl --connect-timeout 10 --retry 3 -L -o /boot/config/plugins/${NAME}/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/&branch;/config.yaml"
+            curl --connect-timeout 10 --retry 3 -L -o /boot/config/plugins/${NAME}/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/&${BRANCH}/config.yaml"
         fi
 
         # settings.cfg
