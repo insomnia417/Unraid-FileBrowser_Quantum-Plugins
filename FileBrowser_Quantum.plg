@@ -1,8 +1,8 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
   <!ENTITY branch "main">
-  <!ENTITY version "2026.01.25">
-  <!ENTITY bundleversion "2026.01.25">
+  <!ENTITY version "2026.01.24">
+  <!ENTITY bundleversion "2026.01.24">
   <!ENTITY author "insomnia417">
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY launch "Settings/filebrowser_quantum">
@@ -16,7 +16,7 @@
 <CHANGES>
 ### &name;
 #### 🆕 最新更新 (v&version;)
-- **逻辑优化**：启停逻辑更顺畅，不再弹窗。
+- **逻辑优化**：启停逻辑更顺畅,不再弹窗.
 
 #### 📜 历史改进
 - **逻辑优化**：UI界面美化调整，修复端口颜色不变的问题，更易用。
@@ -108,7 +108,7 @@
         # 下载默认 config.yaml (如果缺失)
         if [ ! -f /boot/config/plugins/${NAME}/config.yaml ]; then
             echo "正在下载默认配置..."
-            curl --connect-timeout 10 --retry 3 -L -o /boot/config/plugins/${NAME}/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/&${BRANCH}/config.yaml"
+            curl --connect-timeout 10 --retry 3 -L -o /boot/config/plugins/${NAME}/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/${BRANCH}/config.yaml"
         fi
 
         # settings.cfg
