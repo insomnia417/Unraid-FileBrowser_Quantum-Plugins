@@ -43,6 +43,7 @@
         PLUGIN_V="&version;"
         NAME="&name;"
         BRANCH="&branch;"
+        AUTHOR="&author;"
         <![CDATA[
         GITHUB_REPO="gtsteffaniak/filebrowser"
         INSTALL_PATH="/boot/config/plugins/${NAME}/install"
@@ -62,18 +63,18 @@
             TAG_LIST=$(curl -s --connect-timeout 5 "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
             
             if [ -z "$TAG_LIST" ]; then
-            echo "警告：无法连接 GitHub API，将使用保底版本号..."
-            current_version="v1.1.0-stable"
+                echo "警告：无法连接 GitHub API，将使用保底版本号..."
+                current_version="v1.1.0-stable"
             else
-            if [ -f $INSTALL_PATH/beta ]; then
-                current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
-                echo "Beta mode detected. Target version: $current_version"
-                [ -z "$current_version" ] && current_version="v1.1.6-beta"
-            else
-                current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
-                echo "检测到最新稳定版号为: $current_version"
-                [ -z "$current_version" ] && current_version="v1.1.0-stable"
-            fi
+                if [ -f $INSTALL_PATH/beta ]; then
+                    current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
+                    echo "Beta mode detected. Target version: $current_version"
+                    [ -z "$current_version" ] && current_version="v1.1.6-beta"
+                else
+                    current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
+                    echo "检测到最新稳定版号为: $current_version"
+                    [ -z "$current_version" ] && current_version="v1.1.0-stable"
+                fi
             fi
 
             INSTALLED_BINARY="$INSTALL_PATH/${NAME}-$current_version"
@@ -83,11 +84,11 @@
             curl --connect-timeout 15 --retry 3 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
 
             if [ -f "$INSTALLED_BINARY" ]; then
-            cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig.new
-            mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
+                cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig.new
+                mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
             else
-            echo "错误：下载失败且本地无缓存！"
-            exit 1
+                echo "错误：下载失败且本地无缓存！"
+                exit 1
             fi
         fi
 
@@ -106,9 +107,20 @@
         chmod 644 /usr/local/emhttp/plugins/${NAME}/*.php
 
         # 下载默认 config.yaml (如果缺失)
-        if [ ! -f /boot/config/plugins/${NAME}/config.yaml ]; then
+        if [ ! -f "/boot/config/plugins/${NAME}/config.yaml" ]; then
             echo "正在下载默认配置..."
-            curl --connect-timeout 10 --retry 3 -L -o /boot/config/plugins/${NAME}/config.yaml "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/${BRANCH}/config.yaml"
+            if ! curl -fsSL --connect-timeout 10 --retry 3 -o "/boot/config/plugins/${NAME}/config.yaml" "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/${BRANCH}/config.yaml"; then
+                echo "下载失败，正在生成本地默认配置..."
+### 保底 config.yaml
+cat <<EOF > "/boot/config/plugins/${NAME}/config.yaml"
+server:
+  port: 8081
+  baseURL: "/"
+logging:
+  levels: ["info", "error"]
+EOF
+###
+            fi
         fi
 
         # settings.cfg
