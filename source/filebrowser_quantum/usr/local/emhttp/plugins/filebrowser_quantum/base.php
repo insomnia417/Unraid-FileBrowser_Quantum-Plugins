@@ -13,10 +13,15 @@ $BETA_MARKER   = $paths['BETA_MARKER']   ?? "$INSTALL_PATH/beta";
 $LATEST_MARKER = $paths['LATEST_MARKER'] ?? "$INSTALL_PATH/latest";
 
 // 提取日志文件路径
-function getLogPath($configFile) {
+function getLogPath($configFile, $content = null) {
     $default = "/var/log/filebrowser_quantum.log";
-    if (file_exists($configFile)) {
+    
+    // 如果未传入内容且文件存在，则读取文件
+    if ($content === null && file_exists($configFile)) {
         $content = file_get_contents($configFile);
+    }
+
+    if ($content) {
         if (preg_match('/output:\s*["\']?([^"\']+)["\']?/', $content, $matches)) {
             return trim($matches[1]);
         }
@@ -25,9 +30,13 @@ function getLogPath($configFile) {
 }
 
 // 动态提取日志等级列表
-function getLogLevels($configFile) {
-    if (file_exists($configFile)) {
+function getLogLevels($configFile, $content = null) {
+    // 如果未传入内容且文件存在，则读取文件
+    if ($content === null && file_exists($configFile)) {
         $content = file_get_contents($configFile);
+    }
+
+    if ($content) {
         // 匹配 config.yaml 中的 levels: "info|debug|warning|error"
         if (preg_match('/levels:\s*["\']?([^"\']+)["\']?/', $content, $matches)) {
             // 拆分并清理两端空格
