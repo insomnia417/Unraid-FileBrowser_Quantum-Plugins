@@ -1,8 +1,8 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
   <!ENTITY branch "test">
-  <!ENTITY version "2026.01.001">
-  <!ENTITY bundleversion "2026.01.001">
+  <!ENTITY version "2026.01.002">
+  <!ENTITY bundleversion "2026.01.002">
   <!ENTITY author "insomnia417">
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY launch "Settings/filebrowser_quantum">
@@ -51,7 +51,7 @@
         YQ_REPO="mikefarah/yq"
         INSTALL_PATH="/boot/config/plugins/${NAME}/install"
         SETTINGS_FILE="/boot/config/plugins/${NAME}/settings.cfg"
-        DAEMON_SCRIPT="/usr/local/emhttp/plugins/${NAME}/Daemon.sh"
+        PLG_PATH="/boot/config/plugins/${NAME}"
         
         mkdir -p "$INSTALL_PATH"
 
@@ -72,7 +72,6 @@
             local key="$1"
             local value="$2"
             [ ! -f "$SETTINGS_FILE" ] && touch "$SETTINGS_FILE"
-            
             if grep -q "^${key}=" "$SETTINGS_FILE"; then
                 sed -i "/^${key}=/c\\${key}=\"${value}\"" "$SETTINGS_FILE"
             else
@@ -80,14 +79,16 @@
             fi
         }
 
-        # === 迁移旧文件逻辑保持不变 ===
-        [ -f "$INSTALL_PATH/beta" ] && set_setting "filebrowser_BRANCH" "beta" && rm -f "$INSTALL_PATH/beta"
-        [ -f "$INSTALL_PATH/latest" ] && set_setting "filebrowser_LATEST" "$(cat $INSTALL_PATH/latest)" && rm -f "$INSTALL_PATH/latest"
+        # === 1. 迁移旧标记文件 ===
+        [ -f "$INSTALL_PATH/beta" ] && echo "迁移 Beta 标记..." && set_setting "filebrowser_BRANCH" "beta" && rm -f "$INSTALL_PATH/beta"
+        [ -f "$INSTALL_PATH/latest" ] && echo "迁移 Latest 缓存..." && set_setting "filebrowser_LATEST" "$(cat $INSTALL_PATH/latest)" && rm -f "$INSTALL_PATH/latest"
 
-        # --- [1. 安装 yq (如果缺失)] ---
+        # --- [2. 安装 yq (工业级校验器)] ---
         if [ ! -f "$INSTALL_PATH/yq" ]; then
             echo "正在下载 yq 校验器..."
-            curl -L -s --connect-timeout 15 --retry 3 -o "$INSTALL_PATH/yq" "https://github.com/${YQ_REPO}/releases/latest/download/yq_linux_amd64"
+            if ! curl -L -s --connect-timeout 15 --retry 3 -o "$INSTALL_PATH/yq" "https://github.com/${YQ_REPO}/releases/latest/download/yq_linux_amd64"; then
+                echo "yq 下载失败，校验功能可能受限"
+            fi
         fi
         
         if [ -f "$INSTALL_PATH/yq" ]; then
@@ -95,29 +96,46 @@
             chmod +x /usr/sbin/yq
         fi
 
-        # --- [2. 安装 FileBrowser 二进制] ---
+        # --- [3. 核心主程序安装逻辑] ---
         LOCAL_BINARY=$(ls -t $INSTALL_PATH/${NAME}-v* 2>/dev/null | head -n 1)
 
         if [ -f "$LOCAL_BINARY" ]; then
-            echo "检测到本地主程序缓存: $(basename $LOCAL_BINARY)"
-            cp "$LOCAL_BINARY" /usr/sbin/filebrowser_quantumorig
+            echo "检测到本地主程序缓存: $(basename $LOCAL_BINARY)，跳过联网检测。"
+            cp "$LOCAL_BINARY" /usr/sbin/filebrowser_quantumorig.new
+            mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
+            current_version=$(basename "$LOCAL_BINARY" | cut -d'-' -f3-)
+            INSTALLED_BINARY="$LOCAL_BINARY"
         else
-            echo "联网查询最新 FB 版本..."
+            echo "本地无缓存，正在联网查询最新版本..."
             TAG_LIST=$(curl -s --connect-timeout 5 "https://api.github.com/repos/$GITHUB_REPO/tags" | grep '"name":' | head -n 10)
-            CURRENT_BRANCH=$(get_setting "filebrowser_BRANCH" "stable")
             
-            if [ "$CURRENT_BRANCH" == "beta" ]; then
-                current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
+            if [ -z "$TAG_LIST" ]; then
+                echo "警告：无法连接 GitHub API，将使用保底版本号..."
+                current_version="v1.1.0-stable"
             else
-                current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
+                CUR_BR=$(get_setting "filebrowser_BRANCH" "stable")
+                if [ "$CUR_BR" == "beta" ]; then
+                    current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-beta' | head -n 1)
+                    [ -z "$current_version" ] && current_version="v1.1.6-beta"
+                else
+                    current_version=$(echo "$TAG_LIST" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-stable' | head -n 1)
+                    [ -z "$current_version" ] && current_version="v1.1.0-stable"
+                fi
             fi
-            
-            [ -z "$current_version" ] && current_version="v1.1.0-stable"
+
             INSTALLED_BINARY="$INSTALL_PATH/${NAME}-$current_version"
             filebrowser_quantumurl="https://github.com/$GITHUB_REPO/releases/download/$current_version/linux-amd64-filebrowser"
 
+            echo "开始下载并安装: $current_version ..."
             curl --connect-timeout 15 --retry 3 -L -o "$INSTALLED_BINARY" --create-dirs "$filebrowser_quantumurl"
-            cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig
+
+            if [ -f "$INSTALLED_BINARY" ]; then
+                cp "$INSTALLED_BINARY" /usr/sbin/filebrowser_quantumorig.new
+                mv /usr/sbin/filebrowser_quantumorig.new /usr/sbin/filebrowser_quantumorig
+            else
+                echo "错误：下载失败且本地无缓存！"
+                exit 1
+            fi
         fi
 
         # 核心校验
@@ -127,32 +145,91 @@
             exit 1
         fi
 
-        # 后勤处理
-        chmod 755 /usr/sbin/filebrowser_quantumorig /usr/sbin/yq
+        # --- [4. 后勤处理：赋权、配置] ---
+        chown root:root /usr/sbin/filebrowser_quantumorig
+        chmod 755 /usr/sbin/filebrowser_quantumorig
         chown -R root:root /usr/local/emhttp/plugins/${NAME}
         chmod +x /usr/local/emhttp/plugins/${NAME}/*.sh
         chmod 644 /usr/local/emhttp/plugins/${NAME}/*.php
 
+        # 核心：下载默认 config.yaml (如果缺失)
+        if [ ! -f "/boot/config/plugins/${NAME}/config.yaml" ]; then
+            echo "正在尝试从远程获取默认 config.yaml..."
+            if ! curl -fsSL --connect-timeout 10 --retry 3 -o "/boot/config/plugins/${NAME}/config.yaml" "https://raw.githubusercontent.com/insomnia417/Unraid-FileBrowser_Quantum-Plugins/${BRANCH}/config.yaml"; then
+                echo "远程获取失败，正在生成本地保底配置..."
+cat <<EOF > "/boot/config/plugins/${NAME}/config.yaml"
+server:
+  port: 8081
+  baseURL: "/"
+  internalUrl: ""
+  database: "/boot/config/plugins/filebrowser_quantum/database.db"
+  logging:
+    - levels: "info|debug|warning|error"
+      output: "/var/log/filebrowser_quantum.log"
+  sources:
+    - path: "/"
+      name: "Root Dir"
+EOF
+            fi
+        fi
+
         # 初始化 settings.cfg
         if [ ! -f "$SETTINGS_FILE" ]; then
+            echo "初始化默认插件设置..."
             set_setting "filebrowser_ENABLED" "true"
             set_setting "filebrowser_BRANCH" "stable"
         fi
 
-        # 启动服务
-        ENABLE_STATE=$(get_setting "filebrowser_ENABLED" "false")
-        if [ "$ENABLE_STATE" == "true" ]; then
-            "$DAEMON_SCRIPT" "START_ONLY"
+        # 智能清理：保留当前 txz 和当前 binary
+        echo "正在清理旧的安装文件..."
+        find "$INSTALL_PATH" -name "${NAME}-*.txz" ! -name "${NAME}-${BUNDLE_V}-x86_64.txz" -delete
+        if [ -n "$INSTALLED_BINARY" ]; then
+            find "$INSTALL_PATH" -name "${NAME}-v*" ! -name "$(basename "$INSTALLED_BINARY")" -delete
         fi
 
-        # 刷新版本缓存
-        "$DAEMON_SCRIPT" "VERSION"
+        # --- [5. 核心：根据配置状态拉起服务] ---
+        ENABLE_STATE=$(get_setting "filebrowser_ENABLED" "false")
+
+        if [ "$ENABLE_STATE" == "true" ]; then
+            echo "配置状态为 [启用]，正在启动守护进程..."
+            /usr/local/emhttp/plugins/${NAME}/Daemon.sh "START_ONLY"
+            echo "● Filebrowser_Quantum 已在后台启动"
+        else
+            echo "配置状态为 [禁用]，跳过自动启动。"
+        fi
+
+        # 刷新远程版本号缓存
+        /usr/local/emhttp/plugins/${NAME}/Daemon.sh "VERSION"
 
         echo ""
-        echo "${NAME} ${PLUGIN_V} 安装/更新成功！"
+        echo "${NAME} ${PLUGIN_V} 安装成功！"
         echo "-----------------------------------------------------------"
         echo ""
         ]]>
+    </INLINE>
+  </FILE>
+
+  <FILE Run="/bin/bash">
+    <INLINE>
+        if ! [ -f /bin/fusermount ]; then
+            if [ -f /usr/bin/fusermount3 ]; then
+                ln -s /usr/bin/fusermount3 /bin/fusermount
+            fi
+        fi
+    </INLINE>
+  </FILE>
+
+  <FILE Name="/usr/sbin/filebrowser_quantum" Mode="0755">
+    <INLINE>
+        #!/bin/bash
+        config=/boot/config/plugins/filebrowser_quantum/config.yaml
+        filebrowser_quantumorig -c $config "$@"
+    </INLINE>
+  </FILE>
+
+  <FILE Name="/boot/config/plugins/filebrowser_quantum/.gitignore" Mode="0600">
+    <INLINE>
+        config.yaml
     </INLINE>
   </FILE>
 
@@ -161,16 +238,34 @@
         BUNDLE_V="&bundleversion;"
         NAME="&name;"
         <![CDATA[
-        DAEMON_SCRIPT="/usr/local/emhttp/plugins/${NAME}/Daemon.sh"
-        if [ -x "$DAEMON_SCRIPT" ]; then
-            "$DAEMON_SCRIPT" "STOP_ONLY" >/dev/null 2>&1
+        # 1. 停止服务
+        DAEMON="/usr/local/emhttp/plugins/${NAME}/Daemon.sh"
+        if [ -x "$DAEMON" ]; then
+            "$DAEMON" "STOP_ONLY" >/dev/null 2>&1
             sleep 2
         fi
+
+        # 2. 清理其他进程
+        echo "清理残留进程..."
+        pkill -f "filebrowser_quantumorig" >/dev/null 2>&1
+        pkill -f "log_stream.php" >/dev/null 2>&1
+        pkill -f "tail -n 50 -f" >/dev/null 2>&1
         
-        rm -f /usr/sbin/filebrowser_quantumorig /usr/sbin/yq /usr/sbin/filebrowser_quantum
+        # 3. 删除二进制文件和插件目录
+        rm -f /usr/sbin/filebrowser_quantumorig
+        rm -f /usr/sbin/filebrowser_quantum
+        rm -f /usr/sbin/yq
         removepkg ${NAME}-${BUNDLE_V}-x86_64 >/dev/null 2>&1
         rm -rf /usr/local/emhttp/plugins/${NAME}
+        
+        echo "正在清理 U 盘上的安装包缓存..."
+        rm -f /boot/config/plugins/${NAME}/install/${NAME}-${BUNDLE_V}-x86_64.txz
+        
+        echo ""
+        echo "-----------------------------------------------------------"
         echo "${NAME} 卸载成功！"
+        echo "-----------------------------------------------------------"
+        echo ""
         ]]>
     </INLINE>
   </FILE>
