@@ -116,7 +116,7 @@ cat <<EOF > "/boot/config/plugins/${NAME}/config.yaml"
 server:
   port: 8081
   baseURL: "/"
-  internalUrl: "" 
+  internalUrl: ""
   database: "/boot/config/plugins/filebrowser_quantum/database.db"
   logging:
     - levels: "info|debug|warning|error"
@@ -125,7 +125,6 @@ server:
     - path: "/"
       name: "Root Dir"
 EOF
-### ----------
             fi
         fi
 
