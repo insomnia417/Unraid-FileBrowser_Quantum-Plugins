@@ -31,26 +31,30 @@ set_setting() {
 if [ "${1}" == "true" ] || [ "${1}" == "START_ONLY" ]; then
     echo "FileBrowser 准备启动" | tee >(logger -t "$TAG")
     
+    # 修改使能配置
     if [ "${1}" == "true" ]; then
         set_setting "filebrowser_ENABLED" "true"
     fi
     
-    # 使用完整路径探测，确保不误伤脚本进程本身 (满足“不使用 -x”但保证精确)
-    if pgrep -f "^$BINARY" > /dev/null 2>&1 ; then
+    # 检查进程：使用精准命令名匹配，杜绝匹配脚本名
+    if /usr/bin/pgrep -x "$(basename "$BINARY")" > /dev/null 2>&1 ; then
         echo "FileBrowser 已经在运行！" | tee >(logger -t "$TAG")
         exit 0
     fi
 
     echo "FileBrowser 正在启动中..." | tee >(logger -t "$TAG")
-    # 使用 at 启动并记录 PID 以便下游瞬间检测准确性 (可选，但维持现有 at 逻辑)
     echo "$BINARY -c $CONFIG_YAML" | at now -M > /dev/null 2>&1
 
-    # 5秒物理存活探针
+    # 5秒检测循环
     for i in {1..5}; do
         sleep 1
-        if pgrep -f "^$BINARY" > /dev/null 2>&1 ; then
-            echo "FileBrowser 启动成功！" | tee >(logger -t "$TAG")
-            exit 0
+        if /usr/bin/pgrep -x "$(basename "$BINARY")" > /dev/null 2>&1 ; then
+            # 找到进程后，额外等待 2 秒确认其没有瞬间崩溃 (针对 YAML 报错场景)
+            sleep 2
+            if /usr/bin/pgrep -x "$(basename "$BINARY")" > /dev/null 2>&1 ; then
+                echo "FileBrowser 启动成功并通过稳定性检查！" | tee >(logger -t "$TAG")
+                exit 0
+            fi
         fi
     done
     
@@ -61,15 +65,20 @@ if [ "${1}" == "true" ] || [ "${1}" == "START_ONLY" ]; then
 elif [ "${1}" == "false" ] || [ "${1}" == "STOP_ONLY" ]; then
     echo "正在停止 FileBrowser..." | tee >(logger -t "$TAG")
     
-    # 物理强杀
-    pkill -9 -f "^$BINARY"
+    # 物理停止：精准打击
+    /usr/bin/pkill -9 -x "$(basename "$BINARY")" > /dev/null 2>&1
+    
+    # 等待消失 (最多 3 秒)
+    for i in {1..6}; do
+        if ! /usr/bin/pgrep -x "$(basename "$BINARY")" > /dev/null 2>&1 ; then
+            break
+        fi
+        sleep 0.5
+    done
     
     if [ "${1}" == "false" ]; then
-        echo "用户手动关闭服务，正在更新配置..." | tee >(logger -t "$TAG")
         set_setting "filebrowser_ENABLED" "false"
     fi
-    
-    echo "FileBrowser 已停止" | tee >(logger -t "$TAG")
     exit 0
 
 # --- 3. 获取端口 ---
@@ -85,7 +94,7 @@ elif [ "${1}" == "GET_PORT" ]; then
 # --- 4. 获取本地版本号 ---
 elif [ "${1}" == "GET_LOCAL_VER" ]; then
     if [ -f "$BINARY" ]; then
-        "$BINARY" version | grep "Version" | cut -d':' -f2 | tr -d ' '
+        "$BINARY" version | grep "Version" | cut -d':' -f2 | tr -d ' ' 2>/dev/null
     else
         echo "not installed"
     fi
@@ -117,27 +126,31 @@ elif [ "${1}" == "VERSION" ]; then
 elif [ "${1}" == "SET_BRANCH" ]; then
     if [ "${2}" == "beta" ] || [ "${2}" == "stable" ]; then
         set_setting "filebrowser_BRANCH" "${2}"
-        echo "Branch set to ${2}"
         exit 0
     else
-        echo "Invalid branch. Use 'beta' or 'stable'"
         exit 1
     fi
 
 # --- 7. 获取分支 ---
 elif [ "${1}" == "GET_BRANCH" ]; then
-    BRANCH=$(get_setting "filebrowser_BRANCH" "stable")
-    echo "$BRANCH"
+    get_setting "filebrowser_BRANCH" "stable"
     exit 0
 
-# --- 8. 物理检测进程存活 (全插件统一入口) ---
+# --- 7. 获取状态 (全插件统一接口) ---
 elif [ "${1}" == "CHECK" ]; then
-    if pgrep -f "^$BINARY" > /dev/null 2>&1 ; then
+    if /usr/bin/pgrep -f "^$BINARY" > /dev/null 2>&1 ; then
         echo "running"
         exit 0
     else
         echo "stopped"
         exit 1
     fi
+
+# --- 8. 重启服务 (用于 SAVE 操作) ---
+elif [ "${1}" == "RESTART" ]; then
+    # 不调用 $0，直接调用内部逻辑分支更可靠
+    /bin/bash "$DAEMON_SCRIPT" "STOP_ONLY"
+    /bin/bash "$DAEMON_SCRIPT" "START_ONLY"
+    exit $?
 
 fi
