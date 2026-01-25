@@ -83,8 +83,8 @@ function validateYamlRealtime(content) {
                 const val = parts[1].trim().toLowerCase();
                 const validBools = ['true', 'false', 'yes', 'no', 'on', 'off'];
                 if (val.length > 0 && !val.includes(' ') && !val.includes('"') && !val.includes("'")) {
-                    // If it starts with common boolean prefixes but isn't a valid full word
-                    if (/^(tr|fa|ye|no)/.test(val) && !validBools.includes(val)) {
+                    // Catch any keyword that starts like a boolean but isn't one
+                    if (/^(t|f|y|n)/.test(val) && !validBools.includes(val)) {
                         errors.push({ line: i + 1, message: `Invalid keyword '${val}'. Did you mean 'true' or 'false'?` });
                     }
                 }
@@ -92,7 +92,7 @@ function validateYamlRealtime(content) {
                 // Case: key:value (missing space)
                 const val = trim.split(':')[1].toLowerCase();
                 if (['true', 'false', 'yes', 'no'].includes(val)) {
-                    errors.push({ line: i + 1, message: `Missing space after colon (e.g. 'key: ${val}')` });
+                    errors.push({ line: i + 1, message: `Missing space after colon. YAML requires 'key: ${val}'.` });
                 }
             }
             return;
