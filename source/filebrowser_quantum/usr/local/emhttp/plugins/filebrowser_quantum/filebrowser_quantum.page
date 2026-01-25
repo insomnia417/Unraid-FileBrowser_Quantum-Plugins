@@ -82,11 +82,17 @@ function validateYamlRealtime(content) {
             if (parts.length >= 2) {
                 const val = parts[1].trim().toLowerCase();
                 const validBools = ['true', 'false', 'yes', 'no', 'on', 'off'];
-                if (val.length > 0 && val.length < 10 && !val.includes(' ') && !val.includes('"') && !val.includes("'")) {
-                    if (['tru', 'tr', 'fal', 'fals', 'y', 'n'].includes(val) || 
-                       (!validBools.includes(val) && /^(tru|fal|ye|no)/.test(val))) {
-                        errors.push({ line: i + 1, message: `Invalid value '${val}'. Did you mean 'true' or 'false'?` });
+                if (val.length > 0 && !val.includes(' ') && !val.includes('"') && !val.includes("'")) {
+                    // If it starts with common boolean prefixes but isn't a valid full word
+                    if (/^(tr|fa|ye|no)/.test(val) && !validBools.includes(val)) {
+                        errors.push({ line: i + 1, message: `Invalid keyword '${val}'. Did you mean 'true' or 'false'?` });
                     }
+                }
+            } else if (trim.match(/:[^\s#]+/)) {
+                // Case: key:value (missing space)
+                const val = trim.split(':')[1].toLowerCase();
+                if (['true', 'false', 'yes', 'no'].includes(val)) {
+                    errors.push({ line: i + 1, message: `Missing space after colon (e.g. 'key: ${val}')` });
                 }
             }
             return;
