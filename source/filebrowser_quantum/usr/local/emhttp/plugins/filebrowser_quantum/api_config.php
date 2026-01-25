@@ -48,40 +48,42 @@ if ($action == 'save_config') {
 
     if (file_put_contents($CONFIG_YAML, $newContent) === false) sendResponse(false, [], 'Write failed');
 
-    if (file_put_contents($CONFIG_YAML, $newContent) === false) sendResponse(false, [], 'Write failed');
-
     $is_enabled = getSettingValue('filebrowser_ENABLED', 'false') == 'true';
-    $binary_base = basename($BINARY);
-    $is_running = exec("pgrep -f \"$binary_base\"") !== '';
+    
+    // Delegation: Check current status via Daemon.sh
+    $running_output = trim(shell_exec("bash $DAEMON_SCRIPT 'CHECK'"));
+    $is_running = ($running_output === 'running');
     
     $restarted = false;
     $error_output = '';
+    
+    // Logic: If either enabled or running, we need to restart to apply new config
     if ($is_enabled || $is_running) {
-         // 1. 停止服务
-         exec("bash $DAEMON_SCRIPT 'false' > /dev/null 2>&1");
+         // 1. Fully delegate stop
+         exec("bash $DAEMON_SCRIPT 'STOP_ONLY' > /dev/null 2>&1");
          
-         // 2. 等待进程彻底消失 (防止启动竞争)
-         $wait_limit = 5;
-         while ($wait_limit > 0 && exec("pgrep -f \"$binary_base\"") !== '') {
-             usleep(500000); // 等待 0.5s
-             $wait_limit--;
-         }
-         
-         // 3. 启动服务
-         exec("bash $DAEMON_SCRIPT 'true' > /dev/null 2>&1");
-         
-         // 4. 验证窗口：等待 2 秒后检查进程是否存活
-         sleep(2);
-         if (exec("pgrep -f \"$binary_base\"") !== '') {
-             $restarted = true;
-         } else {
-             // 启动失败 - 抓取日志
-             $logfile = getLogPath($CONFIG_YAML);
-             if (file_exists($logfile)) {
-                 $error_output = shell_exec("tail -n 15 " . escapeshellarg($logfile));
-                 $error_output = preg_replace('/\x1b\[[0-9;]*m/', '', $error_output);
+         // 2. Only start if enabled
+         if ($is_enabled) {
+             // Fully delegate start (Daemon.sh has its own 5s verification loop)
+             exec("bash $DAEMON_SCRIPT 'START_ONLY' 2>&1", $shell_out, $return_var);
+             
+             // Check Daemon.sh exit code (0 = Success, 1 = Failed)
+             if ($return_var === 0) {
+                 $restarted = true;
+             } else {
+                 // Startup FAILED - Daemon.sh handles logging to syslog, but we grab log file for UI
+                 $logfile = getLogPath($CONFIG_YAML);
+                 $log_snippet = "";
+                 if (file_exists($logfile)) {
+                     $log_snippet = shell_exec("tail -n 20 " . escapeshellarg($logfile));
+                     $log_snippet = preg_replace('/\x1b\[[0-9;]*m/', '', $log_snippet);
+                 }
+                 
+                 $shell_msg = implode("\n", $shell_out);
+                 $combined_err = "--- [Binary Log] ---\n" . ($log_snippet ?: "No logs found.") . "\n\n--- [Daemon Output] ---\n" . ($shell_msg ?: "No output.");
+                 
+                 sendResponse(false, ['restarted' => false, 'log' => $combined_err], 'Config saved, but Service failed to start. Binary rejected the configuration.');
              }
-             sendResponse(false, ['restarted' => false, 'log' => $error_output], 'Config saved, but Service failed to start. Check log details below.');
          }
     }
     sendResponse(true, ['restarted' => $restarted], 'Saved successfully' . ($restarted ? ' and restarted' : ''));
@@ -92,8 +94,10 @@ if ($action == 'get_status') {
     $is_enabled = getSettingValue('filebrowser_ENABLED', 'false') == 'true' ? 'true' : 'false';
     
     $port = exec($DAEMON_SCRIPT . ' "GET_PORT"');
-    $binary_base = basename($BINARY);
-    $pid = exec("pgrep -f \"$binary_base\"");
+    
+    // Delegation: Use Daemon.sh as single source of truth for process status
+    $running_output = trim(shell_exec("bash $DAEMON_SCRIPT 'CHECK'"));
+    $running = ($running_output === 'running');
     
     $local_ver = exec($DAEMON_SCRIPT . ' "GET_LOCAL_VER"');
     $latest_ver = getSettingValue('filebrowser_LATEST', 'Unknown');
@@ -107,7 +111,7 @@ if ($action == 'get_status') {
 
     sendResponse(true, [
         'enabled' => $is_enabled,
-        'running' => !empty($pid),
+        'running' => $running,
         'port' => $port,
         'branch' => $branch == 'beta' ? '2' : '1',
         'local_version' => trim($local_ver),
@@ -164,7 +168,7 @@ sendResponse(false, [], 'Invalid action: ' . $action);
 function isValidYamlSyntax($content) {
     if (function_exists('yaml_parse')) {
         $parsed = @yaml_parse($content);
-        if ($parsed === false) return "YAML Syntax Error: Use a validator to check your structure.";
+        if ($parsed === false) return "YAML Syntax Error: Specific structure issues detected.";
         
         if (!is_array($parsed)) {
             return "YAML Error: Root element must be a dictionary/array (e.g. 'key: value'), not a simple string.";
@@ -181,20 +185,29 @@ function isValidYamlSyntax($content) {
         
         // YAML Key-Value check
         if (strpos($trim, ':') !== false) {
-             // Enhanced: Check for invalid boolean typos (like 'tru', 'fal')
-             if (preg_match('/:\s+([a-zA-Z]+)$/', $trim, $matches)) {
+             // Enhanced: Catch boolean typos (like 'tr', 'fa', 'truesfff')
+             // 1. Matches "key: value" (with space)
+             if (preg_match('/:\s+([^#\s]+)/', $trim, $matches)) {
                  $val = strtolower($matches[1]);
-                 $valid_bools = ['true', 'false', 'yes', 'no', 'on', 'off'];
-                 // If it looks like a boolean but isn't quite right
-                 if (in_array($val, ['tru', 'tr', 'fal', 'fals', 'y', 'n']) || 
-                    (!in_array($val, $valid_bools) && preg_match('/^(tru|fal|ye|no)/', $val))) {
-                     return "YAML Error (Line " . ($i + 1) . "): Invalid value '$val'. Did you mean 'true' or 'false'?";
+                 $valid_standard = ['true', 'false', 'yes', 'no', 'on', 'off'];
+                 
+                 // If it starts with common boolean prefixes but isn't a valid full word
+                 if (preg_match('/^(tr|fa|ye|no)/', $val) && !in_array($val, $valid_standard)) {
+                     return "YAML Error (Line " . ($i + 1) . "): Invalid keyword '$val'. Did you mean 'true' or 'false'?";
+                 }
+             } 
+             // 2. Matches "key:value" (Invalid YAML mapping, usually a string typo)
+             elseif (preg_match('/:([^\s#]+)/', $trim, $matches)) {
+                 $val = $matches[1];
+                 // If the value after colon is likely meant to be a boolean but missing space
+                 if (in_array(strtolower($val), ['true', 'false', 'yes', 'no'])) {
+                     return "YAML Error (Line " . ($i + 1) . "): Missing space after colon. YAML requires 'key: $val' instead of 'key:$val'.";
                  }
              }
              continue;
         }
 
-        return "YAML Error (Line " . ($i + 1) . "): Line '$trim' is invalid. Must be 'key: value', list item ('- value'), or comment.";
+        return "YAML Error (Line " . ($i + 1) . "): Invalid formatting. Check line structure.";
     }
     
     if (strpos($content, "\t") !== false) return "YAML Error: Tabs are not allowed.";
