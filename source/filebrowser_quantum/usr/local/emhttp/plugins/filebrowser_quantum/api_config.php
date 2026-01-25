@@ -36,6 +36,9 @@ if ($action == 'save_config') {
     if (empty($newContent) && !empty(file_get_contents('php://input'))) {
          $input = json_decode(file_get_contents('php://input'), true);
          $newContent = $input['content'] ?? '';
+         $target_enabled = $input['enabled'] ?? '';
+    } else {
+         $target_enabled = $_POST['enabled'] ?? '';
     }
     
     if (empty($newContent)) sendResponse(false, [], 'Content cannot be empty');
@@ -46,44 +49,41 @@ if ($action == 'save_config') {
     $schema = validateConfigSchema($newContent);
     if ($schema !== true) sendResponse(false, [], $schema);
 
+    // 1. Save YAML content
     if (file_put_contents($CONFIG_YAML, $newContent) === false) sendResponse(false, [], 'Write failed');
 
-    $is_enabled = getSettingValue('filebrowser_ENABLED', 'false') == 'true';
+    // 2. Sync 'Enabled/Disabled' radio state if provided
+    if ($target_enabled !== '') {
+        setSettingValue('filebrowser_ENABLED', $target_enabled);
+    }
     
-    // Delegation: Check current status via Daemon.sh
-    $running_output = trim(shell_exec("bash $DAEMON_SCRIPT 'CHECK'"));
-    $is_running = ($running_output === 'running');
-    
+    $is_enabled = ($target_enabled !== '') ? ($target_enabled == 'true') : (getSettingValue('filebrowser_ENABLED', 'false') == 'true');
     $restarted = false;
     
-    // Logic: If either enabled or running, we need to restart to apply new config
-    if ($is_enabled || $is_running) {
-         // 1. Fully delegate stop
-         exec("bash $DAEMON_SCRIPT 'STOP_ONLY' > /dev/null 2>&1");
+    // 3. Delegate Lifecycle to Daemon.sh
+    if ($is_enabled) {
+         // RESTART command handles STOP-WAIT-START-VERIFY (5s loop)
+         exec("bash $DAEMON_SCRIPT 'RESTART' 2>&1", $shell_out, $return_var);
          
-         // 2. Only start if enabled
-         if ($is_enabled) {
-             // Fully delegate start (Daemon.sh now has its own 5s path-accurate loop)
-             exec("bash $DAEMON_SCRIPT 'START_ONLY' 2>&1", $shell_out, $return_var);
-             
-             // Check Daemon.sh exit code (0 = Success, 1 = Failed)
-             if ($return_var === 0) {
-                 $restarted = true;
-             } else {
-                 // Startup FAILED
-                 $logfile = getLogPath($CONFIG_YAML);
-                 $log_snippet = "";
-                 if (file_exists($logfile)) {
-                     $log_snippet = shell_exec("tail -n 20 " . escapeshellarg($logfile));
-                     $log_snippet = preg_replace('/\x1b\[[0-9;]*m/', '', $log_snippet);
-                 }
-                 
-                 $shell_msg = implode("\n", $shell_out);
-                 $combined_err = "--- [Binary Log] ---\n" . ($log_snippet ?: "No logs.") . "\n\n--- [Daemon Output] ---\n" . ($shell_msg ?: "No output.");
-                 
-                 sendResponse(false, ['restarted' => false, 'log' => $combined_err], 'Config saved, but Service failed to start. Binary rejected the configuration.');
+         if ($return_var === 0) {
+             $restarted = true;
+         } else {
+             // Startup FAILED (due to invalid config value like 'downloa: t')
+             $logfile = getLogPath($CONFIG_YAML);
+             $log_snippet = "";
+             if (file_exists($logfile)) {
+                 $log_snippet = shell_exec("tail -n 20 " . escapeshellarg($logfile));
+                 $log_snippet = preg_replace('/\x1b\[[0-9;]*m/', '', $log_snippet);
              }
+             $shell_msg = implode("\n", $shell_out);
+             $combined_err = "--- [Binary Log] ---\n" . ($log_snippet ?: "No logs.") . "\n\n--- [Daemon Output] ---\n" . ($shell_msg ?: "No output.");
+             
+             // CRITICAL: Return success: false to signal failure to UI
+             sendResponse(false, ['restarted' => false, 'log' => $combined_err], 'Config saved, but Service failed to stay alive. Check YAML values.');
          }
+    } else {
+         // If user saves while Disabled, just ensure it's stopped
+         exec("bash $DAEMON_SCRIPT 'STOP_ONLY' > /dev/null 2>&1");
     }
     sendResponse(true, ['restarted' => $restarted], 'Saved successfully' . ($restarted ? ' and restarted' : ''));
 }
@@ -94,16 +94,12 @@ if ($action == 'get_status') {
     
     $port = exec($DAEMON_SCRIPT . ' "GET_PORT"');
     
-    // Delegation: Single Source of Truth
+    // Delegation: Use specialized CHECK command for process status
     $running_output = trim(shell_exec("bash $DAEMON_SCRIPT 'CHECK'"));
     $running = ($running_output === 'running');
     
     $local_ver = exec($DAEMON_SCRIPT . ' "GET_LOCAL_VER"');
     $latest_ver = getSettingValue('filebrowser_LATEST', 'Unknown');
-    
-    if ($latest_ver == "Unknown") {
-        $latest_ver = exec($DAEMON_SCRIPT . ' "VERSION"');
-    }
     
     $branch = getSettingValue('filebrowser_BRANCH', 'stable');
     $logfile = getLogPath($CONFIG_YAML);
