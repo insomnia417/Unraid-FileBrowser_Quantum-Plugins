@@ -32,7 +32,6 @@ if ($action == 'save_config') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') sendResponse(false, [], 'Method Not Allowed');
     
     $newContent = $_POST['content'] ?? '';
-    
     if (empty($newContent) && !empty(file_get_contents('php://input'))) {
          $input = json_decode(file_get_contents('php://input'), true);
          $newContent = $input['content'] ?? '';
@@ -40,25 +39,61 @@ if ($action == 'save_config') {
     
     if (empty($newContent)) sendResponse(false, [], 'Content cannot be empty');
 
+    // yq 校验
     $syntax = isValidYamlSyntax($newContent);
     if ($syntax !== true) sendResponse(false, [], $syntax);
     
-    $schema = validateConfigSchema($newContent);
-    if ($schema !== true) sendResponse(false, [], $schema);
+    // Schema 检查：至少保留核心 server 块检查
+    if (strpos($newContent, 'server:') === false) sendResponse(false, [], "Schema Error: Missing required 'server:' section.");
+
+    if (file_put_contents($CONFIG_YAML, $newContent) === false) sendResponse(false, [], 'Write failed');
 
     if (file_put_contents($CONFIG_YAML, $newContent) === false) sendResponse(false, [], 'Write failed');
 
     $is_enabled = getSettingValue('filebrowser_ENABLED', 'false') == 'true';
-    $pid = exec('pgrep -f "' . basename($BINARY) . '"');
+    $binary_base = basename($BINARY);
+    $is_running = exec("pgrep -f \"$binary_base\"") !== '';
     
     $restarted = false;
-    if ($is_enabled || !empty($pid)) {
+    $error_output = '';
+    if ($is_enabled || $is_running) {
          exec("bash $DAEMON_SCRIPT 'false' > /dev/null 2>&1");
-         sleep(1);
+         $wait_limit = 5;
+         while ($wait_limit > 0 && exec("pgrep -f \"$binary_base\"") !== '') {
+             usleep(500000);
+             $wait_limit--;
+         }
          exec("bash $DAEMON_SCRIPT 'true' > /dev/null 2>&1");
-         $restarted = true;
+         sleep(2);
+         if (exec("pgrep -f \"$binary_base\"") !== '') {
+             $restarted = true;
+         } else {
+             $logfile = getLogPath($CONFIG_YAML);
+             if (file_exists($logfile)) {
+                 $error_output = shell_exec("tail -n 15 " . escapeshellarg($logfile));
+                 $error_output = preg_replace('/\x1b\[[0-9;]*m/', '', $error_output);
+             }
+             sendResponse(false, ['restarted' => false, 'log' => $error_output], 'Config saved, but Service failed to start. Check log details below.');
+         }
     }
     sendResponse(true, ['restarted' => $restarted], 'Saved successfully' . ($restarted ? ' and restarted' : ''));
+}
+
+// === [新增] yq 实时校验接口 ===
+if ($action == 'validate_config') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') sendResponse(false, [], 'Method Not Allowed');
+    $content = $_POST['content'] ?? '';
+    
+    $result = isValidYamlSyntax($content);
+    if ($result === true) {
+        // 进一步进行业务逻辑校验
+        if (strpos($content, 'server:') === false) {
+            sendResponse(false, [], "Missing core 'server:' section");
+        }
+        sendResponse(true, [], 'Valid YAML');
+    } else {
+        sendResponse(false, [], $result);
+    }
 }
 
 // === 获取状态 ===
@@ -66,7 +101,8 @@ if ($action == 'get_status') {
     $is_enabled = getSettingValue('filebrowser_ENABLED', 'false') == 'true' ? 'true' : 'false';
     
     $port = exec($DAEMON_SCRIPT . ' "GET_PORT"');
-    $pid = exec('pgrep -f "' . basename($BINARY) . '"');
+    $binary_base = basename($BINARY);
+    $pid = exec("pgrep -f \"$binary_base\"");
     
     $local_ver = exec($DAEMON_SCRIPT . ' "GET_LOCAL_VER"');
     $latest_ver = getSettingValue('filebrowser_LATEST', 'Unknown');
@@ -94,28 +130,19 @@ if ($action == 'set_state') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') sendResponse(false, [], 'Method Not Allowed');
     
     $target_state = $_POST['enabled'] ?? '';
-    
-    if ($target_state !== 'true' && $target_state !== 'false') {
-        sendResponse(false, [], 'Invalid state');
-    }
+    if ($target_state !== 'true' && $target_state !== 'false') sendResponse(false, [], 'Invalid state');
 
     shell_exec($DAEMON_SCRIPT . ' ' . escapeshellarg($target_state) . " > /dev/null 2>&1 &");
-    
     sendResponse(true, ['target' => $target_state], 'Command sent');
 }
 
 // === 检查更新 ===
 if ($action == 'check_update') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') sendResponse(false, [], 'Method Not Allowed');
-    
     $branch = $_POST['branch'] ?? '';
-    
-    // 1 = stable, 2 = beta
     $branchName = ($branch === '2') ? 'beta' : 'stable';
     setSettingValue('filebrowser_BRANCH', $branchName);
-    
     $latest = trim(shell_exec($DAEMON_SCRIPT . ' "VERSION"')) ?: "Unknown";
-    
     sendResponse(true, ['latest_version' => $latest], 'Version checked');
 }
 
@@ -132,58 +159,43 @@ if ($action == 'clear_log') {
 
 sendResponse(false, [], 'Invalid action: ' . $action);
 
-// === YAML 验证函数 ===
+// === yq 核心验证函数 ===
 
 function isValidYamlSyntax($content) {
-    if (function_exists('yaml_parse')) {
-        $parsed = @yaml_parse($content);
-        if ($parsed === false) return "YAML Syntax Error: Use a validator to check your structure.";
+    global $YQ_BINARY;
+    
+    if (!file_exists($YQ_BINARY)) {
+        return "Validator Error: yq binary not found at $YQ_BINARY";
+    }
+
+    $descriptorspec = [
+        0 => ["pipe", "r"], // stdin
+        1 => ["pipe", "w"], // stdout
+        2 => ["pipe", "w"]  // stderr
+    ];
+
+    $process = proc_open("$YQ_BINARY eval '.' -", $descriptorspec, $pipes);
+
+    if (is_resource($process)) {
+        fwrite($pipes[0], $content);
+        fclose($pipes[0]);
+
+        $stdout = stream_get_contents($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
         
-        if (!is_array($parsed)) {
-            return "YAML Error: Root element must be a dictionary/array (e.g. 'key: value'), not a simple string.";
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+
+        $return_value = proc_close($process);
+
+        if ($return_value !== 0) {
+            // 清理 yq 报错前缀，只保留有用信息
+            $error = trim($stderr);
+            $error = preg_replace('/^.*?error:\s*/i', '', $error);
+            return "YAML Error: " . $error;
         }
         return true;
     }
-
-    $lines = explode("\n", $content);
-    foreach ($lines as $i => $line) {
-        $trim = trim($line);
-        if (empty($trim)) continue;
-        
-        if ($trim[0] === '#') continue;
-        if ($trim[0] === '-') continue;
-        if (strpos($trim, ':') !== false) continue;
-
-        return "YAML Error (Line " . ($i + 1) . "): Line '$trim' is invalid. Must be 'key: value', list item ('- value'), or comment.";
-    }
-    
-    if (strpos($content, "\t") !== false) return "YAML Error: Tabs are not allowed.";
-    
-    return true;
-}
-
-function validateConfigSchema($content) {
-    if (preg_match('/exclude\.(filePaths|folderPaths|fileNames|folderNames|fileEndsWith|folderEndsWith|fileStartsWith|folderStartsWith|hidden|ignoreZeroSizeFolders)/', $content)) {
-        return "Schema Error: You are using the OLD exclusion rule format. Please migrate to the new 'rules' list format.";
-    }
-    
-    if (preg_match_all('/<<:\s*\*([a-zA-Z0-9_]+)/', $content, $matches)) {
-        foreach ($matches[1] as $anchorName) {
-            if (strpos($content, '&' . $anchorName) === false) {
-                return "Schema Error: Undefined anchor reference '*$anchorName'.";
-            }
-        }
-    }
-    
-    if (function_exists('yaml_parse')) {
-        $parsed = @yaml_parse($content);
-        if (is_array($parsed) && !isset($parsed['server'])) {
-             return "Schema Error: Missing required top-level section 'server:'.";
-        }
-    } else {
-        if (strpos($content, 'server:') === false) return "Schema Error: Missing required top-level section 'server:'.";
-    }
-
-    return true;
+    return "Validator Error: Failed to execute yq";
 }
 ?>
