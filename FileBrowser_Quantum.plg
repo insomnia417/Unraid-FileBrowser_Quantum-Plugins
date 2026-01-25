@@ -1,8 +1,8 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
   <!ENTITY branch "main">
-  <!ENTITY version "2026.01.24">
-  <!ENTITY bundleversion "2026.01.24">
+  <!ENTITY version "2026.01.25">
+  <!ENTITY bundleversion "2026.01.25">
   <!ENTITY author "insomnia417">
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY launch "Settings/filebrowser_quantum">
@@ -16,10 +16,10 @@
 <CHANGES>
 ### &name;
 #### 🆕 最新更新 (v&version;)
-- **逻辑优化**：修复端口颜色不变的问题
+- **逻辑优化**：启停逻辑更顺畅,不再弹窗.
 
 #### 📜 历史改进
-- **逻辑优化**：UI界面美化调整，更易用。
+- **逻辑优化**：UI界面美化调整，修复端口颜色不变的问题，更易用。
 - **安全加固**：新增二进制文件 SHA256 完整性校验，确保下载安全。
 - **逻辑优化**：完善 AJAX 分支切换逻辑，实现版本号与 UI 按钮的实时联动。
 - **内核升级**：引入架构自适应逻辑，为跨平台运行奠定基础。
