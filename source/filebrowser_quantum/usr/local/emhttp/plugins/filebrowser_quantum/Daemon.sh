@@ -127,4 +127,14 @@ elif [ "${1}" == "GET_BRANCH" ]; then
     echo "$BRANCH"
     exit 0
 
+# --- 8. 物理检测进程存活 (全插件统一接口) ---
+elif [ "${1}" == "CHECK" ]; then
+    if pgrep -f "$(basename "$BINARY")" > /dev/null 2>&1 ; then
+        echo "running"
+        exit 0
+    else
+        echo "stopped"
+        exit 1
+    fi
+
 fi
