@@ -1,8 +1,8 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
-  <!ENTITY branch "test">
-  <!ENTITY version "2026.01.26">
-  <!ENTITY bundleversion "2026.01.26">
+  <!ENTITY branch "main">
+  <!ENTITY version "2026.01.27">
+  <!ENTITY bundleversion "2026.01.27">
   <!ENTITY author "insomnia417">
   <!ENTITY name "filebrowser_quantum">
   <!ENTITY launch "Settings/filebrowser_quantum">
