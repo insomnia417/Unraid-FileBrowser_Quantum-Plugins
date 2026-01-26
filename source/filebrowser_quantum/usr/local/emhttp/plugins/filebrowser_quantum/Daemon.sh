@@ -142,8 +142,8 @@ elif [ "${1}" == "CHECK" ]; then
     if [ -n "$PID" ]; then
         # 进程在跑，进一步检查端口是否已就绪
         PORT=$(/bin/bash "$DAEMON_SCRIPT" "GET_PORT")
-        # 使用 netstat 检查端口监听。只要本地有 LISTEN 记录即视为逻辑就绪
-        if netstat -lnt | grep -q ":$PORT .*LISTEN"; then
+        # 使用更精确的正则匹配：端口后必须紧跟空格或地址终止符
+        if netstat -lnt | grep -qE ":$PORT[[:space:]]+.*LISTEN"; then
             echo "fully_ready"
         else
             echo "running"
