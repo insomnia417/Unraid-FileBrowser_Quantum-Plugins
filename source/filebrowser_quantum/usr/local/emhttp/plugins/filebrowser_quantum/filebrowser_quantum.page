@@ -70,69 +70,11 @@ function updateServiceUI(isRunning, port, verifying = false) {
 }
 
 /**
- * Real-time YAML validation (mirrors PHP logic)
- */
-function validateYamlRealtime(content) {
-    const errors = [];
-    const lines = content.split('\n');
-    
-    lines.forEach((line, i) => {
-        const trim = line.trim();
-        if (!trim) return; // Empty line OK
-        if (trim.startsWith('#')) return; // Comment OK
-        if (trim.startsWith('-')) return; // List item OK
-        
-        if (trim.includes(':')) {
-            // Enhanced: Check for invalid boolean typos (mirror PHP logic)
-            const parts = trim.split(':');
-            if (parts.length >= 2) {
-                const val = parts[1].trim().toLowerCase();
-                const validBools = ['true', 'false', 'yes', 'no', 'on', 'off'];
-                if (val.length > 0 && !val.includes(' ') && !val.includes('"') && !val.includes("'")) {
-                    // Catch any keyword that starts like a boolean but isn't one
-                    if (/^(t|f|y|n)/.test(val) && !validBools.includes(val)) {
-                        errors.push({ line: i + 1, message: `Invalid keyword '${val}'. Did you mean 'true' or 'false'?` });
-                    }
-                }
-            } else if (trim.match(/:[^\s#]+/)) {
-                // Case: key:value (missing space)
-                const val = trim.split(':')[1].toLowerCase();
-                if (['true', 'false', 'yes', 'no'].includes(val)) {
-                    errors.push({ line: i + 1, message: `Missing space after colon. YAML requires 'key: ${val}'.` });
-                }
-            }
-            return;
-        }
-        
-        errors.push({ line: i + 1, message: `"${trim.substring(0, 30)}..." is invalid` });
-    });
-    
-    // Tab check
-    if (content.includes('\t')) {
-        errors.push({ line: 0, message: "Tabs are not allowed in YAML" });
-    }
-    
-    // Required section check
-    if (!content.includes('server:')) {
-        errors.push({ line: 0, message: "Missing required 'server:' section" });
-    }
-    
-    return errors;
-}
-
-/**
  * Display validation result in UI
  */
 function displayValidationResult(errors) {
-    const statusEl = $("#save_status");
-    const btn = document.getElementById('SAVE_btn');
-    
-    if (errors.length === 0) {
-        statusEl.text("✓ Valid YAML").css("color", "#4caf50").show();
-    } else {
-        const msg = errors.map(e => e.line > 0 ? `Line ${e.line}: ${e.message}` : e.message).join("; ");
-        statusEl.text("✗ " + msg).css("color", "#f44336").show();
-    }
+    // Legacy function placeholder (logic now purely backend-driven upon SAVE)
+    $("#save_status").hide();
 }
 
 // ============================================================
@@ -206,7 +148,9 @@ function applyService(form) {
 
 function startPolling(form, applyBtn) {
     let pollCount = 0;
-    const maxPolls = 15; // Max 30 seconds
+    const maxPolls = 30; // 15 seconds max (at 0.5s interval)
+    let stableCount = 0;
+    let lastRunningState = null;
     
     let checkTimer = setInterval(function() {
         $.getJSON("/plugins/filebrowser_quantum/api_config.php?action=get_status&t=" + new Date().getTime(), function(response) {
@@ -216,23 +160,46 @@ function startPolling(form, applyBtn) {
             const newState = data.enabled;
             pollCount++;
 
-            // Wait until the backend state matches our intent OR we timeout
-            if (newState === $("#webui_status_hidden").val() || pollCount >= maxPolls) {
-                // If it's Enabled, we also want to wait until it's either RUNNING or officially FAILED
-                if (newState === 'true' && !data.running && pollCount < 5) {
-                    return; // Keep polling a bit longer
+            if (newState === $("#webui_status_hidden").val()) {
+                if (data.running === lastRunningState) {
+                    stableCount++;
+                } else {
+                    stableCount = 0;
+                }
+                lastRunningState = data.running;
+
+                // LOGIC: High-speed short-circuit
+                // 1. Instant-Ready: If binary has bound to port (success proven), skip the 7s wait.
+                // 2. Stopping: 1 poll (0.5s) is enough.
+                const isStopping = (newState === "false");
+                const requiredStable = isStopping ? 1 : 14;
+
+                if (data.ready && !isStopping) {
+                    // FAST-TRACK: Service is already listening, no need to wait for 7s safety 
+                    stableCount = requiredStable; 
                 }
 
+                if (stableCount >= requiredStable || pollCount >= maxPolls) {
+                    clearInterval(checkTimer);
+                    
+                    // SYNC: Lock in the current state
+                    originalServiceState = newState;
+                    
+                    // UI: Standard Reset
+                    applyBtn.val('APPLY').prop('disabled', false).removeClass('submit');
+                    $('input[name="webui_radio"][value="' + newState + '"]').prop('checked', true);
+                    
+                    updateServiceUI(data.running, data.port);
+                    
+                    // Final Sync: Ensure APPLY button color matches reality
+                    toggleService(newState);
+                }
+            } else if (pollCount >= maxPolls) {
                 clearInterval(checkTimer);
-                originalServiceState = newState;
-                
-                applyBtn.val('APPLY').prop('disabled', false).removeClass('submit');
-                $('input[name="webui_radio"][value="' + newState + '"]').prop('checked', true);
-                
-                updateServiceUI(data.running, data.port);
+                applyBtn.val('APPLY').prop('disabled', false);
             }
         });
-    }, 2000);
+    }, 500); // 500ms for high-speed responsiveness
 }
 
 // ============================================================
@@ -309,10 +276,10 @@ function setDefault(form) {
 
 function onConfigInput() {
     var btn = document.getElementById('SAVE_btn');
-    btn.style.background = '#4caf50';
+    btn.style.background = '#81c784'; // Lighter green (Material 300)
     btn.style.color = '#fff';
-    btn.style.borderColor = '#4caf50';
-    triggerValidation();
+    btn.style.borderColor = '#81c784';
+    // Real-time local validation removed in favor of Binary-Native Truth on SAVE
 }
 
 function triggerValidation() {
@@ -330,10 +297,15 @@ function saveConfig() {
     
     var btn = document.getElementById('SAVE_btn');
     btn.innerText = "SAVING...";
+    btn.style.background = '#81c784';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#81c784';
     
     // UI Feedback: Visual Reset
-    $("#save_status").text("Saving and verifying startup...").css("color", "gray").show();
-    updateServiceUI(false, $("#port_value").text(), true); 
+    $("#save_status").text("Saving configuration...").css("color", "gray").show();
+    
+    // Only show "VERIFYING..." (3rd param true) if we are actually in Enabled mode
+    updateServiceUI(false, $("#port_value").text(), (enabled === 'true')); 
     
     var postData = "content=" + encodeURIComponent(content) + "&enabled=" + enabled;
 
@@ -343,38 +315,58 @@ function saveConfig() {
         data: postData, 
         success: function(response) {
             if (response.success) {
-                btn.innerText = "SAVE √";
-                $("#save_status").text(response.message).css("color", "#4caf50").show();
+                // SUCCESS STATE
+                btn.innerText = "SAVED ✔";
+                btn.style.background = '#81c784';
+                btn.style.color = '#fff';
+                btn.style.borderColor = '#81c784';
+
+                $("#save_status").text(response.message).css("color", "#81c784").show();
                 
                 setTimeout(function() { 
                     $("#save_status").fadeOut(); 
                     btn.innerText = "SAVE";
+                    btn.style.background = '#f2f2f2'; 
+                    btn.style.color = '#333'; 
+                    btn.style.borderColor = '#ccc';
                 }, 3000);
                 
                 window.defaultConfigText = content; 
-                btn.style.background = '#f2f2f2'; 
-                btn.style.color = '#333'; 
-                btn.style.borderColor = '#ccc';
                  
                 var portMatch = content.match(/port:\s*(\d+)/);
                 if (portMatch && portMatch[1]) {
                     var newPort = portMatch[1];
                     $("#port_value").text(newPort);
-                    $(".localURL").attr("onclick", "window.open('http://' + window.location.hostname + ':" + newPort + "', '_blank')");
                 }
+
+                // ASYNC TRIGGER: Start polling just like the APPLY button
+                const applyBtn = $("input[value='APPLY']");
+                startPolling(null, applyBtn);
             } else {
-                btn.innerText = "SAVE";
+                // FAILURE STATE
+                btn.innerText = "FAILED ✘";
+                btn.style.background = '#f44336';
+                btn.style.color = '#fff';
+                btn.style.borderColor = '#f44336';
+
                 let errorMsg = response.message;
-                if (response.data && response.data.log) {
-                    const logSnippet = response.data.log.trim();
-                    errorMsg += "\n\nBinary Output:\n" + logSnippet;
-                    $(".log-area").prepend("<b style='color:red;'>[Critical] Startup failure:</b><br><pre style='color:orange; font-size:10px;'>" + logSnippet + "</pre><hr>");
+                if (response.data && response.data.details) {
+                    $("#save_status").html("<b style='color:#f44336;'>Binary Validation Failed:</b><br><pre style='color:orange; font-size:10px; margin-top:5px; background:#fdfdfd; padding:5px; border:1px solid #ddd;'>" + response.data.details + "</pre>").show();
+                } else {
+                    $("#save_status").text(errorMsg).css("color", "#f44336").show();
                 }
-                $("#save_status").text(errorMsg).css("color", "#f44336").show();
+
+                setTimeout(function() {
+                    btn.innerText = "SAVE";
+                    // Only revert colors if no more unsaved changes (reset by onConfigInput)
+                    // But here we just revert to original for consistency
+                    btn.style.background = '#f2f2f2'; 
+                    btn.style.color = '#333'; 
+                    btn.style.borderColor = '#ccc';
+                }, 3000);
+
+                updateStatusViaAPI();
             }
-            
-            // Sync status with half-second delay to allow backend to settle
-            setTimeout(updateStatusViaAPI, 500);
         },
         error: function(xhr, status, error) {
             $("#save_status").text("Comm Error: " + error).css("color", "#f44336").show();

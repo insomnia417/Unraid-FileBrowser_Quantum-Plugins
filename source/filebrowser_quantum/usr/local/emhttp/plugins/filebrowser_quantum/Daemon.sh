@@ -36,7 +36,7 @@ if [ "${1}" == "true" ] || [ "${1}" == "START_ONLY" ]; then
         set_setting "filebrowser_ENABLED" "true"
     fi
     
-    # 物理探测：使用 daemon_old.sh 验证过的 -f 模式
+    # 物理探测：回归用户要求的 $(basename "$BINARY") 模式
     if pgrep -f "$(basename "$BINARY")" > /dev/null 2>&1 ; then
         echo "FileBrowser 已经在运行！" | tee >(logger -t "$TAG")
         exit 0
@@ -45,15 +45,19 @@ if [ "${1}" == "true" ] || [ "${1}" == "START_ONLY" ]; then
     echo "FileBrowser 正在启动中..." | tee >(logger -t "$TAG")
     echo "$BINARY -c $CONFIG_YAML" | at now -M > /dev/null 2>&1
 
-    # 5秒严格检测循环
+    # 循环检测启动结果
     for i in {1..5}; do
         sleep 1
         if pgrep -f "$(basename "$BINARY")" > /dev/null 2>&1 ; then
-            # 稳定性核查：确认启动初期未崩溃
-            sleep 2
+            # 缩减观察期：遵照用户建议，从 8 秒调整为 7 秒
+            echo "发现进程，正在进行 7 秒稳定性核查..." | tee >(logger -t "$TAG")
+            sleep 7
             if pgrep -f "$(basename "$BINARY")" > /dev/null 2>&1 ; then
-                echo "FileBrowser 启动成功！" | tee >(logger -t "$TAG")
+                echo "FileBrowser 启动成功且运行稳定！" | tee >(logger -t "$TAG")
                 exit 0
+            else
+                echo "警告：进程在启动初期崩坏，请检查配置！" | tee >(logger -t "$TAG")
+                exit 1
             fi
         fi
     done
@@ -65,16 +69,8 @@ if [ "${1}" == "true" ] || [ "${1}" == "START_ONLY" ]; then
 elif [ "${1}" == "false" ] || [ "${1}" == "STOP_ONLY" ]; then
     echo "正在停止 FileBrowser..." | tee >(logger -t "$TAG")
     
-    # 物理停止：精准打击
+    # 物理停止：精准打击 (pkill -9 是秒杀，无需循环等待)
     pkill -9 -f "$(basename "$BINARY")" > /dev/null 2>&1
-    
-    # 等待消失 (最多 3 秒)
-    for i in {1..6}; do
-        if ! pgrep -f "$(basename "$BINARY")" > /dev/null 2>&1 ; then
-            break
-        fi
-        sleep 0.5
-    done
     
     if [ "${1}" == "false" ]; then
         set_setting "filebrowser_ENABLED" "false"
@@ -140,10 +136,18 @@ elif [ "${1}" == "GET_BRANCH" ]; then
     get_setting "filebrowser_BRANCH" "stable"
     exit 0
 
-# --- 8. 获取状态 (快捷探测) ---
+# --- 8. 获取状态 (快捷探测 + 深度就绪检查) ---
 elif [ "${1}" == "CHECK" ]; then
-    if pgrep -f "$(basename "$BINARY")" > /dev/null 2>&1 ; then
-        echo "running"
+    PID=$(pgrep -f "$(basename "$BINARY")")
+    if [ -n "$PID" ]; then
+        # 进程在跑，进一步检查端口是否已就绪
+        PORT=$(/bin/bash "$DAEMON_SCRIPT" "GET_PORT")
+        # 使用 netstat 检查端口监听。只要本地有 LISTEN 记录即视为逻辑就绪
+        if netstat -lnt | grep -q ":$PORT .*LISTEN"; then
+            echo "fully_ready"
+        else
+            echo "running"
+        fi
         exit 0
     else
         echo "stopped"
@@ -155,5 +159,31 @@ elif [ "${1}" == "RESTART" ]; then
     /bin/bash "$DAEMON_SCRIPT" "STOP_ONLY"
     /bin/bash "$DAEMON_SCRIPT" "START_ONLY"
     exit $?
+
+# --- 10. 物理校验配置 (真理校验 - 绝对隔离版) ---
+elif [ "${1}" == "VALIDATE" ]; then
+    TEST_CONFIG="${2:-$CONFIG_YAML}"
+    if [ ! -f "$TEST_CONFIG" ]; then echo "Config file not found"; exit 1; fi
+    
+    # 建立深度隔离的校验环境
+    VAL_TMP="/tmp/fb_val_$(date +%s).yaml"
+    cp "$TEST_CONFIG" "$VAL_TMP"
+    
+    # 1. 端口隔离：强制随机端口
+    sed -i 's/\(port:[[:space:]]*\).*/\10/' "$VAL_TMP"
+    # 2. 日志隔离：强制定向到 null
+    sed -i 's/\(output:[[:space:]]*\).*/\1"\/dev\/null"/' "$VAL_TMP"
+    # 3. 数据库隔离 (CRITICAL)：强制使用临时 dummy 库，绝对不准碰生产库
+    sed -i 's/\(database:[[:space:]]*\).*/\1"\/tmp\/fb_val_dummy.db"/' "$VAL_TMP"
+
+    # 执行真理校验
+    VAL_OUT=$(timeout 2s "$BINARY" -c "$VAL_TMP" 2>&1)
+    rm -f "$VAL_TMP"
+
+    if echo "$VAL_OUT" | grep -Ei "FATAL|ERROR" > /dev/null; then
+        echo "$VAL_OUT" | sed 's/^[0-9\/ :]* //'
+        exit 1
+    fi
+    exit 0
 
 fi
